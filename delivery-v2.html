@@ -513,7 +513,7 @@
   };
 
   // ৪. প্রোডাক্ট ডিলিট করা
-  window.deleteMasterProduct = async function(id) {
+  window.deleteMasterProduct = async function(id) { 
     if(!confirm("আপনি কি এই প্রোডাক্টটি ডিলিট করতে চান?")) return;
     try {
       await deleteDoc(doc(db, "master_products", id));
