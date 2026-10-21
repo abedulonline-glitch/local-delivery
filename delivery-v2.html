@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🛵 Hyperlocal Delivery System v2</title>
+
+<!-- External Libraries -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+  /* ============================================================
+     PART 1: CORE STYLES & VARIABLES
+     ============================================================ */
+  :root {
+    --dlv-primary: #1a73e8;
+    --dlv-success: #0f9d58;
+    --dlv-danger: #d93025;
+    --dlv-warning: #f9a825;
+    --dlv-bg: #f0f2f5;
+    --dlv-card-bg: #ffffff;
+    --dlv-text: #202124;
+    --dlv-text-light: #5f6368;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--dlv-bg); color: var(--dlv-text); min-height: 100vh; padding-bottom: 80px; }
+  
+  /* Loader */
+  #dlv-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
+  .dlv-spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--dlv-primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  /* Topbar */
+  .dlv-topbar { background: linear-gradient(135deg, var(--dlv-primary), #4285f4); color: white; padding: 12px 14px; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .dlv-topbar h2 { font-size: 15px; font-weight: 600; }
+  .dlv-topbar-right { display: flex; gap: 8px; align-items: center; }
+  .dlv-role-badge { background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+  .dlv-btn-logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+  
+  /* Container */
+  .dlv-container { padding: 14px; max-width: 750px; margin: 0 auto; }
+  
+  /* Cards & UI */
+  .dlv-card { background: var(--dlv-card-bg); border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .dlv-card h3 { font-size: 15px; color: var(--dlv-text); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  
+  /* Buttons */
+  .dlv-btn { border: none; padding: 11px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; width: 100%; margin-bottom: 10px; text-align: center; }
+  .dlv-btn-primary { background: var(--dlv-primary); color: white; }
+  .dlv-btn-success { background: var(--dlv-success); color: white; }
+  .dlv-btn-danger { background: var(--dlv-danger); color: white; }
+  
+  /* Form Inputs */
+  .dlv-form-group { margin-bottom: 15px; }
+  .dlv-form-group label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 6px; }
+  .dlv-input { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; }
+  
+  /* Utility */
+  .dlv-hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Loader -->
+<div id="dlv-loader">
+  <div class="dlv-spinner"></div>
+  <div style="color: var(--dlv-text-light); font-size: 14px;">সিস্টেম লোড হচ্ছে...</div>
+</div>
+
+<!-- Login Screen (নতুন ফায়ারবেসে লগইনের জন্য) -->
+<div id="dlv-login-screen" class="dlv-hidden" style="padding: 20px; max-width: 400px; margin: 50px auto;">
+  <div class="dlv-card" style="text-align: center;">
+    <h2 style="color: var(--dlv-primary); margin-bottom: 20px;">🛵 Delivery App Login</h2>
+    <div class="dlv-form-group">
+      <input type="email" id="login-email" class="dlv-input" placeholder="ইমেইল দিন">
+    </div>
+    <div class="dlv-form-group">
+      <input type="password" id="login-password" class="dlv-input" placeholder="পাসওয়ার্ড দিন">
+    </div>
+    <button class="dlv-btn dlv-btn-primary" onclick="handleLogin()">লগইন করুন</button>
+    <div id="login-error" style="color: red; font-size: 12px; margin-top: 10px;"></div>
+  </div>
+</div>
+
+<!-- Main App Container -->
+<div id="dlv-main-app" class="dlv-hidden">
+  
+  <!-- Topbar -->
+  <div class="dlv-topbar">
+    <h2 id="dlv-topbar-title">🛵 Delivery System</h2>
+    <div class="dlv-topbar-right">
+      <span id="dlv-user-role" class="dlv-role-badge">Role</span>
+      <button class="dlv-btn-logout" onclick="handleLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="dlv-container">
+    <!-- ভিউগুলো এখানে পার্ট ২-এ যুক্ত হবে -->
+    <div id="dlv-view-placeholder" class="dlv-card">
+      <h3>স্বাগতম!</h3>
+      <p style="font-size: 13px; color: #666;">আপনার রোল অনুযায়ী ড্যাশবোর্ড পরবর্তী পার্টে যুক্ত হবে।</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  // ============================================================
+  // PART 1: FIREBASE AUTHENTICATION & CONFIG
+  // ============================================================
+  
+  import { db, auth } from './delivery-firebase-config.js';
+  import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { setLanguage, t } from './delivery-i18n.js';
+
+  let currentUser = null;
+  let currentUserData = null;
+
+  // UI Elements
+  const loader = document.getElementById('dlv-loader');
+  const loginScreen = document.getElementById('dlv-login-screen');
+  const mainApp = document.getElementById('dlv-main-app');
+  const loginError = document.getElementById('login-error');
+
+  // ==================== LOGIN FUNCTION ====================
+  window.handleLogin = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    
+    if(!email || !password) {
+      loginError.innerText = "ইমেইল এবং পাসওয়ার্ড দিন!";
+      return;
+    }
+
+    loginError.innerText = "";
+    const btn = event.target;
+    btn.innerText = "অপেক্ষা করুন...";
+    btn.disabled = true;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // লগইন সফল হলে onAuthStateChanged অটোমেটিক ট্রিগার হবে
+    } catch (error) {
+      console.error(error);
+      loginError.innerText = "ভুল ইমেইল বা পাসওয়ার্ড!";
+      btn.innerText = "লগইন করুন";
+      btn.disabled = false;
+    }
+  };
+
+  // ==================== AUTH STATE CHECK ====================
+  onAuthStateChanged(auth, async (user) => {
+    loader.classList.remove('dlv-hidden'); // লোডার দেখানো
+    
+    if (user) {
+      currentUser = user;
+      try {
+        // ডেটাবেস থেকে ইউজারের রোল বের করা
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          currentUserData = userSnap.data();
+          
+          // UI আপডেট
+          document.getElementById('dlv-topbar-title').innerText = `🛵 ${currentUserData.name || 'Delivery App'}`;
+          document.getElementById('dlv-user-role').innerText = currentUserData.role ? currentUserData.role.toUpperCase() : 'USER';
+          
+          // মেইন অ্যাপ দেখানো
+          loginScreen.classList.add('dlv-hidden');
+          mainApp.classList.remove('dlv-hidden');
+          
+          console.log("লগইন সফল! ইউজার রোল:", currentUserData.role);
+          
+        } else {
+          // ইউজার Auth-এ আছে কিন্তু ডেটাবেসে নেই
+          console.warn("User document not found in 'users' collection.");
+          alert("আপনার ডেটা ডেটাবেসে নেই। অ্যাডমিনের সাথে যোগাযোগ করুন।");
+          await signOut(auth);
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        alert("সিস্টেমে সমস্যা হচ্ছে।");
+      }
+    } else {
+      // লগইন করা নেই
+      currentUser = null;
+      currentUserData = null;
+      mainApp.classList.add('dlv-hidden');
+      loginScreen.classList.remove('dlv-hidden');
+    }
+    
+    loader.classList.add('dlv-hidden'); // লোডার লুকানো
+  });
+
+  // ==================== LOGOUT FUNCTION ====================
+  window.handleLogout = async function() {
+    if (!confirm('লগআউট করবেন?')) return;
+    try {
+      await signOut(auth);
+    } catch (e) {
+      alert('লগআউট করতে সমস্যা: ' + e.message);
+    }
+  };
+</script>
+
+</body>
+</html>
