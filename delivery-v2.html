@@ -439,12 +439,13 @@
   let masterProductsUnsub = null;
 
   // ১. প্রোডাক্ট লোড করা
-  function loadMasterProducts() {
+   function loadMasterProducts() {
     if (masterProductsUnsub) masterProductsUnsub();
     const listContainer = document.getElementById('admin-master-product-list');
+    if(!listContainer) return;
     
-    // createdAt দিয়ে সর্ট করা (নতুন আগে)
-    const q = query(collection(db, "master_products"), orderBy("createdAt", "desc"));
+    // orderBy বাদ দেওয়া হলো (ইনডেক্স এরর এড়াতে)
+    const q = query(collection(db, "master_products"));
     
     masterProductsUnsub = onSnapshot(q, (snap) => {
       if (snap.empty) {
@@ -452,19 +453,33 @@
         return;
       }
 
-      let html = '';
+      // ১. ডেটাগুলো একটি অ্যারেতে নেওয়া
+      let productsArray = [];
       snap.forEach(docSnap => {
-        const p = docSnap.data();
+        productsArray.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      // ২. নতুন আগে দেখানোর জন্য সর্ট করা
+      productsArray.sort((a, b) => {
+        const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+        return timeB - timeA;
+      });
+
+      // ৩. HTML তৈরি করা
+      let html = '';
+      productsArray.forEach(p => {
         html += `
           <div style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
             <div>
               <div style="font-size:13px; font-weight:600;">${p.name}</div>
               <div style="font-size:11px; color:#666;">${p.category} | Grade ${p.grade} | ${p.unit}</div>
             </div>
-            <button onclick="deleteMasterProduct('${docSnap.id}')" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">🗑️</button>
+            <button onclick="deleteMasterProduct('${p.id}')" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">🗑️</button>
           </div>
         `;
       });
+      
       listContainer.innerHTML = html;
     });
   }
