@@ -3,67 +3,112 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🛵 Hyperlocal Delivery System v2</title>
+<title>🛵 Hyperlocal Delivery System</title>
 
- <!-- External Libraries -->
+<!-- Imports -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>  
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
 <style>
- 
-    /* ============================================================
-     PART 1: CORE STYLES & VARIABLES
+  /* ============================================================
+     MARKETPLACE & DELIVERY APP STYLES
      ============================================================ */
   :root {
-    --dlv-primary: #1a73e8;
-    --dlv-success: #0f9d58;
-    --dlv-danger: #d93025;
-    --dlv-warning: #f9a825;
-    --dlv-bg: #f0f2f5;
-    --dlv-card-bg: #ffffff;
-    --dlv-text: #202124;
-    --dlv-text-light: #5f6368;
+    --mp-primary: #1a73e8;
+    --mp-success: #0f9d58;
+    --mp-danger: #d93025;
+    --mp-warning: #f9a825;
+    --mp-bg: #f0f2f5;
+    --mp-card-bg: #ffffff;
+    --mp-text: #202124;
+    --mp-text-light: #5f6368;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--dlv-bg); color: var(--dlv-text); min-height: 100vh; padding-bottom: 80px; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--mp-bg); color: var(--mp-text); min-height: 100vh; padding-bottom: 80px; }
   
   /* Loader */
   #dlv-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
-  .dlv-spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--dlv-primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+  .dlv-spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--mp-primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
   /* Topbar */
-  .dlv-topbar { background: linear-gradient(135deg, var(--dlv-primary), #4285f4); color: white; padding: 12px 14px; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-  .dlv-topbar h2 { font-size: 15px; font-weight: 600; }
-  .dlv-topbar-right { display: flex; gap: 8px; align-items: center; }
-  .dlv-role-badge { background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-  .dlv-btn-logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+  .mp-topbar { background: linear-gradient(135deg, var(--mp-primary), #4285f4); color: white; padding: 12px 14px; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .mp-topbar h2 { font-size: 15px; font-weight: 600; }
   
-  /* Container */
-  .dlv-container { padding: 14px; max-width: 750px; margin: 0 auto; }
+  /* Layout */
+  .mp-container { padding: 14px; max-width: 750px; margin: 0 auto; }
   
-  /* Cards & UI */
-  .dlv-card { background: var(--dlv-card-bg); border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-  .dlv-card h3 { font-size: 15px; color: var(--dlv-text); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  /* Cards */
+  .mp-card { background: var(--mp-card-bg); border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .mp-card h3 { font-size: 15px; color: var(--mp-text); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  
+  /* Wallet Header */
+  .dlv-wallet-header { background: linear-gradient(135deg, #1a73e8, #4285f4); color: white; padding: 20px; border-radius: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .dlv-wallet-balance { font-size: 24px; font-weight: bold; margin-top: 4px; }
   
   /* Buttons */
-  .dlv-btn { border: none; padding: 11px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; width: 100%; margin-bottom: 10px; text-align: center; }
-  .dlv-btn-primary { background: var(--dlv-primary); color: white; }
-  .dlv-btn-success { background: var(--dlv-success); color: white; }
-  .dlv-btn-danger { background: var(--dlv-danger); color: white; }
+  .mp-btn { border: none; padding: 11px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; width: 100%; margin-bottom: 10px; }
+  .mp-btn-primary { background: var(--mp-primary); color: white; }
+  .mp-btn-success { background: var(--mp-success); color: white; }
+  .mp-btn-danger { background: var(--mp-danger); color: white; }
   
-  /* Form Inputs */
+  /* Hidden utility */
+  .mp-hidden { display: none !important; }
+  .dlv-dashboard-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: var(--mp-primary); }
+
+  /* Modals */
+  .dlv-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: none; justify-content: center; align-items: center; padding: 20px; }
+  .dlv-modal-overlay.active { display: flex; }
+  .dlv-modal-content { background: white; border-radius: 14px; width: 100%; max-width: 400px; padding: 20px; position: relative; animation: slideUp 0.3s ease-out; }
+  .dlv-modal-close { position: absolute; top: 15px; right: 15px; font-size: 24px; color: #666; cursor: pointer; }
+  
+  /* Product Grid */
+  .dlv-search-box { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; margin-bottom: 15px; }
+  .dlv-product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .dlv-product-card { background: white; border: 1px solid #e0e0e0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; }
+  .dlv-product-img { width: 100%; height: 100px; background: #f0f2f5; border-radius: 8px; object-fit: cover; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; font-size: 30px; }
+  .dlv-product-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .dlv-product-price { font-size: 14px; font-weight: bold; color: var(--mp-primary); margin-bottom: 2px; }
+  .dlv-product-shop { font-size: 10px; color: var(--mp-text-light); margin-bottom: 8px; }
+  .dlv-add-btn { background: #e8f0fe; color: var(--mp-primary); border: none; padding: 8px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: auto; }
+  
+  /* Shopkeeper Items */
+  .shop-prod-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; }
+  .prod-img-thumb { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; background: #f0f2f5; display: flex; justify-content: center; align-items: center; font-size: 20px; }
+  .prod-details { flex: 1; }
+  .prod-title { font-size: 14px; font-weight: 600; color: var(--mp-text); }
+  .prod-price { font-size: 13px; font-weight: bold; color: var(--mp-primary); }
+  .prod-stock { font-size: 11px; color: var(--mp-text-light); }
+  
+  /* Forms */
   .dlv-form-group { margin-bottom: 15px; }
   .dlv-form-group label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 6px; }
   .dlv-input { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; }
   
-  /* Utility */
-  .dlv-hidden { display: none !important; }
+  /* Delivery Boy Toggle */
+  .dlv-status-toggle { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .dlv-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+  .dlv-switch input { opacity: 0; width: 0; height: 0; }
+  .dlv-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+  .dlv-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+  input:checked + .dlv-slider { background-color: var(--mp-success); }
+  input:checked + .dlv-slider:before { transform: translateX(24px); }
+
+  .dlv-live-card { background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+  .dlv-bidding-area { background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px dashed #ccc; }
+  .dlv-bid-input-group { display: flex; gap: 8px; margin-top: 8px; }
+  .dlv-bid-input-group input { width: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-weight: bold; }
+  .dlv-bid-input-group button { flex: 1; padding: 8px; background: var(--mp-warning); color: #000; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+  .dlv-accepted-card { background: #e6f4ea; border: 2px solid var(--mp-success); border-radius: 12px; padding: 15px; margin-bottom: 12px; text-align: center; }
+
+  /* Crop Modal */
+  #dlv-crop-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10001; flex-direction: column; }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 </style>
 </head>
 <body>
@@ -71,29 +116,300 @@
 <!-- Loader -->
 <div id="dlv-loader">
   <div class="dlv-spinner"></div>
-  <div style="color: var(--dlv-text-light); font-size: 14px;">সিস্টেম লোড হচ্ছে...</div>
+  <div style="color: var(--mp-text-light); font-size: 14px;">অপেক্ষা করুন...</div>
 </div>
 
-<!-- Login Screen (নতুন ফায়ারবেসে লগইনের জন্য) -->
-<div id="dlv-login-screen" class="dlv-hidden" style="padding: 20px; max-width: 400px; margin: 50px auto;">
-  <div class="dlv-card" style="text-align: center;">
-    <h2 style="color: var(--dlv-primary); margin-bottom: 20px;">🛵 Delivery App Login</h2>
-    <div class="dlv-form-group">
-      <input type="email" id="login-email" class="dlv-input" placeholder="ইমেইল দিন">
+<!-- Main App Container -->
+<div id="mp-app" class="mp-hidden">
+  
+  <!-- Topbar -->
+  <div class="mp-topbar">
+    <h2 id="dlv-topbar-title">🛵 Delivery System</h2>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <span id="dlv-user-role" style="font-size: 11px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px;">Role</span>
+      <button onclick="handleLogout()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">Logout</button>
     </div>
-    <div class="dlv-form-group">
-      <input type="password" id="login-password" class="dlv-input" placeholder="পাসওয়ার্ড দিন">
+  </div>
+
+  <div class="mp-container">
+    
+    <!-- ==================== CUSTOMER DASHBOARD ==================== -->
+    <div id="dlv-view-customer" class="mp-hidden">
+      <div class="dlv-wallet-header">
+        <div>
+          <div style="font-size: 12px; opacity: 0.9;">আমার ওয়ালেট ব্যালেন্স</div>
+          <div class="dlv-wallet-balance" id="cst-wallet-balance">₹0.00</div>
+        </div>
+        <button class="mp-btn" style="width: auto; margin: 0; background: white; color: var(--mp-primary);" onclick="openRechargeModal()">+ Add Money</button>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+        <div class="mp-card" style="margin-bottom: 0; text-align: center; cursor: pointer;" onclick="openKhataModal()">
+          <div style="font-size: 24px; margin-bottom: 5px;">📒</div>
+          <div style="font-size: 13px; font-weight: 600;">আমার খাতা</div>
+          <div style="font-size: 11px; color: var(--mp-danger);">বাকি: <span id="cst-khata-due">₹0.00</span></div>
+        </div>
+        <div class="mp-card" style="margin-bottom: 0; text-align: center; cursor: pointer;" onclick="openCustomerOrdersModal()">
+          <div style="font-size: 24px; margin-bottom: 5px;">📦</div>
+          <div style="font-size: 13px; font-weight: 600;">আমার অর্ডার</div>
+          <div style="font-size: 11px; color: var(--mp-text-light);">সব অর্ডার দেখুন</div>
+        </div>
+      </div>
+
+      <div class="mp-card">
+        <h3>📍 ডেলিভারি অ্যাড্রেস</h3>
+        <div id="customer-saved-address" style="font-size: 13px; color: var(--mp-text-light); margin-bottom: 10px;">কোন অ্যাড্রেস সেভ করা নেই।</div>
+        <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px;" onclick="openAddressModal()">+ নতুন অ্যাড্রেস সেভ করুন</button>
+      </div>
+      
+      <div class="mp-card">
+        <h3>🛒 প্রোডাক্ট এক্সপ্লোর করুন</h3>
+        <div class="dlv-product-grid" id="cst-product-grid"></div>
+      </div>
     </div>
-    <button class="dlv-btn dlv-btn-primary" onclick="handleLogin()">লগইন করুন</button>
-    <div id="login-error" style="color: red; font-size: 12px; margin-top: 10px;"></div>
+
+    <!-- ==================== SHOPKEEPER DASHBOARD ==================== -->
+    <div id="dlv-view-shopkeeper" class="mp-hidden">
+      <div class="dlv-dashboard-title">দোকানদার ড্যাশবোর্ড</div>
+      <div class="mp-card" style="border-left: 4px solid var(--mp-danger);">
+        <h3>🔔 নতুন অর্ডার (পেন্ডিং)</h3>
+        <div id="shop-new-orders-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
+      </div>
+      <div class="mp-card">
+        <h3 style="justify-content: space-between;">
+          📦 আমার প্রোডাক্ট লিস্ট
+          <button class="mp-btn mp-btn-primary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px;" onclick="openAddProductModal()">+ Add</button>
+        </h3>
+        <div id="shop-product-list"></div>
+      </div>
+      <div class="mp-card">
+        <h3 style="justify-content: space-between;">
+          📒 দোকানের খাতা
+          <button class="mp-btn" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px; background: var(--mp-primary); color: white;" onclick="openShopKhataModal()">খাতা দেখুন</button>
+        </h3>
+        <div style="font-size: 13px; color: var(--mp-text-light);">মোট বাকি: <strong id="shop-total-due" style="color: var(--mp-danger); font-size: 16px;">₹0.00</strong></div>
+      </div>
+    </div>
+
+    <!-- ==================== DELIVERY BOY DASHBOARD ==================== -->
+    <div id="dlv-view-delivery" class="mp-hidden">
+      <div class="dlv-dashboard-title">ডেলিভারি বয় ড্যাশবোর্ড</div>
+      <div class="dlv-status-toggle">
+        <div>
+          <span>আমার স্ট্যাটাস:</span>
+          <span id="dlv-online-status" style="color: var(--mp-danger);">🔴 অফলাইন</span>
+        </div>
+        <label class="dlv-switch">
+          <input type="checkbox" id="dlv-online-toggle" onchange="toggleDeliveryStatus(this)">
+          <span class="dlv-slider"></span>
+        </label>
+      </div>
+      <div class="dlv-wallet-header" style="background: linear-gradient(135deg, #0f9d58, #14b866);">
+        <div>
+          <div style="font-size: 12px; opacity: 0.9;">আজকের আয়</div>
+          <div class="dlv-wallet-balance" id="dlv-today-earnings">₹0.00</div>
+        </div>
+      </div>
+      <div class="mp-card" id="dlv-live-orders-container" style="display: none;">
+        <h3>🔔 লাইভ অর্ডার (বিড করুন)</h3>
+        <div id="dlv-live-orders"></div>
+      </div>
+      <div class="mp-card" id="dlv-active-order-container" style="display: none; border: 2px solid var(--mp-success);">
+        <h3 style="color: var(--mp-success);">🚀 চলমান ডেলিভারি</h3>
+        <div id="dlv-active-order-details"></div>
+      </div>
+      <div class="mp-card" id="dlv-offline-msg" style="text-align: center; padding: 30px;">
+        <div style="font-size: 40px; margin-bottom: 10px;">😴</div>
+        <h3 style="color: var(--mp-text-light);">আপনি বর্তমানে অফলাইনে আছেন</h3>
+      </div>
+    </div>
+
+    <!-- ==================== ADMIN DASHBOARD ==================== -->
+    <div id="dlv-view-admin" class="mp-hidden">
+      <div class="dlv-dashboard-title">👑 অ্যাডমিন কন্ট্রোল প্যানেল</div>
+      
+      <div class="dlv-wallet-header" style="background: linear-gradient(135deg, #1a73e8, #4285f4);">
+        <div>
+          <div style="font-size: 12px; opacity: 0.9;">সিস্টেমের মোট রেভিনিউ (১%)</div>
+          <div class="dlv-wallet-balance" id="admin-total-revenue">₹0.00</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+        <div class="mp-card" style="margin: 0; text-align: center; padding: 10px;">
+          <div style="font-size: 20px;">🏪</div><div style="font-size: 11px; font-weight: 600;">দোকানদার</div>
+          <div style="font-size: 16px; font-weight: bold; color: var(--mp-primary);" id="admin-total-shops">0</div>
+        </div>
+        <div class="mp-card" style="margin: 0; text-align: center; padding: 10px;">
+          <div style="font-size: 20px;">🛵</div><div style="font-size: 11px; font-weight: 600;">ডেলিভারি বয়</div>
+          <div style="font-size: 16px; font-weight: bold; color: var(--mp-success);" id="admin-total-delivery">0</div>
+        </div>
+        <div class="mp-card" style="margin: 0; text-align: center; padding: 10px;">
+          <div style="font-size: 20px;">👨‍💼</div><div style="font-size: 11px; font-weight: 600;">ম্যানেজার</div>
+          <div style="font-size: 16px; font-weight: bold; color: var(--mp-warning);" id="admin-total-managers">0</div>
+        </div>
+      </div>
+
+      <!-- Master Product Section -->
+      <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
+        <h3 style="justify-content: space-between;">
+          🏷️ মাস্টার প্রোডাক্ট
+          <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
+        </h3>
+        <div id="admin-master-product-list">
+          <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
+        </div>
+      </div>
+
+      <div class="mp-card">
+        <h3>👥 ইউজার রোল ম্যানেজমেন্ট</h3>
+        <div id="admin-user-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
+      </div>
+
+      <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
+        <h3>📍 পিনকোড ভিত্তিক ম্যানেজার</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <input type="text" id="admin-pin-input" class="dlv-input" placeholder="পিনকোড (যেমন: 700001)" style="flex: 1;">
+          <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 0 15px;" onclick="searchPinUsers()">🔍 খুঁজুন</button>
+        </div>
+        <div id="admin-pin-user-list"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
-<!-- Master Product Add Modal -->
-<div id="dlv-master-product-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:10000; overflow-y:auto; padding:20px;">
-  <div style="background:white; border-radius:14px; max-width:400px; margin:30px auto; padding:20px; position:relative;">
-    <span onclick="closeMasterProductModal()" style="position:absolute; top:10px; right:15px; font-size:24px; cursor:pointer;">&times;</span>
-    <h3 style="color:var(--dlv-primary); margin-bottom:15px;">🏷️ নতুন প্রোডাক্ট যোগ করুন</h3>
+<!-- ==================== MODALS ==================== -->
+
+<!-- Recharge Modal -->
+<div id="dlv-recharge-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content">
+    <span class="dlv-modal-close" onclick="closeRechargeModal()">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">💰 ওয়ালেট রিচার্জ</h3>
+    <div style="text-align: center; margin-bottom: 15px;">
+      <div style="width: 150px; height: 150px; background: #f0f2f5; margin: 0 auto; display: flex; justify-content: center; align-items: center; border: 2px dashed #ccc; border-radius: 10px;">
+        <span style="font-size: 40px;">QR</span>
+      </div>
+      <p style="font-size: 12px; color: #666; margin-top: 8px;">UPI অ্যাপ দিয়ে স্ক্যান করুন</p>
+    </div>
+    <button class="mp-btn mp-btn-primary" onclick="processRecharge()">পেমেন্ট সম্পন্ন হয়েছে</button>
+  </div>
+</div>
+
+<!-- Customer Khata Modal -->
+<div id="dlv-khata-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-khata-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">📒 আমার খাতা (বাকি)</h3>
+    <div style="background: #fce8e6; color: var(--mp-danger); padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: center;">
+      <div style="font-size: 12px;">মোট বাকি</div>
+      <div style="font-size: 24px; font-weight: bold;" id="khata-total-due">₹0.00</div>
+    </div>
+    <div id="khata-shop-list" style="border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 15px; max-height: 200px; overflow-y: auto;"></div>
+  </div>
+</div>
+
+<!-- Address Modal -->
+<div id="dlv-address-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-address-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">📍 নতুন অ্যাড্রেস দিন</h3>
+    <div class="dlv-form-group">
+      <label>অ্যাড্রেসের ধরন</label>
+      <select id="new-addr-type" class="dlv-input">
+        <option value="Home">🏠 বাড়ি (Home)</option>
+        <option value="Office">🏢 অফিস (Office)</option>
+        <option value="Other">📍 অন্যান্য (Other)</option>
+      </select>
+    </div>
+    <div class="dlv-form-group">
+      <label>সম্পূর্ণ ঠিকানা</label>
+      <input type="text" id="new-addr-text" class="dlv-input" placeholder="ম্যাপ থেকে অটো আসবে...">
+    </div>
+    <div class="dlv-form-group">
+      <label>ল্যান্ডমার্ক (ঐচ্ছিক)</label>
+      <input type="text" id="new-addr-landmark" class="dlv-input" placeholder="যেমন: মসজিদের পাশে">
+    </div>
+    <div class="dlv-form-group">
+      <label>ম্যাপে লোকেশন পিন করুন</label>
+      <div id="map-picker" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #e8f0fe; color: var(--mp-primary); flex: 1;" onclick="getCurrentLocation()">📍 আমার লোকেশন</button>
+        <button id="btn-satellite-view" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #f0f2f5; color: #333; flex: 1;" onclick="toggleMapLayer()">🛰️ স্যাটেলাইট</button>
+      </div>
+      <div style="font-size: 11px; color: var(--mp-text-light); margin-top: 5px;" id="map-coords">কোনো পিন সেট করা হয়নি</div>
+    </div>
+    <button class="mp-btn mp-btn-success" onclick="saveNewAddress()">💾 সেভ করুন</button>
+  </div>
+</div>
+
+<!-- Customer Order History Modal -->
+<div id="dlv-customer-orders-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 85vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-customer-orders-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">📦 আমার অর্ডার সমূহ</h3>
+    <div id="customer-orders-list"></div>
+  </div>
+</div>
+
+<!-- Payment Method Modal -->
+<div id="dlv-payment-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content">
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary); text-align: center;">পেমেন্ট মেথড</h3>
+    <p style="text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 15px;" id="pay-modal-amount">₹0</p>
+    <button class="mp-btn mp-btn-primary" onclick="processOrderPayment('wallet')" style="background: #0f9d58;">💳 ওয়ালেট</button>
+    <button class="mp-btn" onclick="processOrderPayment('cod')" style="background: #f0f2f5; color: #333;">💵 ক্যাশ অন ডেলিভারি</button>
+    <button class="mp-btn" onclick="processOrderPayment('credit')" style="background: #fef7e0; color: #b06000;">📒 বাকি (খাতা)</button>
+    <button class="mp-btn" onclick="document.getElementById('dlv-payment-modal').classList.remove('active')" style="background: transparent; color: #999;">বাতিল</button>
+  </div>
+</div>
+
+<!-- Shopkeeper Khata Modal -->
+<div id="dlv-shop-khata-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 80vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="closeShopKhataModal()">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">📒 দোকানের খাতা</h3>
+    <div id="shop-khata-list"></div>
+  </div>
+</div>
+
+<!-- Add Product Modal (Shopkeeper) -->
+<div id="dlv-add-product-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="closeAddProductModal()">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">🛒 নতুন প্রোডাক্ট যোগ করুন</h3>
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের নাম *</label>
+      <input type="text" id="add-p-name" class="dlv-input" placeholder="যেমন: মিনিকেট চাল ৫ কেজি">
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div class="dlv-form-group">
+        <label>দাম (₹) *</label>
+        <input type="number" id="add-p-price" class="dlv-input" placeholder="0.00">
+      </div>
+      <div class="dlv-form-group">
+        <label>স্টক *</label>
+        <input type="number" id="add-p-stock" class="dlv-input" placeholder="0">
+      </div>
+    </div>
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের ছবি</label>
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <button class="mp-btn" style="margin:0; background:#e8f0fe; color:var(--mp-primary); font-size:12px; padding:8px;" onclick="pickImageSource('camera', 'add-p')">📷 ক্যামেরা</button>
+        <button class="mp-btn" style="margin:0; background:#f0f2f5; color:#333; font-size:12px; padding:8px;" onclick="pickImageSource('gallery', 'add-p')">🖼️ গ্যালারি</button>
+      </div>
+      <img id="add-p-image-preview" style="width:100%; height:150px; object-fit:contain; border-radius:8px; display:none;">
+      <input type="file" id="add-p-image-file" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'add-p')">
+    </div>
+    <button class="mp-btn mp-btn-success" id="btn-save-product" onclick="saveNewProduct()">💾 সেভ করুন</button>
+  </div>
+</div>
+
+<!-- Master Product Modal (Admin) -->
+<div id="dlv-master-product-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="closeMasterProductModal()">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">🏷️ মাস্টার প্রোডাক্ট যোগ করুন</h3>
     
     <div class="dlv-form-group">
       <label>প্রোডাক্টের নাম *</label>
@@ -130,203 +446,114 @@
       </div>
     </div>
 
-    <button class="dlv-btn dlv-btn-success" id="btn-save-mp" onclick="saveMasterProduct()">💾 সেভ করুন</button>
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের ছবি</label>
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'mp')">📷 ক্যামেরা</button>
+        <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'mp')">🖼️ গ্যালারি</button>
+      </div>
+      <img id="mp-image-preview" style="width: 100%; height: 150px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
+      <input type="file" id="mp-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'mp')">
+    </div>
+
+    <button class="mp-btn mp-btn-success" id="btn-save-mp" onclick="saveMasterProduct()" style="margin-top: 15px;">💾 সেভ করুন</button>
   </div>
 </div>
-  
-  <!-- Main App Container -->
-<div id="dlv-main-app" class="dlv-hidden">
-  
-  <!-- Topbar -->
-  <div class="dlv-topbar">
-    <h2 id="dlv-topbar-title">🛵 Delivery System</h2>
-    <div class="dlv-topbar-right">
-      <span id="dlv-user-role" class="dlv-role-badge">Role</span>
-      <button class="dlv-btn-logout" onclick="handleLogout()">Logout</button>
-    </div>
+
+<!-- Crop Modal (Global) -->
+<div id="dlv-crop-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10001; flex-direction: column;">
+  <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white;">
+    <span onclick="closeCropModal()" style="font-size: 24px; cursor: pointer;">✖</span>
+    <span style="font-weight: bold;">ছবি ক্রপ করুন</span>
+    <span id="crop-status" style="font-size: 12px; color: #f9a825;">অপেক্ষা করুন...</span>
   </div>
-
-  <div class="dlv-container">
-    <!-- ভিউগুলো এখানে পার্ট ২-এ যুক্ত হবে -->
-        <!-- ==================== ROLE: CUSTOMER DASHBOARD ==================== -->
-    <div id="dlv-view-customer" class="dlv-hidden">
-      <div class="dlv-card" style="background: linear-gradient(135deg, var(--dlv-primary), #4285f4); color: white;">
-        <div style="font-size: 12px; opacity: 0.9;">আমার ওয়ালেট ব্যালেন্স</div>
-        <div style="font-size: 24px; font-weight: bold; margin-top: 5px;" id="cst-wallet-balance">₹0.00</div>
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-          <button class="dlv-btn" style="background: white; color: var(--dlv-primary); margin: 0; font-size: 12px; padding: 8px;" onclick="alert('Recharge Coming Soon')">+ Add Money</button>
-          <button class="dlv-btn" style="background: rgba(255,255,255,0.2); color: white; margin: 0; font-size: 12px; padding: 8px;" onclick="alert('Khata Coming Soon')">📒 আমার খাতা</button>
-        </div>
-      </div>
-
-           <!-- Master Product Section -->
-      <div class="dlv-card" style="border-left: 4px solid var(--dlv-primary);">
-        <h3 style="justify-content: space-between;">
-          🏷️ মাস্টার প্রোডাক্ট (ক্যাটালগ)
-          <button class="dlv-btn dlv-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন প্রোডাক্ট</button>
-        </h3>
-        <div id="admin-master-product-list">
-          <!-- Master products will load here -->
-          <div style="text-align: center; color: #999; font-size: 13px;">প্রোডাক্ট লোড হচ্ছে...</div>
-        </div>
-      </div>
-      
-      <div class="dlv-card">
-        <h3>🛒 প্রোডাক্ট এক্সপ্লোর করুন</h3>
-        <input type="text" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">প্রোডাক্ট ১</div>
-          <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">প্রোডাক্ট ২</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ==================== ROLE: SHOPKEEPER DASHBOARD ==================== -->
-    <div id="dlv-view-shopkeeper" class="dlv-hidden">
-      <div class="dlv-card">
-        <h3>📦 আমার প্রোডাক্ট লিস্ট</h3>
-        <button class="dlv-btn dlv-btn-success" onclick="alert('Add Product Coming Soon')">+ নতুন প্রোডাক্ট যোগ করুন</button>
-        <div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">কোনো প্রোডাক্ট নেই।</div>
-      </div>
-      <div class="dlv-card" style="border-left: 4px solid var(--dlv-danger);">
-        <h3>🔔 নতুন অর্ডার (পেন্ডিং)</h3>
-        <div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">বর্তমানে কোনো নতুন অর্ডার নেই।</div>
-      </div>
-    </div>
-
-    <!-- ==================== ROLE: DELIVERY BOY DASHBOARD ==================== -->
-    <div id="dlv-view-delivery" class="dlv-hidden">
-      <div class="dlv-card" style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 14px; font-weight: 600;">আমার স্ট্যাটাস:</span>
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span id="dlv-online-status" style="color: var(--dlv-danger); font-size: 12px; font-weight: bold;">🔴 অফলাইন</span>
-          <label style="position: relative; display: inline-block; width: 46px; height: 24px;">
-            <input type="checkbox" id="dlv-online-toggle" onchange="toggleDeliveryStatus(this)" style="opacity: 0; width: 0; height: 0;">
-            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px;" id="dlv-toggle-slider"></span>
-          </label>
-        </div>
-      </div>
-      
-      <div class="dlv-card" style="background: linear-gradient(135deg, var(--dlv-success), #14b866); color: white;">
-        <div style="font-size: 12px; opacity: 0.9;">আজকের আয়</div>
-        <div style="font-size: 24px; font-weight: bold;" id="dlv-today-earnings">₹0.00</div>
-      </div>
-
-      <div class="dlv-card" id="dlv-live-orders-container" style="display: none;">
-        <h3>🔔 লাইভ অর্ডার (বিড করুন)</h3>
-        <div id="dlv-live-orders" style="text-align: center; color: #999; font-size: 13px;">অর্ডার খোঁজা হচ্ছে...</div>
-      </div>
-    </div>
-
-    <!-- ==================== ROLE: ADMIN DASHBOARD ==================== -->
-    <div id="dlv-view-admin" class="dlv-hidden">
-      <div class="dlv-card" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: white;">
-        <div style="font-size: 12px; opacity: 0.9;">সিস্টেমের মোট রেভিনিউ (১%)</div>
-        <div style="font-size: 24px; font-weight: bold;" id="admin-total-revenue">₹0.00</div>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px;">
-        <div class="dlv-card" style="margin: 0; text-align: center; padding: 10px;">
-          <div style="font-size: 20px;">🏪</div>
-          <div style="font-size: 11px; font-weight: 600;">দোকানদার</div>
-          <div style="font-size: 16px; font-weight: bold; color: var(--dlv-primary);" id="admin-total-shops">0</div>
-        </div>
-        <div class="dlv-card" style="margin: 0; text-align: center; padding: 10px;">
-          <div style="font-size: 20px;">🛵</div>
-          <div style="font-size: 11px; font-weight: 600;">ডেলিভারি বয়</div>
-          <div style="font-size: 16px; font-weight: bold; color: var(--dlv-success);" id="admin-total-delivery">0</div>
-        </div>
-        <div class="dlv-card" style="margin: 0; text-align: center; padding: 10px;">
-          <div style="font-size: 20px;">👨‍💼</div>
-          <div style="font-size: 11px; font-weight: 600;">ম্যানেজার</div>
-          <div style="font-size: 16px; font-weight: bold; color: var(--dlv-warning);" id="admin-total-managers">0</div>
-        </div>
-      </div>
-
-      <div class="dlv-card">
-        <h3>👥 ইউজার রোল ম্যানেজমেন্ট</h3>
-        <div id="admin-user-list">
-          <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
-        </div>
-      </div>
+  <div style="flex: 1; overflow: hidden; display: flex; justify-content: center; align-items: center; padding: 10px;">
+    <img id="crop-image" style="max-width: 100%; max-height: 100%; display: block;">
+  </div>
+  <div style="padding: 15px; text-align: center;">
+    <button class="mp-btn mp-btn-success" style="width: 100%; max-width: 300px; margin: 0 auto;" onclick="saveCroppedImage()">✅ ক্রপ করে সেভ করুন</button>
   </div>
 </div>
 
 <script type="module">
   // ============================================================
-  // PART 1: FIREBASE AUTHENTICATION & CONFIG
+  // FIREBASE & CORE CONFIG
   // ============================================================
-  
-  import { db, auth } from './delivery-firebase-config.js';
-  import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
   import { 
-    doc, getDoc, collection, onSnapshot, updateDoc, query, orderBy, addDoc, deleteDoc, serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-  import { setLanguage, t } from './delivery-i18n.js';
+    getFirestore, doc, getDoc, getDocs, collection, addDoc, onSnapshot, query, where, updateDoc, deleteDoc, serverTimestamp, orderBy 
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  let currentUser = null;
-  let currentUserData = null;
-
-  // UI Elements
-  const loader = document.getElementById('dlv-loader');
-  const loginScreen = document.getElementById('dlv-login-screen');
-  const mainApp = document.getElementById('dlv-main-app');
-  const loginError = document.getElementById('login-error');
-
-  // ==================== LOGIN FUNCTION ====================
-  window.handleLogin = async function() {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value.trim();
-    
-    if(!email || !password) {
-      loginError.innerText = "ইমেইল এবং পাসওয়ার্ড দিন!";
-      return;
-    }
-
-    loginError.innerText = "";
-    const btn = event.target;
-    btn.innerText = "অপেক্ষা করুন...";
-    btn.disabled = true;
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // লগইন সফল হলে onAuthStateChanged অটোমেটিক ট্রিগার হবে
-    } catch (error) {
-      console.error(error);
-      loginError.innerText = "ভুল ইমেইল বা পাসওয়ার্ড!";
-      btn.innerText = "লগইন করুন";
-      btn.disabled = false;
-    }
+  // আপনার দেওয়া নতুন ফায়ারবেস কনফিগ
+  const firebaseConfig = {
+    apiKey: "AIzaSyBth-4UlBlHFaIm-4vi6Q7G_OIH640l9qM",
+    authDomain: "local-delivery-app-59c61.firebaseapp.com",
+    projectId: "local-delivery-app-59c61",
+    storageBucket: "local-delivery-app-59c61.firebasestorage.app",
+    messagingSenderId: "564563629552",
+    appId: "1:564563629552:web:19fc32c620958f0b0af935",
+    measurementId: "G-T3L9D6BFQL"
   };
 
-  // ==================== AUTH STATE CHECK ====================
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // ============================================================
+  // GLOBAL VARIABLES
+  // ============================================================
+  let currentUser = null;
+  let globalUserData = null;
+  let userRole = null;
+  let isOnline = false;
+  let unsubscribeOrders = null;
+  let currentImageBase64 = null;
+  let uploadedImageUrl = null;
+  let currentUploadContext = null; // 'mp' বা 'add-p'
+  
+  // ImgBB API Key
+  const IMGBB_API_KEY = '493904e927fb86161e0a4944d5b28de6'; 
+
+  // Map & Address variables
+  let pickerMap = null;
+  let pickerMarker = null;
+  let pickedLatLng = null;
+  let customerAddresses = []; 
+  let currentTileLayer = null;
+  let isSatelliteView = false;
+
+  // Crop variables
+  let cropperInstance = null;
+
+  // Admin variables
+  let adminUsersUnsubscribe = null;
+  let masterProductsUnsub = null;
+
+  // Temp Order Data
+  let tempOrderData = null;
+
+  // ============================================================
+  // INITIALIZATION & AUTH
+  // ============================================================
+  const loader = document.getElementById('dlv-loader');
+  const loginScreen = document.getElementById('dlv-login-screen'); // Will handle via beta.html
+  const mainApp = document.getElementById('mp-app');
+
   onAuthStateChanged(auth, async (user) => {
-    loader.classList.remove('dlv-hidden'); // লোডার দেখানো
+    loader.classList.remove('mp-hidden');
     
     if (user) {
       currentUser = user;
       try {
-        // ডেটাবেস থেকে ইউজারের রোল বের করা
-        const userRef = doc(db, "users", user.uid);
+        const userRef = doc(db, "users", user.uid); // 'users' কালেকশন
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
-          currentUserData = userSnap.data();
-          
-          // UI আপডেট
-          document.getElementById('dlv-topbar-title').innerText = `🛵 ${currentUserData.name || 'Delivery App'}`;
-          document.getElementById('dlv-user-role').innerText = currentUserData.role ? currentUserData.role.toUpperCase() : 'USER';
-          
-          // মেইন অ্যাপ দেখানো
-          loginScreen.classList.add('dlv-hidden');
-          mainApp.classList.remove('dlv-hidden');
-          
-          console.log("লগইন সফল! ইউজার রোল:", currentUserData.role);
-                    // রোল অনুযায়ী UI লোড করা
-          setupUIForRole(currentUserData.role || 'customer', currentUserData);
+          globalUserData = userSnap.data();
+          userRole = globalUserData.role || 'customer';
+          setupUIForRole(userRole, globalUserData);
         } else {
-          // ইউজার Auth-এ আছে কিন্তু ডেটাবেসে নেই
-          console.warn("User document not found in 'users' collection.");
           alert("আপনার ডেটা ডেটাবেসে নেই। অ্যাডমিনের সাথে যোগাযোগ করুন।");
           await signOut(auth);
         }
@@ -335,77 +562,629 @@
         alert("সিস্টেমে সমস্যা হচ্ছে।");
       }
     } else {
-      // লগইন করা নেই
-      currentUser = null;
-      currentUserData = null;
-      mainApp.classList.add('dlv-hidden');
-      loginScreen.classList.remove('dlv-hidden');
+      // লগইন না থাকলে beta.html এ পাঠান
+      window.location.href = 'beta.html';
     }
-    
-    loader.classList.add('dlv-hidden'); // লোডার লুকানো
+    loader.classList.add('mp-hidden');
   });
 
-  // ==================== ROLE BASED UI SETUP (PART 2) ====================
+  window.handleLogout = async function() {
+    if (!confirm('লগআউট করবেন?')) return;
+    try {
+      await signOut(auth);
+      window.location.href = 'beta.html';
+    } catch (e) {
+      alert('লগআউট করতে সমস্যা: ' + e.message);
+    }
+  };
+
+  // ============================================================
+  // ROLE BASED UI SETUP
+  // ============================================================
   function setupUIForRole(role, userData) {
-    // ১. সব ভিউ লুকিয়ে ফেলা
-    ['customer', 'shopkeeper', 'delivery', 'admin', 'manager'].forEach(r => {
+    mainApp.classList.remove('mp-hidden');
+    document.getElementById('dlv-user-role').innerText = role.toUpperCase();
+    document.getElementById('dlv-topbar-title').innerText = `🛵 ${userData.name || 'Delivery System'}`;
+
+    // Hide all views
+    ['customer', 'shopkeeper', 'delivery', 'admin'].forEach(r => {
       const view = document.getElementById(`dlv-view-${r}`);
-      if (view) view.classList.add('dlv-hidden');
+      if (view) view.classList.add('mp-hidden');
     });
 
-    // ২. রোল অনুযায়ী ভিউ দেখানো
+    // Show active view
     const activeView = document.getElementById(`dlv-view-${role}`);
-    if (activeView) {
-      activeView.classList.remove('dlv-hidden');
-    } else {
-      // ডিফল্ট কাস্টমার
-      document.getElementById('dlv-view-customer').classList.remove('dlv-hidden');
-    }
+    if (activeView) activeView.classList.remove('mp-hidden');
 
-    // ৩. ডেটা লোড করা
+    // Load role-specific data
     if (role === 'customer') {
+      renderCustomerProducts();
       if (userData) {
         document.getElementById('cst-wallet-balance').innerText = `₹${(userData.walletBalance || 0).toFixed(2)}`;
+        document.getElementById('cst-khata-due').innerText = `₹${(userData.khataDue || 0).toFixed(2)}`;
       }
+    } else if (role === 'shopkeeper') {
+      renderShopProducts();
+      loadShopTotalDue();
+      loadShopNewOrders();
     } else if (role === 'delivery') {
-      // ডেলিভারি বয়ের অফলাইন স্ক্রিন (লজিক পার্ট ৩-এ আসবে)
-      const offlineMsg = document.getElementById('dlv-live-orders');
-      if (offlineMsg) offlineMsg.style.display = 'block';
+      document.getElementById('dlv-offline-msg').style.display = 'block';
+      document.getElementById('dlv-live-orders-container').style.display = 'none';
     } else if (role === 'admin') {
-      loadAdminDashboardUI(); // অ্যাডমিন ড্যাশবোর্ডের ডেটা লোড (আপাতত ডামি)
+      loadAdminDashboardUI();
     }
   }
 
-  // ==================== ADMIN DASHBOARD REAL DATA (PART 3 & 4) ====================
-  let adminUsersUnsubscribe = null;
-  
-  function loadAdminDashboardUI() {
-    // আগের লিসেনার থাকলে সেটি বন্ধ করা
-    if (adminUsersUnsubscribe) adminUsersUnsubscribe();
+  // ============================================================
+  // CUSTOMER FUNCTIONS
+  // ============================================================
+  function renderCustomerProducts() {
+    const grid = document.getElementById('cst-product-grid');
+    if (!grid) return;
 
-    const usersRef = collection(db, "users");
+    // 'products' কালেকশন (দোকানদারের প্রোডাক্ট)
+    onSnapshot(collection(db, "products"), (snapshot) => {
+      grid.innerHTML = '';
+      if(snapshot.empty) {
+         grid.innerHTML = '<div style="font-size:12px; color:#999; grid-column:1/-1; text-align:center;">কোনো প্রোডাক্ট নেই।</div>';
+         return;
+      }
+      snapshot.forEach(docSnap => {
+        const prod = docSnap.data();
+        grid.innerHTML += `
+          <div class="dlv-product-card">
+            <div class="dlv-product-img">
+              ${prod.image ? `<img src="${prod.image}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">` : '📦'}
+            </div>
+            <div class="dlv-product-name">${prod.name}</div>
+            <div class="dlv-product-shop">🏪 ${prod.shopName}</div>
+            <div class="dlv-product-price">₹${prod.price}</div>
+            <button class="dlv-add-btn" onclick="placeOrder('${docSnap.id}', '${prod.name}', ${prod.price}, '${prod.shopId}', '${prod.shopName}')">+ Order Now</button>
+          </div>
+        `;
+      });
+    });
+  }
+
+  window.placeOrder = function(prodId, name, price, shopId, shopName) {
+    if (customerAddresses.length === 0) {
+      if(!confirm("আপনি এখনো কোনো ডেলিভারি অ্যাড্রেস সেভ করেননি! অ্যাড্রেস ছাড়া অর্ডার করতে চান?")) {
+        openAddressModal();
+        return;
+      }
+    }
+
+    tempOrderData = { prodId, name, price, shopId, shopName };
+    if (customerAddresses.length > 0) {
+      tempOrderData.address = customerAddresses[customerAddresses.length - 1];
+    }
+
+    document.getElementById('pay-modal-amount').innerText = `₹${price}`;
+    document.getElementById('dlv-payment-modal').classList.add('active');
+  };
+
+  window.processOrderPayment = async function(method) {
+    if (!tempOrderData) return;
     
-    adminUsersUnsubscribe = onSnapshot(usersRef, (snap) => {
-      let shops = 0;
-      let delivery = 0;
-      let managers = 0;
-      let userHtml = '';
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    let paymentStatus = "pending";
+
+    try {
+      if (method === 'wallet') {
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        const balance = userSnap.data().walletBalance || 0;
+        
+        if (balance < tempOrderData.price) {
+          alert("দুঃখিত, আপনার ওয়ালেটে পর্যাপ্ত ব্যালেন্স নেই!");
+          return;
+        }
+        
+        await updateDoc(userRef, { walletBalance: balance - tempOrderData.price });
+        paymentStatus = "paid";
+        document.getElementById('cst-wallet-balance').innerText = `₹${(balance - tempOrderData.price).toFixed(2)}`;
+
+      } else if (method === 'credit') {
+        paymentStatus = "due"; 
+      } else if (method === 'cod') {
+        paymentStatus = "cod_pending"; 
+      }
+
+      await addDoc(collection(db, "orders"), {
+        customerId: currentUser.uid,
+        customerName: document.getElementById('dlv-topbar-title').innerText.replace('🛵 ', ''),
+        shopId: tempOrderData.shopId,
+        shopName: tempOrderData.shopName,
+        productId: tempOrderData.prodId,
+        productName: tempOrderData.name,
+        price: tempOrderData.price,
+        deliveryAddress: tempOrderData.address ? tempOrderData.address.text : 'কোনো অ্যাড্রেস দেওয়া হয়নি',
+        landmark: tempOrderData.address ? tempOrderData.address.landmark : '',
+        lat: tempOrderData.address ? tempOrderData.address.lat : null,
+        lng: tempOrderData.address ? tempOrderData.address.lng : null,
+        customerPhone: globalUserData.phone || 'নম্বর নেই', // Fixed userData error
+        otp: otp,
+        paymentMethod: method,
+        paymentStatus: paymentStatus,
+        status: "pending", 
+        createdAt: serverTimestamp()
+      });
+      
+      document.getElementById('dlv-payment-modal').classList.remove('active');
+      
+      if(method === 'credit') {
+         alert(`অর্ডার প্লেস হয়েছে! এটি আপনার খাতায় যোগ হলো।\n\n⚠️ OTP: ${otp}`);
+      } else {
+         alert(`অর্ডার প্লেস হয়েছে!\n\n⚠️ ডেলিভারির জন্য OTP: ${otp}`);
+      }
+
+    } catch (e) {
+      console.error(e);
+      alert("অর্ডার প্রসেস করতে সমস্যা হয়েছে!");
+    }
+  };
+
+  window.openCustomerOrdersModal = function() {
+    document.getElementById('dlv-customer-orders-modal').classList.add('active');
+    const list = document.getElementById('customer-orders-list');
+    list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>';
+    
+    const q = query(collection(db, "orders"), where("customerId", "==", currentUser.uid));
+    onSnapshot(q, (snap) => {
+      if(snap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">আপনি এখনো কোনো অর্ডার করেননি।</div>';
+        return;
+      }
+      
+      let html = '';
+      snap.forEach(doc => {
+        const o = doc.data();
+        let statusColor = o.status === 'delivered' ? '#0f9d58' : '#f9a825';
+        const orderStatus = o.status ? o.status.toUpperCase() : 'PENDING';
+        const payMethod = o.paymentMethod ? o.paymentMethod.toUpperCase() : 'COD';
+        const payStatus = o.paymentStatus || 'pending';
+        
+        let ratingBtnHtml = '';
+        if (o.status === 'delivered') {
+           if(o.rating) {
+              ratingBtnHtml = `<div style="color: #f9a825; font-size:16px; margin-top:8px;">রেটিং: ${'⭐'.repeat(o.rating)}</div>`;
+           } else {
+              ratingBtnHtml = `<button class="mp-btn" style="margin-top:8px; padding:6px; background:#fef7e0; color:#b06000; font-size:12px;" onclick="openRatingModal('${doc.id}', '${o.deliveryBoyId}')">⭐ রেটিং দিন</button>`;
+           }
+        }
+
+        html += `
+          <div style="border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
+              <span>${o.productName}</span>
+              <span>₹${o.price}</span>
+            </div>
+            <div style="font-size:12px; color:#666; margin-bottom:5px;">🏪 ${o.shopName}</div>
+            <div style="display:flex; justify-content:space-between; font-size:12px;">
+              <span>Status: <b style="color:${statusColor};">${orderStatus}</b></span>
+              <span>Pay: ${payMethod} (${payStatus})</span>
+            </div>
+            ${ratingBtnHtml}
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  };
+
+  window.openKhataModal = async function() {
+    document.getElementById('dlv-khata-modal').classList.add('active');
+    const listContainer = document.getElementById('khata-shop-list');
+    const totalEl = document.getElementById('khata-total-due');
+    listContainer.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>';
+    
+    try {
+      const q = query(collection(db, "orders"), where("customerId", "==", currentUser.uid), where("paymentStatus", "==", "due"));
+      const snap = await getDocs(q);
+      let totalDue = 0;
+      let html = '';
       
       if (snap.empty) {
-        document.getElementById('admin-user-list').innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">ডেটাবেসে কোনো ইউজার নেই।</div>';
+        listContainer.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">আপনার কোনো বাকি নেই।</div>';
+        totalEl.innerText = '₹0.00';
         return;
       }
 
       snap.forEach(docSnap => {
-        const u = docSnap.data();
-        const uid = docSnap.id;
+        const order = docSnap.data();
+        totalDue += order.price;
+        html += `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px;">
+            <span style="font-size: 13px; font-weight: 600;">${order.shopName}</span>
+            <span style="font-size: 13px; color: var(--mp-danger); font-weight: bold;">₹${order.price}</span>
+          </div>
+        `;
+      });
+      listContainer.innerHTML = html;
+      totalEl.innerText = `₹${totalDue.toFixed(2)}`;
+    } catch (e) {
+      listContainer.innerHTML = '<div style="text-align: center; color: red; font-size: 13px;">লোড করতে সমস্যা হয়েছে।</div>';
+    }
+  };
 
-        // কাউন্ট করা
+  // ============================================================
+  // ADDRESS & MAP LOGIC
+  // ============================================================
+  window.openAddressModal = function() {
+    document.getElementById('dlv-address-modal').classList.add('active');
+    setTimeout(() => {
+      if (!pickerMap) {
+        pickerMap = L.map('map-picker').setView([22.5726, 88.3639], 13);
+        currentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(pickerMap);
+        pickerMap.on('click', function(e) { setPickerMarker(e.latlng); });
+        setPickerMarker(L.latLng(22.5726, 88.3639));
+      }
+      pickerMap.invalidateSize();
+    }, 300);
+  };
+
+  function setPickerMarker(latLng) {
+    if (pickerMarker) pickerMap.removeLayer(pickerMarker);
+    pickerMarker = L.marker(latLng, { draggable: true }).addTo(pickerMap);
+    pickedLatLng = latLng;
+    document.getElementById('map-coords').innerText = `Lat: ${latLng.lat.toFixed(4)}, Lng: ${latLng.lng.toFixed(4)}`;
+    
+    pickerMarker.on('dragend', function() {
+      const position = pickerMarker.getLatLng();
+      pickedLatLng = position;
+      document.getElementById('map-coords').innerText = `Lat: ${position.lat.toFixed(4)}, Lng: ${position.lng.toFixed(4)}`;
+      fetchAddressFromCoords(position.lat, position.lng);
+    });
+    fetchAddressFromCoords(latLng.lat, latLng.lng);
+  }
+
+  async function fetchAddressFromCoords(lat, lng) {
+    const addrInput = document.getElementById('new-addr-text');
+    addrInput.value = "লোড হচ্ছে...";
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`, {
+        headers: { 'User-Agent': 'HyperlocalDeliveryApp/1.0' }
+      });
+      const data = await response.json();
+      addrInput.value = (data && data.display_name) ? data.display_name : "";
+    } catch (e) {
+      addrInput.value = ""; 
+    }
+  }
+
+  window.getCurrentLocation = function() {
+    if (!navigator.geolocation) return alert("ব্রাউজার লোকেশন সাপোর্ট করে না।");
+    document.getElementById('map-coords').innerText = "লোকেশন খোঁজা হচ্ছে...";
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latLng = L.latLng(position.coords.latitude, position.coords.longitude);
+        pickerMap.setView(latLng, 17);
+        setPickerMarker(latLng);
+      },
+      () => alert("লোকেশন পাওয়া যায়নি।"),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  window.toggleMapLayer = function() {
+    const btn = document.getElementById('btn-satellite-view');
+    if (isSatelliteView) {
+      pickerMap.removeLayer(currentTileLayer);
+      currentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(pickerMap);
+      isSatelliteView = false;
+      if (btn) btn.innerText = '🛰️ স্যাটেলাইট';
+    } else {
+      pickerMap.removeLayer(currentTileLayer);
+      currentTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(pickerMap);
+      isSatelliteView = true;
+      if (btn) btn.innerText = '🗺️ স্ট্রিট';
+    }
+  };
+
+  window.saveNewAddress = function() {
+    const type = document.getElementById('new-addr-type').value;
+    const text = document.getElementById('new-addr-text').value.trim();
+    const landmark = document.getElementById('new-addr-landmark').value.trim();
+    if (!text) return alert("দয়া করে সম্পূর্ণ ঠিকানা লিখুন।");
+
+    const newAddr = { type, text, landmark, lat: pickedLatLng ? pickedLatLng.lat : null, lng: pickedLatLng ? pickedLatLng.lng : null };
+    customerAddresses.push(newAddr);
+    
+    const el = document.getElementById('customer-saved-address');
+    el.innerHTML = `
+      <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border-left: 3px solid var(--mp-primary);">
+        <b>${type === 'Home' ? '🏠 বাড়ি' : type === 'Office' ? '🏢 অফিস' : '📍 অন্যান্য'}</b><br>
+        ${text} ${landmark ? `(${landmark})` : ''}
+      </div>
+    `;
+    
+    document.getElementById('new-addr-text').value = '';
+    document.getElementById('new-addr-landmark').value = '';
+    document.getElementById('dlv-address-modal').classList.remove('active');
+  };
+
+  // ============================================================
+  // SHOPKEEPER FUNCTIONS
+  // ============================================================
+  function renderShopProducts() {
+    const list = document.getElementById('shop-product-list');
+    if (!list) return;
+    const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+    onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">কোনো প্রোডাক্ট নেই।</div>';
+        return;
+      }
+      list.innerHTML = '';
+      snapshot.forEach((docSnap) => {
+        const prod = docSnap.data();
+        list.innerHTML += `
+          <div class="shop-prod-item">
+            <div class="prod-img-thumb">${prod.image ? `<img src="${prod.image}" style="width:100%; height:100%; border-radius:8px; object-fit:cover;">` : '📦'}</div>
+            <div class="prod-details">
+              <div class="prod-title">${prod.name}</div>
+              <div class="prod-price">₹${prod.price}</div>
+              <div class="prod-stock">স্টক: ${prod.stock} টি</div>
+            </div>
+          </div>
+        `;
+      });
+    });
+  }
+
+  async function loadShopTotalDue() {
+    try {
+      const q = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("paymentStatus", "==", "due"));
+      const snap = await getDocs(q);
+      let total = 0;
+      snap.forEach(d => { total += d.data().price || 0; });
+      const el = document.getElementById('shop-total-due');
+      if (el) el.innerText = `₹${total.toFixed(2)}`;
+    } catch(e) { console.error(e); }
+  }
+
+  function loadShopNewOrders() {
+    const q = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("status", "==", "pending"));
+    onSnapshot(q, (snap) => {
+      const list = document.getElementById('shop-new-orders-list');
+      if (!list) return;
+      if (snap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">বর্তমানে কোনো নতুন অর্ডার নেই।</div>';
+        return;
+      }
+      let html = '';
+      snap.forEach(docSnap => {
+        const order = docSnap.data();
+        html += `
+          <div style="border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #fff;">
+            <div style="display:flex; justify-content:space-between; font-weight:bold;">
+              <span>${order.productName}</span><span>₹${order.price}</span>
+            </div>
+            <div style="font-size:12px; color:#666; margin-top:5px;">কাস্টমার: ${order.customerName}</div>
+            <div style="font-size:12px; color:#666; margin-bottom:10px;">পেমেন্ট: ${order.paymentMethod.toUpperCase()}</div>
+            <button class="mp-btn mp-btn-success" style="margin: 0; padding: 8px;" onclick="markOrderReady('${docSnap.id}')">✅ রেডি করুন</button>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  }
+
+  window.markOrderReady = async function(orderId) {
+    if(!confirm("প্রোডাক্টটি রেডি করেছেন?")) return;
+    try {
+      await updateDoc(doc(db, "orders", orderId), { status: "ready" });
+      alert("ডেলিভারি বয়রা এখন বিড করতে পারবে।");
+    } catch (e) { alert("সমস্যা হয়েছে!"); }
+  };
+
+  window.openShopKhataModal = async function() {
+    document.getElementById('dlv-shop-khata-modal').classList.add('active');
+    const listContainer = document.getElementById('shop-khata-list');
+    listContainer.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>';
+    try {
+      const q = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("paymentStatus", "==", "due"));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        listContainer.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">বর্তমানে কোনো বাকি নেই।</div>';
+        return;
+      }
+      const customerDues = {};
+      snap.forEach(docSnap => {
+        const order = docSnap.data();
+        if(!customerDues[order.customerId]) customerDues[order.customerId] = { name: order.customerName, total: 0, orders: [] };
+        customerDues[order.customerId].total += order.price;
+        customerDues[order.customerId].orders.push(docSnap.id);
+      });
+      let html = '';
+      for (const custId in customerDues) {
+        const c = customerDues[custId];
+        html += `
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding: 10px 0;">
+            <div>
+              <div style="font-size: 14px; font-weight: 600;">${c.name}</div>
+              <div style="font-size: 11px; color: var(--mp-danger); font-weight: bold;">বাকি: ₹${c.total}</div>
+            </div>
+            <button class="mp-btn" style="width: auto; margin: 0; padding: 6px 10px; background: var(--mp-success); color: white;" onclick="receivePayment('${custId}', ${c.total}, ${JSON.stringify(c.orders).replace(/"/g, '&quot;')})">টাকা বুঝেছি</button>
+          </div>
+        `;
+      }
+      listContainer.innerHTML = html;
+    } catch (e) { listContainer.innerHTML = '<div style="color: red; text-align: center;">লোড করতে সমস্যা হয়েছে।</div>'; }
+  };
+
+  window.closeShopKhataModal = function() { document.getElementById('dlv-shop-khata-modal').classList.remove('active'); };
+
+  window.receivePayment = async function(customerId, amount, orderIds) {
+    if(!confirm(`আপনি কি ₹${amount} টাকা বুঝে পেয়েছেন?`)) return;
+    try {
+      for (const orderId of orderIds) {
+        await updateDoc(doc(db, "orders", orderId), { paymentStatus: "paid", paymentReceivedAt: serverTimestamp() });
+      }
+      alert("পেমেন্ট রিসিভ হয়েছে!");
+      closeShopKhataModal();
+      openShopKhataModal(); 
+    } catch (e) { alert("পেমেন্ট আপডেটে সমস্যা হয়েছে।"); }
+  };
+
+  window.openAddProductModal = function() { document.getElementById('dlv-add-product-modal').classList.add('active'); };
+  window.closeAddProductModal = function() {
+    document.getElementById('dlv-add-product-modal').classList.remove('active');
+    document.getElementById('add-p-name').value = '';
+    document.getElementById('add-p-price').value = '';
+    document.getElementById('add-p-stock').value = '';
+    document.getElementById('add-p-image-preview').style.display = 'none';
+    uploadedImageUrl = null;
+  };
+
+  window.saveNewProduct = async function() {
+    const name = document.getElementById('add-p-name').value.trim();
+    const price = parseFloat(document.getElementById('add-p-price').value);
+    const stock = parseInt(document.getElementById('add-p-stock').value);
+    if (!name || isNaN(price) || isNaN(stock)) return alert("দয়া করে সব তথ্য দিন।");
+
+    const btn = document.getElementById('btn-save-product');
+    btn.innerText = "⏳ সেভ হচ্ছে...";
+    btn.disabled = true;
+
+    try {
+      await addDoc(collection(db, "products"), {
+        shopId: currentUser.uid,
+        shopName: document.getElementById('dlv-topbar-title').innerText.replace('🛵 ', ''),
+        name: name,
+        price: price,
+        stock: stock,
+        image: uploadedImageUrl,
+        createdAt: serverTimestamp()
+      });
+      alert("প্রোডাক্ট সেভ হয়েছে!");
+      closeAddProductModal();
+    } catch (error) {
+      alert("প্রোডাক্ট সেভ করতে সমস্যা হয়েছে!");
+    } finally {
+      btn.innerText = "💾 সেভ করুন";
+      btn.disabled = false;
+    }
+  };
+
+  // ============================================================
+  // DELIVERY BOY FUNCTIONS
+  // ============================================================
+  window.toggleDeliveryStatus = function(checkbox) {
+    isOnline = checkbox.checked;
+    const statusText = document.getElementById('dlv-online-status');
+    const ordersContainer = document.getElementById('dlv-live-orders-container');
+    const offlineMsg = document.getElementById('dlv-offline-msg');
+    const activeOrderContainer = document.getElementById('dlv-active-order-container');
+
+    if (isOnline) {
+      statusText.innerHTML = '🟢 অনলাইন'; statusText.style.color = 'var(--mp-success)';
+      ordersContainer.style.display = 'block'; offlineMsg.style.display = 'none';
+      
+      const q = query(collection(db, "orders"), where("status", "in", ["ready", "bidding", "assigned"]));
+      unsubscribeOrders = onSnapshot(q, (snapshot) => {
+        const ordersList = document.getElementById('dlv-live-orders');
+        const activeDetails = document.getElementById('dlv-active-order-details');
+        let liveOrdersHtml = '', activeOrderHtml = '', hasActiveOrder = false;
+        
+        snapshot.forEach(docSnap => {
+          const order = docSnap.data();
+          const orderId = docSnap.id;
+
+          if (order.status === 'ready') {
+            liveOrdersHtml += `
+              <div class="dlv-live-card" id="live-card-${orderId}">
+                <h4>📦 ${order.productName}</h4>
+                <div class="dlv-live-info"><span>🏪 পিকআপ: ${order.shopName}</span></div>
+                <div class="dlv-bidding-area">
+                  <div style="font-size:12px; font-weight:bold; margin-bottom:5px;">দাম: ₹${order.price}</div>
+                  <div class="dlv-bid-input-group">
+                    <input type="number" id="bid-input-${orderId}" placeholder="চার্জ ₹" min="10">
+                    <button onclick="placeBid('${orderId}')">বিড করুন</button>
+                  </div>
+                </div>
+              </div>`;
+          } else if ((order.status === 'bidding' || order.status === 'assigned') && order.deliveryBoyId === currentUser.uid) {
+            hasActiveOrder = true;
+            activeOrderHtml += `
+              <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--mp-success);">
+                <h4>📦 ${order.productName} (${order.shopName})</h4>
+                <p style="font-size: 12px; margin: 5px 0;">কাস্টমার: ${order.customerName}</p>
+                <p style="font-size: 12px; font-weight: bold; color: var(--mp-primary);">📞 ফোন: ${order.customerPhone || 'নেই'}</p>
+                <p style="font-size: 12px;">📍 ঠিকানা: ${order.deliveryAddress || 'নেই'} ${order.landmark ? `(${order.landmark})` : ''}</p>
+                <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">চার্জ: ₹${order.deliveryCharge}</p>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                  <button class="mp-btn mp-btn-primary" style="flex:1; margin:0;" onclick="openGoogleMap(${order.lat}, ${order.lng})">📍 ম্যাপ</button>
+                  <button class="mp-btn mp-btn-success" style="flex:1; margin:0;" onclick="promptOTP('${orderId}')">✅ Delivered</button>
+                </div>
+              </div>`;
+          }
+        });
+        ordersList.innerHTML = liveOrdersHtml || '<div style="text-align: center; padding: 20px; color: #999;">কোনো অর্ডার নেই।</div>';
+        activeOrderContainer.style.display = hasActiveOrder ? 'block' : 'none';
+        activeDetails.innerHTML = activeOrderHtml;
+      });
+    } else {
+      statusText.innerHTML = '🔴 অফলাইন'; statusText.style.color = 'var(--mp-danger)';
+      ordersContainer.style.display = 'none'; offlineMsg.style.display = 'block';
+      activeOrderContainer.style.display = 'none';
+      if (unsubscribeOrders) unsubscribeOrders();
+    }
+  };
+
+  window.placeBid = async function(orderId) {
+    const bidAmount = parseFloat(document.getElementById(`bid-input-${orderId}`).value);
+    if (isNaN(bidAmount) || bidAmount <= 0) return alert("সঠিক চার্জ লিখুন।");
+    if (!confirm(`আপনি ₹${bidAmount} চার্জে বিড করছেন। নিশ্চিত?`)) return;
+
+    try {
+      await updateDoc(doc(db, "orders", orderId), {
+        status: "bidding",
+        deliveryBoyId: currentUser.uid,
+        deliveryBoyName: document.getElementById('dlv-topbar-title').innerText.replace('🛵 ', ''),
+        deliveryCharge: bidAmount,
+        updatedAt: serverTimestamp()
+      });
+    } catch (e) { alert("বিড করতে সমস্যা হয়েছে।"); }
+  };
+
+  window.promptOTP = async function(orderId) {
+    const enteredOtp = prompt("কাস্টমারের কাছ থেকে ৪ ডিজিটের OTP দিন:");
+    if (!enteredOtp) return;
+    try {
+      const orderRef = doc(db, "orders", orderId);
+      const orderSnap = await getDoc(orderRef);
+      if (orderSnap.exists() && orderSnap.data().otp === enteredOtp) {
+        await updateDoc(orderRef, { status: "delivered", deliveredAt: serverTimestamp() });
+        alert("🎉 সফলভাবে ডেলিভারি সম্পন্ন হয়েছে!");
+        let earnEl = document.getElementById('dlv-today-earnings');
+        let earnAmt = parseFloat(earnEl.innerText.replace('₹', '')) || 0;
+        earnEl.innerText = `₹${(earnAmt + (orderSnap.data().deliveryCharge || 0)).toFixed(2)}`;
+      } else { alert("❌ ভুল OTP!"); }
+    } catch (e) { alert("ডেলিভারি কনফার্ম করতে সমস্যা হয়েছে।"); }
+  };
+
+  window.openGoogleMap = function(lat, lng) {
+    if (!lat || !lng) return alert("লোকেশন পাওয়া যায়নি। কাস্টমারকে ফোন করুন।");
+    window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
+  };
+
+  // ============================================================
+  // ADMIN FUNCTIONS
+  // ============================================================
+  function loadAdminDashboardUI() {
+    if (adminUsersUnsubscribe) adminUsersUnsubscribe();
+    adminUsersUnsubscribe = onSnapshot(collection(db, "users"), (snap) => {
+      let shops = 0, delivery = 0, managers = 0, userHtml = '';
+      if (snap.empty) {
+        document.getElementById('admin-user-list').innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">ডেটাবেসে কোনো ইউজার নেই।</div>';
+        return;
+      }
+      snap.forEach(docSnap => {
+        const u = docSnap.data();
         if (u.role === 'shopkeeper') shops++;
         if (u.role === 'delivery') delivery++;
         if (u.isManager === true) managers++; 
-
-        // ইউজার লিস্ট তৈরি
         let roleText = u.role ? u.role.toUpperCase() : 'NO ROLE';
         
         userHtml += `
@@ -414,7 +1193,7 @@
               <div style="font-size: 14px; font-weight: 600;">${u.name || 'Unknown User'}</div>
               <div style="font-size: 11px; color: #666;">${roleText}</div>
             </div>
-            <select onchange="changeUserRole('${uid}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; background: white;">
+            <select onchange="changeUserRole('${docSnap.id}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; background: white;">
               <option value="" disabled selected>রোল দিন</option>
               <option value="shopkeeper" ${u.role === 'shopkeeper' ? 'selected' : ''}>দোকানদার</option>
               <option value="delivery" ${u.role === 'delivery' ? 'selected' : ''}>ডেলিভারি বয়</option>
@@ -424,52 +1203,51 @@
           </div>
         `;
       });
-      
-      // UI আপডেট
       document.getElementById('admin-total-shops').innerText = shops;
       document.getElementById('admin-total-delivery').innerText = delivery;
       document.getElementById('admin-total-managers').innerText = managers;
       document.getElementById('admin-user-list').innerHTML = userHtml;
     });
 
-    // 🚀 নতুন: মাস্টার প্রোডাক্ট লোড করার ফাংশন কল
-    if (typeof loadMasterProducts === 'function') {
-      loadMasterProducts();
-    }
+    loadMasterProducts(); // Master product load
+
+    const ordersQ = query(collection(db, "orders"), where("status", "==", "delivered"));
+    onSnapshot(ordersQ, (snap) => {
+      let revenue = 0;
+      snap.forEach(d => { revenue += (d.data().price * 0.01); });
+      document.getElementById('admin-total-revenue').innerText = `₹${revenue.toFixed(2)}`;
+    });
   }
 
- // ==================== MASTER PRODUCTS (PART 4) ====================
-  let masterProductsUnsub = null;
+  window.changeUserRole = async function(uid, newRole) {
+    if (!newRole) return;
+    if(!confirm(`রোল পরিবর্তন করে "${newRole}" করবেন?`)) return;
+    try {
+      await updateDoc(doc(db, "users", uid), { role: newRole });
+      alert("রোল আপডেট হয়েছে!");
+    } catch (e) { alert("রোল আপডেট করতে সমস্যা হয়েছে!"); }
+  };
 
-  // ১. প্রোডাক্ট লোড করা
-   function loadMasterProducts() {
+  // Master Products
+  function loadMasterProducts() {
     if (masterProductsUnsub) masterProductsUnsub();
     const listContainer = document.getElementById('admin-master-product-list');
     if(!listContainer) return;
     
-    // orderBy বাদ দেওয়া হলো (ইনডেক্স এরর এড়াতে)
     const q = query(collection(db, "master_products"));
-    
     masterProductsUnsub = onSnapshot(q, (snap) => {
       if (snap.empty) {
         listContainer.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো প্রোডাক্ট নেই। নতুন যোগ করুন।</div>';
         return;
       }
-
-      // ১. ডেটাগুলো একটি অ্যারেতে নেওয়া
       let productsArray = [];
-      snap.forEach(docSnap => {
-        productsArray.push({ id: docSnap.id, ...docSnap.data() });
-      });
-
-      // ২. নতুন আগে দেখানোর জন্য সর্ট করা
+      snap.forEach(docSnap => productsArray.push({ id: docSnap.id, ...docSnap.data() }));
       productsArray.sort((a, b) => {
-        const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
-        const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
-        return timeB - timeA;
+        const tA = a.createdAt ? a.createdAt.toMillis() : 0;
+        const tB = b.createdAt ? b.createdAt.toMillis() : 0;
+        return tB - tA;
       });
 
-      // ৩. HTML তৈরি করা
       let html = '';
       productsArray.forEach(p => {
         html += `
@@ -482,30 +1260,126 @@
           </div>
         `;
       });
-      
       listContainer.innerHTML = html;
     });
   }
 
-   // ==================== IMAGE UPLOAD & CROP (PART 4.5) ====================
-  const IMGBB_API_KEY = "493904e927fb86161e0a4944d5b28de6"; // ⚠️ এখানে আপনার ImgBB API Key দিন
-  let cropperInstance = null;
-  let currentImageBase64 = null;
-  let uploadedImageUrl = null;
+  window.openMasterProductModal = function() { document.getElementById('dlv-master-product-modal').classList.add('active'); };
+  window.closeMasterProductModal = function() {
+    document.getElementById('dlv-master-product-modal').classList.remove('active');
+    document.getElementById('mp-name').value = '';
+    document.getElementById('mp-image-preview').style.display = 'none';
+    uploadedImageUrl = null;
+  };
 
-  // ১. ইমেজ সোর্স সিলেক্ট করা (ক্যামেরা বা গ্যালারি)
-  window.pickImageSource = function(source) {
-    const fileInput = document.getElementById('mp-image-input');
-    if (source === 'camera') {
-      fileInput.setAttribute('capture', 'environment');
-    } else {
-      fileInput.removeAttribute('capture');
-    }
+  window.saveMasterProduct = async function() {
+    const name = document.getElementById('mp-name').value.trim();
+    const category = document.getElementById('mp-category').value;
+    const unit = document.getElementById('mp-unit').value;
+    const grade = document.getElementById('mp-grade').value;
+    if (!name) return alert("নাম দিন!");
+
+    const btn = document.getElementById('btn-save-mp');
+    btn.innerText = "⏳ সেভ হচ্ছে..."; btn.disabled = true;
+
+    try {
+      await addDoc(collection(db, "master_products"), {
+        name, category, unit, grade, image: uploadedImageUrl, createdAt: serverTimestamp()
+      });
+      alert("সফলভাবে সেভ হয়েছে!");
+      closeMasterProductModal();
+    } catch (e) { alert("সেভ করতে সমস্যা হয়েছে!"); } 
+    finally { btn.innerText = "💾 সেভ করুন"; btn.disabled = false; }
+  };
+
+  window.deleteMasterProduct = async function(id) {
+    if(!confirm("ডিলিট করতে চান?")) return;
+    try { await deleteDoc(doc(db, "master_products", id)); } catch(e) { alert("ডিলিট সমস্যা!"); }
+  };
+
+  // Pin Manager
+  window.searchPinUsers = async function() {
+    const pin = document.getElementById('admin-pin-input').value.trim();
+    if (!pin) return alert("পিনকোড লিখুন।");
+    const listContainer = document.getElementById('admin-pin-user-list');
+    listContainer.innerHTML = '<div style="font-size:12px; color:#666;">খোঁজা হচ্ছে...</div>';
+    
+    try {
+      const snap = await getDocs(collection(db, "users"));
+      let html = '';
+      snap.forEach(docSnap => {
+        const u = docSnap.data();
+        if(u.role === 'shopkeeper' || u.role === 'delivery' || u.role === 'admin') {
+           let managerTag = "";
+           if (u.isManager) {
+             const pinsList = u.managerPins || [];
+             let pinTagsHtml = '';
+             pinsList.forEach(p => {
+               pinTagsHtml += `<span style="display:inline-block; background:#ffebee; color:#d93025; padding:2px 6px; border-radius:4px; font-size:10px; margin-right:5px; margin-bottom:3px;">${p} <span onclick="removeManagerPin('${docSnap.id}', '${u.name}', '${p}')" style="cursor:pointer; font-weight:bold; margin-left:3px;">×</span></span>`;
+             });
+             managerTag = `<div style="font-size:10px; color:var(--mp-success); margin-top:5px;">✅ ম্যানেজার: <br> ${pinTagsHtml}</div>`;
+           }
+           html += `
+             <div style="display:flex; justify-content:space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+               <div style="flex: 1;">
+                 <div style="font-size:13px; font-weight:600;">${u.name || 'Unknown'}</div>
+                 <div style="font-size:11px; color:#666;">${u.role.toUpperCase()}</div>
+                 ${managerTag}
+               </div>
+               <button class="mp-btn mp-btn-success" style="width:auto; margin:0; padding:6px 10px; font-size:11px; height: fit-content;" onclick="assignPinManager('${docSnap.id}', '${u.name}', '${pin}')">+ পিন</button>
+             </div>`;
+        }
+      });
+      listContainer.innerHTML = html || '<div style="font-size:12px; color:#666;">পাওয়া যায়নি।</div>';
+    } catch(e) { listContainer.innerHTML = '<div style="font-size:12px; color:red;">সমস্যা হয়েছে।</div>'; }
+  };
+
+  window.assignPinManager = async function(uid, name, pin) {
+    try {
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        let currentPins = userSnap.data().managerPins || [];
+        if (!currentPins.includes(pin)) {
+          currentPins.push(pin);
+          if(!confirm(`${name}-কে পিন ${pin} দিন?`)) return;
+          await updateDoc(userRef, { managerPins: currentPins, isManager: true });
+          alert("সফলভাবে যুক্ত হয়েছে!");
+        } else { alert("আগেই আছে!"); }
+      }
+      document.getElementById('admin-pin-input').value = '';
+      document.getElementById('admin-pin-user-list').innerHTML = '';
+    } catch(e) { alert("সমস্যা হয়েছে।"); }
+  };
+  
+  window.removeManagerPin = async function(uid, name, pinToRemove) {
+    if(!confirm(`পিন ${pinToRemove} রিমুভ করবেন?`)) return;
+    try {
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        let currentPins = userSnap.data().managerPins || [];
+        const updatedPins = currentPins.filter(p => p !== pinToRemove);
+        await updateDoc(userRef, { managerPins: updatedPins, isManager: updatedPins.length > 0 });
+        alert("রিমুভ হয়েছে!");
+        searchPinUsers();
+      }
+    } catch(e) { alert("সমস্যা হয়েছে।"); }
+  };
+
+  // ============================================================
+  // IMAGE UPLOAD & CROPPER LOGIC
+  // ============================================================
+  window.pickImageSource = function(source, context) {
+    currentUploadContext = context;
+    const fileInput = context === 'mp' ? document.getElementById('mp-image-input') : document.getElementById('add-p-image-file');
+    
+    if (source === 'camera') fileInput.setAttribute('capture', 'environment');
+    else fileInput.removeAttribute('capture');
     fileInput.click();
   };
 
-  // ২. ছবি সিলেক্ট করলে ক্রপ মডাল ওপেন করা
-  window.handleImageSelect = function(event) {
+  window.handleImageSelect = function(event, context) {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -513,265 +1387,97 @@
     reader.onload = function(e) {
       const cropModal = document.getElementById('dlv-crop-modal');
       const cropImage = document.getElementById('crop-image');
-      
       cropModal.style.display = 'flex';
       cropImage.src = e.target.result;
 
-      // Cropper.js ইনিশিয়ালাইজ (মোবাইলে সহজে ৪-কোণা টানা যাবে)
       if (cropperInstance) cropperInstance.destroy();
-      
       setTimeout(() => {
-        cropperInstance = new Cropper(cropImage, {
-          viewMode: 1,
-          dragMode: 'move',
-          autoCropArea: 0.9,
-          restore: false,
-          guides: true,
-          center: true,
-          highlight: false,
-          cropBoxMovable: true,
-          cropBoxResizable: true,
-          toggleDragModeOnDblclick: false,
-        });
+        cropperInstance = new Cropper(cropImage, { viewMode: 1, dragMode: 'move', autoCropArea: 0.9, background: false });
       }, 100);
     };
     reader.readAsDataURL(file);
   };
 
-  // ৩. ক্রপ মডাল বন্ধ করা
   window.closeCropModal = function() {
     document.getElementById('dlv-crop-modal').style.display = 'none';
-    if (cropperInstance) {
-      cropperInstance.destroy();
-      cropperInstance = null;
-    }
-    document.getElementById('mp-image-input').value = '';
+    if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
   };
 
-  // ৪. ক্রপ করে ImgBB-তে আপলোড করা
   window.saveCroppedImage = async function() {
     if (!cropperInstance) return;
-    
     const statusEl = document.getElementById('crop-status');
-    statusEl.innerText = "আপলোড হচ্ছে...";
-    statusEl.style.color = "#0f9d58";
+    statusEl.innerText = "আপলোড হচ্ছে..."; statusEl.style.color = "#0f9d58";
 
-    // ইমেজ ক্রপ করে Base64 পাওয়া
-    const canvas = cropperInstance.getCroppedCanvas({
-      maxWidth: 800, // ইমেজ সাইজ অপ্টিমাইজ
-      maxHeight: 800,
-    });
-    
+    const canvas = cropperInstance.getCroppedCanvas({ maxWidth: 800, maxHeight: 800 });
     const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
 
     try {
-      // ImgBB API তে আপলোড
       const formData = new FormData();
       formData.append("image", base64Image);
-
-      const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-        method: "POST",
-        body: formData
-      });
-
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
       const data = await response.json();
+      
       if (data.success) {
         uploadedImageUrl = data.data.url;
-        
-        // UI তে প্রিভিউ দেখানো
-        const preview = document.getElementById('mp-image-preview');
-        preview.src = uploadedImageUrl;
-        preview.style.display = 'block';
-        
+        const previewId = currentUploadContext === 'mp' ? 'mp-image-preview' : 'add-p-image-preview';
+        const preview = document.getElementById(previewId);
+        preview.src = uploadedImageUrl; preview.style.display = 'block';
         closeCropModal();
-      } else {
-        throw new Error("ImgBB Upload Failed");
+      } else { throw new Error("Failed"); }
+    } catch (e) {
+      alert("ছবি আপলোডে সমস্যা!"); statusEl.innerText = "ব্যর্থ!"; statusEl.style.color = "red";
+    }
+  };
+
+  // ============================================================
+  // OTHERS (Recharge, Rating)
+  // ============================================================
+  window.openRechargeModal = function() { document.getElementById('dlv-recharge-modal').classList.add('active'); };
+  window.closeRechargeModal = function() { document.getElementById('dlv-recharge-modal').classList.remove('active'); };
+  window.processRecharge = async function() {
+    const amount = 500; 
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      const currentBal = userSnap.data().walletBalance || 0;
+      await updateDoc(userRef, { walletBalance: currentBal + amount });
+      document.getElementById('cst-wallet-balance').innerText = `₹${(currentBal + amount).toFixed(2)}`;
+      alert(`₹${amount} যোগ হয়েছে!`); closeRechargeModal();
+    } catch (e) { alert("সমস্যা!"); }
+  };
+
+  let currentRatingOrderId = null, currentRatingDeliveryBoyId = null, selectedRating = 0;
+  window.openRatingModal = function(orderId, deliveryBoyId) {
+    currentRatingOrderId = orderId; currentRatingDeliveryBoyId = deliveryBoyId; selectedRating = 0; updateStars(0);
+    document.getElementById('dlv-rating-modal').classList.add('active');
+  };
+  window.setRating = function(rating) { selectedRating = rating; updateStars(rating); };
+  function updateStars(rating) {
+    document.querySelectorAll('#star-container span').forEach((star, index) => {
+      star.style.color = index < rating ? '#f9a825' : '#ccc';
+    });
+  }
+  window.submitRating = async function() {
+    if (selectedRating === 0) return alert("রেটিং দিন!");
+    try {
+      await updateDoc(doc(db, "orders", currentRatingOrderId), { rating: selectedRating, ratedAt: serverTimestamp() });
+      if (currentRatingDeliveryBoyId) {
+        const orderSnap = await getDoc(doc(db, "orders", currentRatingOrderId));
+        const deliveryCharge = orderSnap.data().deliveryCharge || 0;
+        const boyRef = doc(db, "users", currentRatingDeliveryBoyId);
+        const boySnap = await getDoc(boyRef);
+        if (boySnap.exists()) {
+          await updateDoc(boyRef, {
+            walletBalance: (boySnap.data().walletBalance || 0) + deliveryCharge,
+            totalEarnings: (boySnap.data().totalEarnings || 0) + deliveryCharge
+          });
+        }
       }
-    } catch (e) {
-      console.error(e);
-      alert("ছবি আপলোডে সমস্যা হয়েছে!");
-      statusEl.innerText = "ব্যর্থ!";
-      statusEl.style.color = "red";
-    }
-  };
-  
-  // ২. মডাল ওপেন/ক্লোজ
-  window.openMasterProductModal = function() {
-    document.getElementById('dlv-master-product-modal').style.display = 'block';
-  };
-  window.closeMasterProductModal = function() {
-    document.getElementById('dlv-master-product-modal').style.display = 'none';
-    document.getElementById('mp-name').value = '';
+      alert("ধন্যবাদ!"); document.getElementById('dlv-rating-modal').classList.remove('active');
+    } catch (e) { alert("রেটিং সেভ হয়নি!"); }
   };
 
-  // ৩. নতুন প্রোডাক্ট সেভ করা
-  window.saveMasterProduct = async function() {
-    const name = document.getElementById('mp-name').value.trim();
-    const category = document.getElementById('mp-category').value;
-    const unit = document.getElementById('mp-unit').value;
-    const grade = document.getElementById('mp-grade').value;
-
-    if (!name) {
-      alert("প্রোডাক্টের নাম দিন!");
-      return;
-    }
-
-    const btn = document.getElementById('btn-save-mp');
-    btn.innerText = "⏳ সেভ হচ্ছে...";
-    btn.disabled = true;
-
-    try {
-      await addDoc(collection(db, "master_products"), {
-        name: name,
-        category: category,
-        unit: unit,
-        grade: grade,
-        image: uploadedImageUrl, // 🚀 ছবির লিংক সেভ হচ্ছে
-        createdAt: serverTimestamp()
-      });
-      alert("প্রোডাক্ট সফলভাবে সেভ হয়েছে!");
-      closeMasterProductModal();
-      
-      // রিসেট
-      uploadedImageUrl = null;
-      document.getElementById('mp-image-preview').style.display = 'none';
-      
-    } catch (e) {
-      console.error(e);
-      alert("সেভ করতে সমস্যা হয়েছে!");
-    } finally {
-      btn.innerText = "💾 সেভ করুন";
-      btn.disabled = false;
-    }
-  };
-
-  // ৪. প্রোডাক্ট ডিলিট করা
-  window.deleteMasterProduct = async function(id) {
-    if(!confirm("আপনি কি এই প্রোডাক্টটি ডিলিট করতে চান?")) return;
-    try {
-      await deleteDoc(doc(db, "master_products", id));
-      alert("ডিলিট হয়েছে!");
-    } catch(e) {
-      console.error(e);
-      alert("ডিলিট করতে সমস্যা হয়েছে!");
-    }
-  };
-  
-  // ইউজারের রোল পরিবর্তন করার ফাংশন
-  window.changeUserRole = async function(uid, newRole) {
-    if (!newRole) return;
-    if(!confirm(`আপনি কি এই ইউজারের রোল পরিবর্তন করে "${newRole}" করতে চান?`)) return;
-    
-    try {
-      await updateDoc(doc(db, "users", uid), {
-        role: newRole
-      });
-      alert("সফলভাবে রোল আপডেট হয়েছে!");
-    } catch (e) {
-      console.error(e);
-      alert("রোল আপডেট করতে সমস্যা হয়েছে!");
-    }
-  };
-
-  // ডেলিভারি বয়ের টগল সুইচ অ্যানিমেশন (ভিজ্যুয়াল)
-  window.toggleDeliveryStatus = function(checkbox) {
-    const slider = document.getElementById('dlv-toggle-slider');
-    const statusText = document.getElementById('dlv-online-status');
-    
-    if(checkbox.checked) {
-      slider.style.backgroundColor = 'var(--dlv-success)';
-      statusText.innerHTML = '🟢 অনলাইন';
-      statusText.style.color = 'var(--dlv-success)';
-    } else {
-      slider.style.backgroundColor = '#ccc';
-      statusText.innerHTML = '🔴 অফলাইন';
-      statusText.style.color = 'var(--dlv-danger)';
-    }
-  };
-  
-  // ==================== LOGOUT FUNCTION ====================
-  window.handleLogout = async function() {
-    if (!confirm('লগআউট করবেন?')) return;
-    try {
-      await signOut(auth);
-    } catch (e) {
-      alert('লগআউট করতে সমস্যা: ' + e.message);
-    }
-  };
 </script>
-
-<!-- Master Product Add Modal -->
-<div id="dlv-master-product-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:10000; overflow-y:auto; padding:20px;">
-  <div style="background:white; border-radius:14px; max-width:400px; margin:30px auto; padding:20px; position:relative;">
-    <span onclick="closeMasterProductModal()" style="position:absolute; top:10px; right:15px; font-size:24px; cursor:pointer;">&times;</span>
-    <h3 style="color:var(--dlv-primary); margin-bottom:15px;">🏷️ নতুন প্রোডাক্ট যোগ করুন</h3>
-    
-    <div class="dlv-form-group">
-      <label>প্রোডাক্টের নাম *</label>
-      <input type="text" id="mp-name" class="dlv-input" placeholder="যেমন: মিনিকেট চাল">
-    </div>
-
-    <div class="dlv-form-group">
-      <label>ক্যাটাগরি *</label>
-      <select id="mp-category" class="dlv-input">
-        <option value="Grocery">মুদি (Grocery)</option>
-        <option value="Tiles">টাইলস ও মার্বেল</option>
-        <option value="Hardware">হার্ডওয়্যার</option>
-        <option value="Furniture">ফার্নিচার</option>
-      </select>
-    </div>
-
-    <!-- ইউনিট এবং গ্রেড গ্রিড শুরু -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>ইউনিট *</label>
-        <select id="mp-unit" class="dlv-input">
-          <option value="kg">কেজি (kg)</option>
-          <option value="ltr">লিটার (ltr)</option>
-          <option value="pcs">পিস (pcs)</option>
-          <option value="box">বক্স (box)</option>
-        </select>
-      </div>
-      <div class="dlv-form-group">
-        <label>গ্রেড (Grade) *</label>
-        <select id="mp-grade" class="dlv-input">
-          <option value="A">Grade A</option>
-          <option value="B">Grade B</option>
-          <option value="C">Grade C</option>
-        </select>
-      </div>
-    </div> 
-    <!-- ✅ গ্রিড এখানেই বন্ধ করতে হবে (আপনার কোডে এটি বন্ধ করা ছিল না) -->
-
-    <!-- ইমেজ আপলোড সেকশন -->
-    <div class="dlv-form-group">
-      <label>প্রোডাক্টের ছবি</label>
-      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <button class="dlv-btn" style="background: #e8f0fe; color: var(--dlv-primary); font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('camera')">📷 ক্যামেরা</button>
-        <button class="dlv-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('gallery')">🖼️ গ্যালারি</button>
-      </div>
-      <img id="mp-image-preview" style="width: 100%; height: 150px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
-      <input type="file" id="mp-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
-    </div>
-
-    <button class="dlv-btn dlv-btn-success" id="btn-save-mp" onclick="saveMasterProduct()" style="margin-top: 15px;">💾 সেভ করুন</button>
-  </div>
-</div>
- 
-<!-- Crop Modal -->
-<div id="dlv-crop-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10001; flex-direction: column;">
-  <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white;">
-    <span onclick="closeCropModal()" style="font-size: 24px; cursor: pointer;">✖</span>
-    <span style="font-weight: bold;">ছবি ক্রপ করুন</span>
-    <span id="crop-status" style="font-size: 12px; color: #f9a825;">অপেক্ষা করুন...</span>
-  </div>
-  <div style="flex: 1; overflow: hidden; display: flex; justify-content: center; align-items: center; padding: 10px;">
-    <img id="crop-image" style="max-width: 100%; max-height: 100%; display: block;">
-  </div>
-  <div style="padding: 15px; text-align: center;">
-    <button class="dlv-btn dlv-btn-success" style="width: 100%; max-width: 300px; margin: 0 auto;" onclick="saveCroppedImage()">✅ ক্রপ করে সেভ করুন</button>
-  </div>
-</div>
 
 </body>
 </html>
