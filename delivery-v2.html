@@ -86,7 +86,52 @@
   </div>
 </div>
 
-<!-- Main App Container -->
+<!-- Master Product Add Modal -->
+<div id="dlv-master-product-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:10000; overflow-y:auto; padding:20px;">
+  <div style="background:white; border-radius:14px; max-width:400px; margin:30px auto; padding:20px; position:relative;">
+    <span onclick="closeMasterProductModal()" style="position:absolute; top:10px; right:15px; font-size:24px; cursor:pointer;">&times;</span>
+    <h3 style="color:var(--dlv-primary); margin-bottom:15px;">🏷️ নতুন প্রোডাক্ট যোগ করুন</h3>
+    
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের নাম *</label>
+      <input type="text" id="mp-name" class="dlv-input" placeholder="যেমন: মিনিকেট চাল">
+    </div>
+
+    <div class="dlv-form-group">
+      <label>ক্যাটাগরি *</label>
+      <select id="mp-category" class="dlv-input">
+        <option value="Grocery">মুদি (Grocery)</option>
+        <option value="Tiles">টাইলস ও মার্বেল</option>
+        <option value="Hardware">হার্ডওয়্যার</option>
+        <option value="Furniture">ফার্নিচার</option>
+      </select>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>ইউনিট *</label>
+        <select id="mp-unit" class="dlv-input">
+          <option value="kg">কেজি (kg)</option>
+          <option value="ltr">লিটার (ltr)</option>
+          <option value="pcs">পিস (pcs)</option>
+          <option value="box">বক্স (box)</option>
+        </select>
+      </div>
+      <div class="dlv-form-group">
+        <label>গ্রেড (Grade) *</label>
+        <select id="mp-grade" class="dlv-input">
+          <option value="A">Grade A</option>
+          <option value="B">Grade B</option>
+          <option value="C">Grade C</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="dlv-btn dlv-btn-success" id="btn-save-mp" onclick="saveMasterProduct()">💾 সেভ করুন</button>
+  </div>
+</div>
+  
+  <!-- Main App Container -->
 <div id="dlv-main-app" class="dlv-hidden">
   
   <!-- Topbar -->
@@ -111,6 +156,18 @@
         </div>
       </div>
 
+           <!-- Master Product Section -->
+      <div class="dlv-card" style="border-left: 4px solid var(--dlv-primary);">
+        <h3 style="justify-content: space-between;">
+          🏷️ মাস্টার প্রোডাক্ট (ক্যাটালগ)
+          <button class="dlv-btn dlv-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন প্রোডাক্ট</button>
+        </h3>
+        <div id="admin-master-product-list">
+          <!-- Master products will load here -->
+          <div style="text-align: center; color: #999; font-size: 13px;">প্রোডাক্ট লোড হচ্ছে...</div>
+        </div>
+      </div>
+      
       <div class="dlv-card">
         <h3>🛒 প্রোডাক্ট এক্সপ্লোর করুন</h3>
         <input type="text" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px;">
@@ -374,6 +431,96 @@
     });
   }
 
+   // ==================== MASTER PRODUCTS (PART 4) ====================
+  let masterProductsUnsub = null;
+
+  // ১. প্রোডাক্ট লোড করা
+  function loadMasterProducts() {
+    if (masterProductsUnsub) masterProductsUnsub();
+    const listContainer = document.getElementById('admin-master-product-list');
+    
+    // createdAt দিয়ে সর্ট করা (নতুন আগে)
+    const q = query(collection(db, "master_products"), orderBy("createdAt", "desc"));
+    
+    masterProductsUnsub = onSnapshot(q, (snap) => {
+      if (snap.empty) {
+        listContainer.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো প্রোডাক্ট নেই। নতুন যোগ করুন।</div>';
+        return;
+      }
+
+      let html = '';
+      snap.forEach(docSnap => {
+        const p = docSnap.data();
+        html += `
+          <div style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
+            <div>
+              <div style="font-size:13px; font-weight:600;">${p.name}</div>
+              <div style="font-size:11px; color:#666;">${p.category} | Grade ${p.grade} | ${p.unit}</div>
+            </div>
+            <button onclick="deleteMasterProduct('${docSnap.id}')" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">🗑️</button>
+          </div>
+        `;
+      });
+      listContainer.innerHTML = html;
+    });
+  }
+
+  // ২. মডাল ওপেন/ক্লোজ
+  window.openMasterProductModal = function() {
+    document.getElementById('dlv-master-product-modal').style.display = 'block';
+  };
+  window.closeMasterProductModal = function() {
+    document.getElementById('dlv-master-product-modal').style.display = 'none';
+    document.getElementById('mp-name').value = '';
+  };
+
+  // ৩. নতুন প্রোডাক্ট সেভ করা
+  window.saveMasterProduct = async function() {
+    const name = document.getElementById('mp-name').value.trim();
+    const category = document.getElementById('mp-category').value;
+    const unit = document.getElementById('mp-unit').value;
+    const grade = document.getElementById('mp-grade').value;
+
+    if (!name) {
+      alert("প্রোডাক্টের নাম দিন!");
+      return;
+    }
+
+    const btn = document.getElementById('btn-save-mp');
+    btn.innerText = "⏳ সেভ হচ্ছে...";
+    btn.disabled = true;
+
+    try {
+      await addDoc(collection(db, "master_products"), {
+        name: name,
+        category: category,
+        unit: unit,
+        grade: grade,
+        createdAt: serverTimestamp()
+      });
+      alert("প্রোডাক্ট সফলভাবে সেভ হয়েছে!");
+      closeMasterProductModal();
+    } catch (e) {
+      console.error(e);
+      alert("সেভ করতে সমস্যা হয়েছে!");
+    } finally {
+      btn.innerText = "💾 সেভ করুন";
+      btn.disabled = false;
+    }
+  };
+
+  // ৪. প্রোডাক্ট ডিলিট করা
+  window.deleteMasterProduct = async function(id) {
+    if(!confirm("আপনি কি এই প্রোডাক্টটি ডিলিট করতে চান?")) return;
+    try {
+      await deleteDoc(doc(db, "master_products", id));
+      alert("ডিলিট হয়েছে!");
+    } catch(e) {
+      console.error(e);
+      alert("ডিলিট করতে সমস্যা হয়েছে!");
+    }
+  };
+  
   // ইউজারের রোল পরিবর্তন করার ফাংশন
   window.changeUserRole = async function(uid, newRole) {
     if (!newRole) return;
