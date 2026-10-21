@@ -100,7 +100,96 @@
 
   <div class="dlv-container">
     <!-- ভিউগুলো এখানে পার্ট ২-এ যুক্ত হবে -->
-    <div id="dlv-view-placeholder" class="dlv-card">
+        <!-- ==================== ROLE: CUSTOMER DASHBOARD ==================== -->
+    <div id="dlv-view-customer" class="dlv-hidden">
+      <div class="dlv-card" style="background: linear-gradient(135deg, var(--dlv-primary), #4285f4); color: white;">
+        <div style="font-size: 12px; opacity: 0.9;">আমার ওয়ালেট ব্যালেন্স</div>
+        <div style="font-size: 24px; font-weight: bold; margin-top: 5px;" id="cst-wallet-balance">₹0.00</div>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+          <button class="dlv-btn" style="background: white; color: var(--dlv-primary); margin: 0; font-size: 12px; padding: 8px;" onclick="alert('Recharge Coming Soon')">+ Add Money</button>
+          <button class="dlv-btn" style="background: rgba(255,255,255,0.2); color: white; margin: 0; font-size: 12px; padding: 8px;" onclick="alert('Khata Coming Soon')">📒 আমার খাতা</button>
+        </div>
+      </div>
+
+      <div class="dlv-card">
+        <h3>🛒 প্রোডাক্ট এক্সপ্লোর করুন</h3>
+        <input type="text" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">প্রোডাক্ট ১</div>
+          <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">প্রোডাক্ট ২</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== ROLE: SHOPKEEPER DASHBOARD ==================== -->
+    <div id="dlv-view-shopkeeper" class="dlv-hidden">
+      <div class="dlv-card">
+        <h3>📦 আমার প্রোডাক্ট লিস্ট</h3>
+        <button class="dlv-btn dlv-btn-success" onclick="alert('Add Product Coming Soon')">+ নতুন প্রোডাক্ট যোগ করুন</button>
+        <div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">কোনো প্রোডাক্ট নেই।</div>
+      </div>
+      <div class="dlv-card" style="border-left: 4px solid var(--dlv-danger);">
+        <h3>🔔 নতুন অর্ডার (পেন্ডিং)</h3>
+        <div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">বর্তমানে কোনো নতুন অর্ডার নেই।</div>
+      </div>
+    </div>
+
+    <!-- ==================== ROLE: DELIVERY BOY DASHBOARD ==================== -->
+    <div id="dlv-view-delivery" class="dlv-hidden">
+      <div class="dlv-card" style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 14px; font-weight: 600;">আমার স্ট্যাটাস:</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="dlv-online-status" style="color: var(--dlv-danger); font-size: 12px; font-weight: bold;">🔴 অফলাইন</span>
+          <label style="position: relative; display: inline-block; width: 46px; height: 24px;">
+            <input type="checkbox" id="dlv-online-toggle" onchange="toggleDeliveryStatus(this)" style="opacity: 0; width: 0; height: 0;">
+            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px;" id="dlv-toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="dlv-card" style="background: linear-gradient(135deg, var(--dlv-success), #14b866); color: white;">
+        <div style="font-size: 12px; opacity: 0.9;">আজকের আয়</div>
+        <div style="font-size: 24px; font-weight: bold;" id="dlv-today-earnings">₹0.00</div>
+      </div>
+
+      <div class="dlv-card" id="dlv-live-orders-container" style="display: none;">
+        <h3>🔔 লাইভ অর্ডার (বিড করুন)</h3>
+        <div id="dlv-live-orders" style="text-align: center; color: #999; font-size: 13px;">অর্ডার খোঁজা হচ্ছে...</div>
+      </div>
+    </div>
+
+    <!-- ==================== ROLE: ADMIN DASHBOARD ==================== -->
+    <div id="dlv-view-admin" class="dlv-hidden">
+      <div class="dlv-card" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: white;">
+        <div style="font-size: 12px; opacity: 0.9;">সিস্টেমের মোট রেভিনিউ (১%)</div>
+        <div style="font-size: 24px; font-weight: bold;" id="admin-total-revenue">₹0.00</div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+        <div class="dlv-card" style="margin: 0; text-align: center; padding: 10px;">
+          <div style="font-size: 20px;">🏪</div>
+          <div style="font-size: 11px; font-weight: 600;">দোকানদার</div>
+          <div style="font-size: 16px; font-weight: bold; color: var(--dlv-primary);" id="admin-total-shops">0</div>
+        </div>
+        <div class="dlv-card" style="margin: 0; text-align: center; padding: 10px;">
+          <div style="font-size: 20px;">🛵</div>
+          <div style="font-size: 11px; font-weight: 600;">ডেলিভারি বয়</div>
+          <div style="font-size: 16px; font-weight: bold; color: var(--dlv-success);" id="admin-total-delivery">0</div>
+        </div>
+        <div class="dlv-card" style="margin: 0; text-align: center; padding: 10px;">
+          <div style="font-size: 20px;">👨‍💼</div>
+          <div style="font-size: 11px; font-weight: 600;">ম্যানেজার</div>
+          <div style="font-size: 16px; font-weight: bold; color: var(--dlv-warning);" id="admin-total-managers">0</div>
+        </div>
+      </div>
+
+      <div class="dlv-card">
+        <h3>👥 ইউজার রোল ম্যানেজমেন্ট</h3>
+        <div id="admin-user-list">
+          <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
+        </div>
+      </div>
+    </div>
       <h3>স্বাগতম!</h3>
       <p style="font-size: 13px; color: #666;">আপনার রোল অনুযায়ী ড্যাশবোর্ড পরবর্তী পার্টে যুক্ত হবে।</p>
     </div>
@@ -175,7 +264,8 @@
           mainApp.classList.remove('dlv-hidden');
           
           console.log("লগইন সফল! ইউজার রোল:", currentUserData.role);
-          
+                    // রোল অনুযায়ী UI লোড করা
+          setupUIForRole(currentUserData.role || 'customer', currentUserData);
         } else {
           // ইউজার Auth-এ আছে কিন্তু ডেটাবেসে নেই
           console.warn("User document not found in 'users' collection.");
@@ -197,6 +287,61 @@
     loader.classList.add('dlv-hidden'); // লোডার লুকানো
   });
 
+  // ==================== ROLE BASED UI SETUP (PART 2) ====================
+  function setupUIForRole(role, userData) {
+    // ১. সব ভিউ লুকিয়ে ফেলা
+    ['customer', 'shopkeeper', 'delivery', 'admin', 'manager'].forEach(r => {
+      const view = document.getElementById(`dlv-view-${r}`);
+      if (view) view.classList.add('dlv-hidden');
+    });
+
+    // ২. রোল অনুযায়ী ভিউ দেখানো
+    const activeView = document.getElementById(`dlv-view-${role}`);
+    if (activeView) {
+      activeView.classList.remove('dlv-hidden');
+    } else {
+      // ডিফল্ট কাস্টমার
+      document.getElementById('dlv-view-customer').classList.remove('dlv-hidden');
+    }
+
+    // ৩. ডেটা লোড করা
+    if (role === 'customer') {
+      if (userData) {
+        document.getElementById('cst-wallet-balance').innerText = `₹${(userData.walletBalance || 0).toFixed(2)}`;
+      }
+    } else if (role === 'delivery') {
+      // ডেলিভারি বয়ের অফলাইন স্ক্রিন (লজিক পার্ট ৩-এ আসবে)
+      const offlineMsg = document.getElementById('dlv-live-orders');
+      if (offlineMsg) offlineMsg.style.display = 'block';
+    } else if (role === 'admin') {
+      loadAdminDashboardUI(); // অ্যাডমিন ড্যাশবোর্ডের ডেটা লোড (আপাতত ডামি)
+    }
+  }
+
+  // অ্যাডমিন ড্যাশবোর্ডে ডামি ডেটা লোড (পার্ট ৩-এ আসল ডেটা আসবে)
+  function loadAdminDashboardUI() {
+    document.getElementById('admin-total-shops').innerText = "0";
+    document.getElementById('admin-total-delivery').innerText = "0";
+    document.getElementById('admin-total-managers').innerText = "0";
+    document.getElementById('admin-user-list').innerHTML = `<div style="text-align: center; color: #999; font-size: 13px;">ইউজার লিস্ট পার্ট ৩-এ যুক্ত হবে।</div>`;
+  }
+
+  // ডেলিভারি বয়ের টগল সুইচ অ্যানিমেশন (ভিজ্যুয়াল)
+  window.toggleDeliveryStatus = function(checkbox) {
+    const slider = document.getElementById('dlv-toggle-slider');
+    const statusText = document.getElementById('dlv-online-status');
+    
+    if(checkbox.checked) {
+      slider.style.backgroundColor = 'var(--dlv-success)';
+      statusText.innerHTML = '🟢 অনলাইন';
+      statusText.style.color = 'var(--dlv-success)';
+    } else {
+      slider.style.backgroundColor = '#ccc';
+      statusText.innerHTML = '🔴 অফলাইন';
+      statusText.style.color = 'var(--dlv-danger)';
+    }
+  };
+  
   // ==================== LOGOUT FUNCTION ====================
   window.handleLogout = async function() {
     if (!confirm('লগআউট করবেন?')) return;
