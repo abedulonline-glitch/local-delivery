@@ -721,6 +721,7 @@
       </select>
     </div>
 
+    <!-- ইউনিট এবং গ্রেড গ্রিড শুরু -->
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       <div class="dlv-form-group">
         <label>ইউনিট *</label>
@@ -739,23 +740,24 @@
           <option value="C">Grade C</option>
         </select>
       </div>
+    </div> 
+    <!-- ✅ গ্রিড এখানেই বন্ধ করতে হবে (আপনার কোডে এটি বন্ধ করা ছিল না) -->
 
-          <div class="dlv-form-group">
+    <!-- ইমেজ আপলোড সেকশন -->
+    <div class="dlv-form-group">
       <label>প্রোডাক্টের ছবি</label>
       <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <button class="dlv-btn" style="background: #e8f0fe; color: var(--dlv-primary); font-size: 12px; padding: 10px; margin: 0;" onclick="pickImageSource('camera')">📷 ক্যামেরা</button>
-        <button class="dlv-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 10px; margin: 0;" onclick="pickImageSource('gallery')">🖼️ গ্যালারি</button>
+        <button class="dlv-btn" style="background: #e8f0fe; color: var(--dlv-primary); font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('camera')">📷 ক্যামেরা</button>
+        <button class="dlv-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('gallery')">🖼️ গ্যালারি</button>
       </div>
-      <img id="mp-image-preview" style="width: 100%; height: 150px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa;">
+      <img id="mp-image-preview" style="width: 100%; height: 150px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
       <input type="file" id="mp-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
     </div>
-      
-    </div>
 
-    <button class="dlv-btn dlv-btn-success" id="btn-save-mp" onclick="saveMasterProduct()">💾 সেভ করুন</button>
+    <button class="dlv-btn dlv-btn-success" id="btn-save-mp" onclick="saveMasterProduct()" style="margin-top: 15px;">💾 সেভ করুন</button>
   </div>
 </div>
-
+ 
 <!-- Crop Modal -->
 <div id="dlv-crop-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10001; flex-direction: column;">
   <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white;">
