@@ -1,4 +1,4 @@
-# 🚀 Hyperlocal Delivery & Marketplace System
+# 🚀 Local Delivery & Marketplace System
 
 ## 📌 Project Overview
 এটি একটি মাল্টি-রোল ডেলিভারি ও মার্কেটপ্লেস সিস্টেম। এখানে অ্যাডমিন, ম্যানেজার, দোকানদার, ডেলিভারি বয় এবং কাস্টমার—এই ৫টি রোল কাজ করে।
