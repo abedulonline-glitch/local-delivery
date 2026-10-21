@@ -189,10 +189,6 @@
           <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
         </div>
       </div>
-    </div>
-      <h3>স্বাগতম!</h3>
-      <p style="font-size: 13px; color: #666;">আপনার রোল অনুযায়ী ড্যাশবোর্ড পরবর্তী পার্টে যুক্ত হবে।</p>
-    </div>
   </div>
 </div>
 
@@ -203,7 +199,9 @@
   
   import { db, auth } from './delivery-firebase-config.js';
   import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+   import { 
+    doc, getDoc, collection, onSnapshot, updateDoc 
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
   import { setLanguage, t } from './delivery-i18n.js';
 
   let currentUser = null;
@@ -319,12 +317,78 @@
   }
 
   // অ্যাডমিন ড্যাশবোর্ডে ডামি ডেটা লোড (পার্ট ৩-এ আসল ডেটা আসবে)
+  // ==================== ADMIN DASHBOARD REAL DATA (PART 3) ====================
+  let adminUsersUnsubscribe = null;
+
   function loadAdminDashboardUI() {
-    document.getElementById('admin-total-shops').innerText = "0";
-    document.getElementById('admin-total-delivery').innerText = "0";
-    document.getElementById('admin-total-managers').innerText = "0";
-    document.getElementById('admin-user-list').innerHTML = `<div style="text-align: center; color: #999; font-size: 13px;">ইউজার লিস্ট পার্ট ৩-এ যুক্ত হবে।</div>`;
+    // আগের লিসেনার থাকলে সেটি বন্ধ করা
+    if (adminUsersUnsubscribe) adminUsersUnsubscribe();
+
+    const usersRef = collection(db, "users");
+    
+    adminUsersUnsubscribe = onSnapshot(usersRef, (snap) => {
+      let shops = 0;
+      let delivery = 0;
+      let managers = 0;
+      let userHtml = '';
+      
+      if (snap.empty) {
+        document.getElementById('admin-user-list').innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">ডেটাবেসে কোনো ইউজার নেই।</div>';
+        return;
+      }
+
+      snap.forEach(docSnap => {
+        const u = docSnap.data();
+        const uid = docSnap.id;
+
+        // কাউন্ট করা
+        if (u.role === 'shopkeeper') shops++;
+        if (u.role === 'delivery') delivery++;
+        if (u.isManager === true) managers++; 
+
+        // ইউজার লিস্ট তৈরি
+        let roleText = u.role ? u.role.toUpperCase() : 'NO ROLE';
+        
+        userHtml += `
+          <div style="border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 14px; font-weight: 600;">${u.name || 'Unknown User'}</div>
+              <div style="font-size: 11px; color: #666;">${roleText}</div>
+            </div>
+            <select onchange="changeUserRole('${uid}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; background: white;">
+              <option value="" disabled selected>রোল দিন</option>
+              <option value="shopkeeper" ${u.role === 'shopkeeper' ? 'selected' : ''}>দোকানদার</option>
+              <option value="delivery" ${u.role === 'delivery' ? 'selected' : ''}>ডেলিভারি বয়</option>
+              <option value="customer" ${u.role === 'customer' ? 'selected' : ''}>কাস্টমার</option>
+              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>অ্যাডমিন</option>
+            </select>
+          </div>
+        `;
+      });
+      
+      // UI আপডেট
+      document.getElementById('admin-total-shops').innerText = shops;
+      document.getElementById('admin-total-delivery').innerText = delivery;
+      document.getElementById('admin-total-managers').innerText = managers;
+      document.getElementById('admin-user-list').innerHTML = userHtml;
+    });
   }
+
+  // ইউজারের রোল পরিবর্তন করার ফাংশন
+  window.changeUserRole = async function(uid, newRole) {
+    if (!newRole) return;
+    if(!confirm(`আপনি কি এই ইউজারের রোল পরিবর্তন করে "${newRole}" করতে চান?`)) return;
+    
+    try {
+      await updateDoc(doc(db, "users", uid), {
+        role: newRole
+      });
+      alert("সফলভাবে রোল আপডেট হয়েছে!");
+    } catch (e) {
+      console.error(e);
+      alert("রোল আপডেট করতে সমস্যা হয়েছে!");
+    }
+  };
 
   // ডেলিভারি বয়ের টগল সুইচ অ্যানিমেশন (ভিজ্যুয়াল)
   window.toggleDeliveryStatus = function(checkbox) {
