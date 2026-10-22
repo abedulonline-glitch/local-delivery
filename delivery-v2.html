@@ -1727,7 +1727,7 @@ window.toggleDeliveryStatus = function(checkbox) {
   // ============================================================
   // ADMIN FUNCTIONS
   // ============================================================
-  function loadAdminDashboardUI() {
+    function loadAdminDashboardUI() {
     if (adminUsersUnsubscribe) adminUsersUnsubscribe();
     adminUsersUnsubscribe = onSnapshot(collection(db, "users"), (snap) => {
       let shops = 0, delivery = 0, managers = 0, userHtml = '';
@@ -1742,12 +1742,18 @@ window.toggleDeliveryStatus = function(checkbox) {
         if (u.isManager === true) managers++; 
         let roleText = u.role ? u.role.toUpperCase() : 'NO ROLE';
         
-                    <select onchange="changeUserRole('${docSnap.id}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; background: white;">
+        // 🚀 এখানে userHtml += ` এবং <div> অংশটি যোগ করা হয়েছে
+        userHtml += `
+          <div style="border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 14px; font-weight: 600;">${u.name || 'Unknown User'}</div>
+              <div style="font-size: 11px; color: #666;">${roleText}</div>
+            </div>
+            <select onchange="changeUserRole('${docSnap.id}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; background: white;">
               <option value="" disabled selected>রোল দিন</option>
               <option value="shopkeeper" ${u.role === 'shopkeeper' ? 'selected' : ''}>দোকানদার</option>
               <option value="delivery" ${u.role === 'delivery' ? 'selected' : ''}>ডেলিভারি বয়</option>
               <option value="customer" ${u.role === 'customer' ? 'selected' : ''}>কাস্টমার</option>
-              <!-- 🚀 নতুন যোগ করা ম্যানেজার রোল -->
               <option value="manager" ${u.role === 'manager' ? 'selected' : ''}>ম্যানেজার</option>
               <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>অ্যাডমিন</option>
             </select>
@@ -1769,7 +1775,6 @@ window.toggleDeliveryStatus = function(checkbox) {
       document.getElementById('admin-total-revenue').innerText = `₹${revenue.toFixed(2)}`;
     });
   }
-
   window.changeUserRole = async function(uid, newRole) {
     if (!newRole) return;
     if(!confirm(`রোল পরিবর্তন করে "${newRole}" করবেন?`)) return;
