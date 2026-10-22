@@ -398,23 +398,39 @@
         </div>
       </div>
 
-           <!-- Ad Management Section (Admin) -->
+          
+    <!-- Ad Management Section (Admin) -->
       <div class="mp-card" style="border-left: 4px solid #f9a825;">
         <h3>📢 অ্যাড ম্যানেজমেন্ট</h3>
-        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">অ্যাপের টপবারে দেখানোর জন্য নতুন ইমেজ বা ভিডিও লিংক দিন।</p>
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">অ্যাপের টপবারে দেখানোর জন্য নতুন ইমেজ বা ভিডিও দিন।</p>
         
-        <div class="dlv-form-group" style="display:flex; gap:10px; margin-bottom:10px;">
-          <select id="admin-ad-type" class="dlv-input" style="flex:1;">
-            <option value="image">🖼️ ইমেজ (ImgBB লিংক)</option>
+        <div class="dlv-form-group" style="margin-bottom:10px;">
+          <select id="admin-ad-type" class="dlv-input" onchange="toggleAdInputType()">
+            <option value="image">🖼️ ইমেজ (সরাসরি আপলোড)</option>
             <option value="video">🎥 ভিডিও (YouTube লিংক)</option>
           </select>
-          <input type="text" id="admin-ad-url" class="dlv-input" style="flex:2;" placeholder="লিংক পেস্ট করুন...">
+        </div>
+
+        <!-- ইমেজ আপলোড এরিয়া -->
+        <div id="ad-image-upload-area" style="margin-bottom: 10px;">
+          <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'ad')">📷 ক্যামেরা</button>
+            <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'ad')">🖼️ গ্যালারি</button>
+          </div>
+          <img id="ad-image-preview" style="width: 100%; height: 100px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
+          <input type="file" id="ad-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'ad')">
+        </div>
+
+        <!-- ভিডিও লিংক এরিয়া -->
+        <div id="ad-video-url-area" class="dlv-form-group mp-hidden" style="margin-bottom: 10px;">
+          <input type="text" id="admin-ad-url" class="dlv-input" placeholder="YouTube ভিডিও লিংক পেস্ট করুন...">
         </div>
         
         <button class="mp-btn mp-btn-primary" style="margin-bottom: 15px; padding: 8px;" onclick="saveAd()">+ অ্যাড যোগ করুন</button>
         
         <!-- Active Ads List -->
-        <div id="admin-ad-list">
+        <div id="admin-ad-list"></div>
+      </div>
           <!-- Ads will load here -->
         </div>
       </div>
@@ -1964,22 +1980,46 @@ window.toggleDeliveryStatus = function(checkbox) {
     });
   }
 
-  // ==================== AD MANAGEMENT LOGIC ====================
+   // অ্যাড টাইপ পরিবর্তন হলে ইনপুট চেঞ্জ করা
+  window.toggleAdInputType = function() {
+    const type = document.getElementById('admin-ad-type').value;
+    if (type === 'image') {
+      document.getElementById('ad-image-upload-area').classList.remove('mp-hidden');
+      document.getElementById('ad-video-url-area').classList.add('mp-hidden');
+    } else {
+      document.getElementById('ad-image-upload-area').classList.add('mp-hidden');
+      document.getElementById('ad-video-url-area').classList.remove('mp-hidden');
+    }
+  };
   
-  // ১. নতুন অ্যাড সেভ করা
+  // ==================== AD MANAGEMENT LOGIC ====================
+  // ১. নতুন অ্যাড সেভ করা (ইমেজ আপলোডসহ)
   window.saveAd = async function() {
     const type = document.getElementById('admin-ad-type').value;
-    const url = document.getElementById('admin-ad-url').value.trim();
+    let finalUrl = '';
     
-    if(!url) return alert("দয়া করে লিংক পেস্ট করুন!");
+    if (type === 'image') {
+      if (!uploadedImageUrl) {
+        return alert("দয়া করে প্রথমে একটি ছবি আপলোড ও ক্রপ করুন!");
+      }
+      finalUrl = uploadedImageUrl;
+    } else {
+      finalUrl = document.getElementById('admin-ad-url').value.trim();
+      if (!finalUrl) return alert("দয়া করে ভিডিও লিংক পেস্ট করুন!");
+    }
     
     try {
       await addDoc(collection(db, "ads"), {
         type: type,
-        url: url,
+        url: finalUrl,
         createdAt: serverTimestamp()
       });
+      
+      // রিসেট
       document.getElementById('admin-ad-url').value = '';
+      document.getElementById('ad-image-preview').style.display = 'none';
+      uploadedImageUrl = null; // গ্লোবাল ভেরিয়েবল রিসেট
+      
       alert("অ্যাড সফলভাবে যুক্ত হয়েছে!");
     } catch(e) {
       console.error(e);
@@ -2304,6 +2344,7 @@ window.toggleDeliveryStatus = function(checkbox) {
     let fileInput;
     if (context === 'mp') fileInput = document.getElementById('mp-image-input');
     else if (context === 'edit-mp') fileInput = document.getElementById('ep-image-input');
+    else if (context === 'ad') fileInput = document.getElementById('ad-image-input'); // 🚀 নতুন লাইন
     else fileInput = document.getElementById('add-p-image-file');
     
     if (source === 'camera') fileInput.setAttribute('capture', 'environment');
@@ -2354,6 +2395,7 @@ window.toggleDeliveryStatus = function(checkbox) {
                 let previewId;
         if (currentUploadContext === 'mp') previewId = 'mp-image-preview';
         else if (currentUploadContext === 'edit-mp') previewId = 'ep-image-preview';
+        else if (currentUploadContext === 'ad') previewId = 'ad-image-preview'; // 🚀 নতুন লাইন
         else previewId = 'add-p-image-preview';
         const preview = document.getElementById(previewId);
         preview.src = uploadedImageUrl; preview.style.display = 'block';
