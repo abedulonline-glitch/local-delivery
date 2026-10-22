@@ -336,14 +336,36 @@
       <div class="dlv-dashboard-title">দোকানদার ড্যাশবোর্ড</div>
 
             <!-- Shopkeeper Badge Status -->
-      <div class="mp-card" id="shop-badge-section" style="border-left: 4px solid var(--mp-primary); background: #e8f0fe;">
+           <!-- Shopkeeper Badge Status & Toggles -->
+      <div class="mp-card" style="border-left: 4px solid var(--mp-primary); background: #e8f0fe;">
         <h3>🌟 আপনার দোকানের স্ট্যাটাস</h3>
-        <div id="shop-badge-display" style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #666;">
-          সাধারণ দোকান (কোনো ব্যাজ নেই)
+        <p style="font-size: 12px; color: #555; margin-bottom: 15px;">বেশি কাস্টমার পেতে ব্যাজ চালু করুন। ব্যাজ চালু করলে কাস্টমার সার্চে আপনার দোকান সবার উপরে থাকবে।</p>
+        
+        <!-- Premium Toggle -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <div>
+            <div style="font-size: 14px; font-weight: bold;">🌟 প্রিমিয়াম ব্যাজ</div>
+            <div style="font-size: 11px; color: #666;">ফি: ₹৫০০ / ৩০ দিন</div>
+          </div>
+          <label class="dlv-switch">
+            <input type="checkbox" id="toggle-premium" onchange="handleBadgeToggle('isPremium', this.checked, 500, this)">
+            <span class="dlv-slider"></span>
+          </label>
         </div>
-        <button class="mp-btn mp-btn-primary" style="font-size: 12px; padding: 8px;" onclick="requestBadgeUpgrade()">
-          🚀 প্রিমিয়াম/ভেরিফাইড ব্যাজ কিনুন
-        </button>
+
+        <!-- Verified Toggle -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <div>
+            <div style="font-size: 14px; font-weight: bold;">✅ ভেরিফাইড ব্যাজ</div>
+            <div style="font-size: 11px; color: #666;">ফি: ₹২০০ / ৩০ দিন</div>
+          </div>
+          <label class="dlv-switch">
+            <input type="checkbox" id="toggle-verified" onchange="handleBadgeToggle('isVerified', this.checked, 200, this)">
+            <span class="dlv-slider"></span>
+          </label>
+        </div>
+      </div>
+
       </div>
       
       <div class="mp-card" style="border-left: 4px solid var(--mp-danger);">
@@ -816,6 +838,35 @@
 
     <button class="mp-btn mp-btn-primary" id="btn-update-mp" onclick="updateMasterProduct()" style="margin-bottom: 10px;">💾 আপডেট করুন</button>
     <button class="mp-btn mp-btn-danger" onclick="deleteMasterProductFromEdit()">🗑️ প্রোডাক্ট ডিলিট করুন</button>
+  </div>
+</div>
+  
+ <!-- Badge Terms & Conditions Modal -->
+<div id="dlv-badge-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <h3 style="margin-bottom: 10px; color: var(--mp-primary); text-align: center;" id="badge-modal-title">প্রিমিয়াম ব্যাজ চালু করুন</h3>
+    
+    <div style="background: #fef7e0; padding: 15px; border-radius: 8px; border-left: 4px solid var(--mp-warning); margin-bottom: 15px;">
+      <div style="font-size: 14px; font-weight: bold; color: #b06000; margin-bottom: 5px;">💳 পেমেন্ট বিবরণ</div>
+      <p style="font-size: 13px; color: #333;">আপনার ওয়ালেট থেকে <b id="badge-modal-price">₹০</b> কেটে নেওয়া হবে।</p>
+      <p style="font-size: 11px; color: #666; margin-top: 5px;">আপনার বর্তমান ব্যালেন্স: <span id="badge-modal-balance">₹০.০০</span></p>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <h4 style="font-size: 14px; margin-bottom: 8px; color: #333;">📜 শর্তাবলী:</h4>
+      <ul style="font-size: 12px; color: #555; padding-left: 20px; line-height: 1.6;">
+        <li>কাস্টমারকে রেটিং অনুযায়ী সঠিক গ্রেড (A/B/C) এর মাল দিতে হবে।</li>
+        <li>ভুল মাল বা নিম্নমানের মাল দিলে কাস্টমার রিটার্ন করতে পারবে।</li>
+        <li>একই প্রোডাক্টের জন্য কাস্টমারকে ভুল বা অতিরিক্ত দাম দেখানো যাবে না।</li>
+        <li>শর্ত ভঙ্গ করলে অ্যাডমিন আপনার ব্যাজ সাময়িকভাবে সাসপেন্ড করতে পারবে।</li>
+        <li>এই প্যাকেজের মেয়াদ ৩০ দিন। মেয়াদ শেষে স্বয়ংক্রিয়ভাবে বন্ধ হয়ে যাবে।</li>
+      </ul>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <button class="mp-btn" style="margin: 0; background: #f0f2f5; color: #333;" onclick="cancelBadgePurchase()">বাতিল</button>
+      <button class="mp-btn mp-btn-success" style="margin: 0;" id="btn-confirm-badge" onclick="confirmBadgePurchase()">সম্মত আছি, একটিভ করুন</button>
+    </div>
   </div>
 </div>
   
@@ -2216,13 +2267,146 @@ window.toggleDeliveryStatus = function(checkbox) {
     });
   }
 
-  // ২. অ্যাডমিনের ব্যাজ আপডেট করা
-  window.toggleShopBadge = async function(uid, badgeType, value) {
-    try {
-      await updateDoc(doc(db, "users", uid), { [badgeType]: value });
-      // (এখানে চাইলে দোকানদারের ওয়ালেট থেকে ফি কেটে নেওয়ার লজিক বসানো যাবে)
-    } catch(e) { alert("ব্যাজ আপডেটে সমস্যা হয়েছে!"); }
+  // ==================== AUTO BADGE PURCHASE LOGIC ====================
+  let pendingBadgeType = null;
+  let pendingBadgePrice = 0;
+  let pendingBadgeToggleElement = null;
+
+  // ১. টগল করলে মডাল ওপেন করা
+  window.handleBadgeToggle = function(badgeType, isChecked, price, toggleEl) {
+    if (!isChecked) {
+      // যদি বন্ধ করতে চায়, তবে ডেটাবেসে false করে দেব
+      deactivateBadge(badgeType);
+      return;
+    }
+
+    pendingBadgeType = badgeType;
+    pendingBadgePrice = price;
+    pendingBadgeToggleElement = toggleEl;
+
+    const balance = globalUserData.walletBalance || 0;
+    if (balance < price) {
+      alert("দুঃখিত! আপনার ওয়ালেটে পর্যাপ্ত ব্যালেন্স নেই। দয়া করে রিচার্জ করুন।");
+      toggleEl.checked = false; // সুইচ আবার অফ করে দাও
+      return;
+    }
+
+    // মডালের ভেতরের ডেটা আপডেট
+    const title = badgeType === 'isPremium' ? 'প্রিমিয়াম ব্যাজ' : 'ভেরিফাইড ব্যাজ';
+    document.getElementById('badge-modal-title').innerText = title + ' চালু করুন';
+    document.getElementById('badge-modal-price').innerText = `₹${price}`;
+    document.getElementById('badge-modal-balance').innerText = `₹${balance.toFixed(2)}`;
+    
+    document.getElementById('dlv-badge-modal').classList.add('active');
   };
+
+  // ২. বাতিল করলে টগল অফ করা
+  window.cancelBadgePurchase = function() {
+    if (pendingBadgeToggleElement) pendingBadgeToggleElement.checked = false;
+    document.getElementById('dlv-badge-modal').classList.remove('active');
+    pendingBadgeType = null;
+  };
+
+  // ৩. কনফার্ম করলে টাকা কাটা ও ব্যাজ একটিভ করা
+  window.confirmBadgePurchase = async function() {
+    const btn = document.getElementById('btn-confirm-badge');
+    btn.innerText = "⏳ প্রসেস হচ্ছে...";
+    btn.disabled = true;
+
+    try {
+      // ক) দোকানদারের ওয়ালেট থেকে টাকা কাটা
+      const shopRef = doc(db, "users", currentUser.uid);
+      const shopSnap = await getDoc(shopRef);
+      const currentBal = shopSnap.data().walletBalance || 0;
+      const newBal = currentBal - pendingBadgePrice;
+
+      // খ) অ্যাডমিনের ওয়ালেট খুঁজে বের করা (যেহেতু একাধিক অ্যাডমিন থাকতে পারে, প্রথম অ্যাডমিনকে টাকা দেওয়া হবে)
+      let adminUid = null;
+      const adminQuery = query(collection(db, "users"), where("role", "==", "admin"));
+      const adminSnap = await getDocs(adminQuery);
+      if (!adminSnap.empty) {
+        adminUid = adminSnap.docs[0].id;
+      }
+
+      // গ) দোকানদারের প্রোফাইল আপডেট
+      await updateDoc(shopRef, {
+        [pendingBadgeType]: true,
+        walletBalance: newBal
+      });
+
+      // ঘ) অ্যাডমিনের ওয়ালেটে টাকা যোগ করা
+      if (adminUid) {
+        const adminRef = doc(db, "users", adminUid);
+        const adminData = await getDoc(adminRef);
+        await updateDoc(adminRef, {
+          walletBalance: (adminData.data().walletBalance || 0) + pendingBadgePrice
+        });
+      }
+
+      // ঙ) দোকানদারের সব প্রোডাক্টে ব্যাজ আপডেট করা (যাতে কাস্টমার সাথে সাথে দেখতে পায়)
+      const prodQuery = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+      const prodSnap = await getDocs(prodQuery);
+      const batchUpdates = [];
+      prodSnap.forEach((pDoc) => {
+        batchUpdates.push(updateDoc(doc(db, "products", pDoc.id), {
+          [pendingBadgeType]: true
+        }));
+      });
+      await Promise.all(batchUpdates);
+
+      // চ) লোকাল ডেটা আপডেট ও ইউআই রিফ্রেশ
+      globalUserData[pendingBadgeType] = true;
+      globalUserData.walletBalance = newBal;
+      updateTopbarWallet(newBal);
+      loadShopBadgeStatus();
+
+      alert("🎉 অভিনন্দন! আপনার ব্যাজ সফলভাবে একটিভ হয়েছে।");
+      document.getElementById('dlv-badge-modal').classList.remove('active');
+
+    } catch (e) {
+      console.error(e);
+      alert("ব্যাজ একটিভ করতে সমস্যা হয়েছে!");
+      if (pendingBadgeToggleElement) pendingBadgeToggleElement.checked = false;
+    } finally {
+      btn.innerText = "সম্মত আছি, একটিভ করুন";
+      btn.disabled = false;
+      pendingBadgeType = null;
+    }
+  };
+
+  // ৪. ব্যাজ বন্ধ করা (যদি দোকানদার চায়)
+  async function deactivateBadge(badgeType) {
+    if(!confirm("আপনি কি এই ব্যাজটি বন্ধ করতে চান? (টাকা ফেরত দেওয়া হবে না)")) {
+       loadShopBadgeStatus(); // টগল আগের অবস্থায় ফিরিয়ে আনবে
+       return;
+    }
+    try {
+      await updateDoc(doc(db, "users", currentUser.uid), { [badgeType]: false });
+      
+      // প্রোডাক্ট থেকেও বন্ধ করা
+      const prodQuery = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+      const prodSnap = await getDocs(prodQuery);
+      const batchUpdates = [];
+      prodSnap.forEach((pDoc) => {
+        batchUpdates.push(updateDoc(doc(db, "products", pDoc.id), { [badgeType]: false }));
+      });
+      await Promise.all(batchUpdates);
+
+      globalUserData[badgeType] = false;
+      loadShopBadgeStatus();
+      alert("ব্যাজটি বন্ধ করা হয়েছে।");
+    } catch(e) { alert("সমস্যা হয়েছে!"); }
+  }
+
+  // ৫. দোকানদারের ব্যাজ স্ট্যাটাস ও টগল আপডেট করা
+  function loadShopBadgeStatus() {
+    if (!globalUserData) return;
+    const premToggle = document.getElementById('toggle-premium');
+    const verToggle = document.getElementById('toggle-verified');
+    
+    if(premToggle) premToggle.checked = globalUserData.isPremium || false;
+    if(verToggle) verToggle.checked = globalUserData.isVerified || false;
+  }
 
   // ৩. দোকানদারের নিজের ব্যাজ স্ট্যাটাস দেখা
   function loadShopBadgeStatus() {
@@ -2240,13 +2424,6 @@ window.toggleDeliveryStatus = function(checkbox) {
       display.innerHTML = `আপনার বর্তমান ব্যাজ: ${html}`;
     }
   }
-
-  // ৪. ব্যাজ কেনার রিকোয়েস্ট (হোয়াটসঅ্যাপে অ্যাডমিনের কাছে যাবে)
-  window.requestBadgeUpgrade = function() {
-    const adminPhone = "919876543210"; // ⚠️ এখানে অ্যাডমিনের ফোন নম্বর দিন
-    const msg = `আসসালামু আলাইকুম,\n\nআমি ${globalUserData.name} (দোকান: ${globalUserData.name})।\nআমি আমার দোকানে "Premium" বা "Verified" ব্যাজ নিতে আগ্রহী।\nদয়া করে পেমেন্ট ডিটেইলস ও প্রসিডিউর জানাবেন।`;
-    window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-  };
   
   // অ্যাড টাইপ পরিবর্তন হলে ইনপুট চেঞ্জ করা
   window.toggleAdInputType = function() {
