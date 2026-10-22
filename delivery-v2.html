@@ -1382,17 +1382,58 @@
   window.promptOTP = async function(orderId) {
     const enteredOtp = prompt("কাস্টমারের কাছ থেকে ৪ ডিজিটের OTP দিন:");
     if (!enteredOtp) return;
+
     try {
       const orderRef = doc(db, "orders", orderId);
       const orderSnap = await getDoc(orderRef);
-      if (orderSnap.exists() && orderSnap.data().otp === enteredOtp) {
-        await updateDoc(orderRef, { status: "delivered", deliveredAt: serverTimestamp() });
-        alert("🎉 সফলভাবে ডেলিভারি সম্পন্ন হয়েছে!");
-        let earnEl = document.getElementById('dlv-today-earnings');
-        let earnAmt = parseFloat(earnEl.innerText.replace('₹', '')) || 0;
-        earnEl.innerText = `₹${(earnAmt + (orderSnap.data().deliveryCharge || 0)).toFixed(2)}`;
-      } else { alert("❌ ভুল OTP!"); }
-    } catch (e) { alert("ডেলিভারি কনফার্ম করতে সমস্যা হয়েছে।"); }
+      
+      if (orderSnap.exists()) {
+        const orderData = orderSnap.data();
+        
+        if (orderData.otp === enteredOtp) {
+          // ১. অর্ডার স্ট্যাটাস ডেলিভারড করা
+          await updateDoc(orderRef, {
+            status: "delivered",
+            deliveredAt: serverTimestamp()
+          });
+          
+          // ২. ডেলিভারি বয়ের ওয়ালেটে ডেলিভারি চার্জ যোগ করা
+          const boyRef = doc(db, "users", currentUser.uid);
+          const boySnap = await getDoc(boyRef);
+          if (boySnap.exists()) {
+            const currentBal = boySnap.data().walletBalance || 0;
+            await updateDoc(boyRef, {
+              walletBalance: currentBal + (orderData.deliveryCharge || 0)
+            });
+          }
+
+          // ৩. দোকানদারের ওয়ালেটে টাকা যোগ করা (COD হলে)
+          if (orderData.paymentMethod === 'cod') {
+            const shopRef = doc(db, "users", orderData.shopId);
+            const shopSnap = await getDoc(shopRef);
+            if (shopSnap.exists()) {
+              const shopBal = shopSnap.data().walletBalance || 0;
+              await updateDoc(shopRef, {
+                walletBalance: shopBal + orderData.price
+              });
+            }
+          }
+          
+          alert("🎉 সফলভাবে ডেলিভারি সম্পন্ন হয়েছে! ওয়ালেট আপডেট করা হয়েছে।");
+          
+          // UI তে আয় আপডেট
+          let earnEl = document.getElementById('dlv-today-earnings');
+          let earnAmt = parseFloat(earnEl.innerText.replace('₹', '')) || 0;
+          earnEl.innerText = `₹${(earnAmt + (orderData.deliveryCharge || 0)).toFixed(2)}`;
+          
+        } else {
+          alert("❌ ভুল OTP! কাস্টমারের কাছ থেকে আবার চেক করুন।");
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      alert("ডেলিভারি কনফার্ম করতে সমস্যা হয়েছে।");
+    }
   };
 
   window.openGoogleMap = function(lat, lng) {
