@@ -959,8 +959,8 @@
     
       if (!regMap) {
         regMap = L.map('reg-map-container').setView([22.5726, 88.3639], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
-          attribution: '© OpenStreetMap, © CartoDB' 
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+          attribution: '© OpenStreetMap' 
         }).addTo(regMap);
       
       regMap.on('click', function(e) {
@@ -1629,8 +1629,8 @@ function setupUIForRole(role, userData) {
     setTimeout(() => {
       if (!pickerMap) {
         pickerMap = L.map('map-picker').setView([22.5726, 88.3639], 13);
-        currentTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
-          attribution: '© OpenStreetMap, © CartoDB' 
+        currentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+          attribution: '© OpenStreetMap' 
         }).addTo(pickerMap);
         
         pickerMap.on('click', function(e) { setPickerMarker(e.latlng); });
@@ -1687,8 +1687,8 @@ function setupUIForRole(role, userData) {
     const btn = document.getElementById('btn-satellite-view');
       if (isSatelliteView) {
         pickerMap.removeLayer(currentTileLayer);
-        currentTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
-          attribution: '© OpenStreetMap, © CartoDB' 
+        currentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+          attribution: '© OpenStreetMap' 
         }).addTo(pickerMap);
         
         isSatelliteView = false;
