@@ -1005,10 +1005,11 @@
     const mapDiv = document.getElementById('reg-map-container');
     mapDiv.style.display = 'block';
     
-    if (!regMap) {
-      regMap = L.map('reg-map-container').setView([22.5726, 88.3639], 13);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {     attribution: '© OpenStreetMap, © CartoDB' })).addTo(regMap);
-      
+          if (!regMap) {
+        regMap = L.map('reg-map-container').setView([22.5726, 88.3639], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
+          attribution: '© OpenStreetMap, © CartoDB' 
+        }).addTo(regMap); 
       regMap.on('click', function(e) {
         if (regMarker) regMap.removeLayer(regMarker);
         regMarker = L.marker(e.latlng).addTo(regMap);
@@ -1645,9 +1646,12 @@ function setupUIForRole(role, userData) {
   window.openAddressModal = function() {
     document.getElementById('dlv-address-modal').classList.add('active');
     setTimeout(() => {
-      if (!pickerMap) {
+            if (!pickerMap) {
         pickerMap = L.map('map-picker').setView([22.5726, 88.3639], 13);
-        currentTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {     attribution: '© OpenStreetMap, © CartoDB' }), { attribution: '© OpenStreetMap' }).addTo(pickerMap);
+        currentTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
+          attribution: '© OpenStreetMap, © CartoDB' 
+        }).addTo(pickerMap);
+        
         pickerMap.on('click', function(e) { setPickerMarker(e.latlng); });
         setPickerMarker(L.latLng(22.5726, 88.3639));
       }
@@ -1700,12 +1704,15 @@ function setupUIForRole(role, userData) {
 
   window.toggleMapLayer = function() {
     const btn = document.getElementById('btn-satellite-view');
-    if (isSatelliteView) {
-      pickerMap.removeLayer(currentTileLayer);
-      currentTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {     attribution: '© OpenStreetMap, © CartoDB' })).addTo(pickerMap);
-      isSatelliteView = false;
-      if (btn) btn.innerText = '🛰️ স্যাটেলাইট';
-    } else {
+          if (isSatelliteView) {
+        pickerMap.removeLayer(currentTileLayer);
+        currentTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
+          attribution: '© OpenStreetMap, © CartoDB' 
+        }).addTo(pickerMap);
+        
+        isSatelliteView = false;
+        if (btn) btn.innerText = '🛰️ স্যাটেলাইট';
+      } else {
       pickerMap.removeLayer(currentTileLayer);
       currentTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(pickerMap);
       isSatelliteView = true;
