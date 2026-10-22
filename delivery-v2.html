@@ -1316,6 +1316,12 @@
 
     group.shops.forEach((shop, index) => {
       // দূরত্ব বের করা
+ let distText = 'দূরত্ব অজানা';
+      if (shop.shopLat && shop.shopLng) {
+        const d = (L.latLng(shop.shopLat, shop.shopLng).distanceTo(L.latLng(customerLat, customerLng)) / 1000).toFixed(1);
+        distText = `${d} কিমি দূরে`;
+      }
+      
       // আনুমানিক ডেলিভারি টাইম
       let eta = shop.shopLat ? Math.ceil(parseFloat(distText) * 3 + 10) + ' মিনিট' : '২০-৩০ মিনিট';
       
