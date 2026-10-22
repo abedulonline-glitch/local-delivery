@@ -1016,8 +1016,8 @@ function setupUIForRole(role, userData) {
     // ৫. টপবারে ওয়ালেট আপডেট (সব রোলের জন্য)
     updateTopbarWallet(userData.walletBalance);
 
-    // Hide all views
-    ['customer', 'shopkeeper', 'delivery', 'admin'].forEach(r => {
+    // Hide all views (এখানে 'manager' যোগ করা হয়েছে)
+    ['customer', 'shopkeeper', 'delivery', 'admin', 'manager'].forEach(r => {
       const view = document.getElementById(`dlv-view-${r}`);
       if (view) view.classList.add('mp-hidden');
     });
@@ -1042,6 +1042,9 @@ function setupUIForRole(role, userData) {
       document.getElementById('dlv-live-orders-container').style.display = 'none';
     } else if (role === 'admin') {
       loadAdminDashboardUI();
+    } else if (role === 'manager') {
+      // ম্যানেজারের জন্য ড্যাশবোর্ড (আপাতত অ্যাডমিনের মতোই দেখাবে, তবে শুধু তার পিনের ডেটা দেখবে)
+      document.getElementById('dlv-view-manager').classList.remove('mp-hidden');
     }
   }
 
@@ -1739,17 +1742,13 @@ window.toggleDeliveryStatus = function(checkbox) {
         if (u.isManager === true) managers++; 
         let roleText = u.role ? u.role.toUpperCase() : 'NO ROLE';
         
-        userHtml += `
-          <div style="border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <div style="font-size: 14px; font-weight: 600;">${u.name || 'Unknown User'}</div>
-              <div style="font-size: 11px; color: #666;">${roleText}</div>
-            </div>
-            <select onchange="changeUserRole('${docSnap.id}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; background: white;">
+                    <select onchange="changeUserRole('${docSnap.id}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; background: white;">
               <option value="" disabled selected>রোল দিন</option>
               <option value="shopkeeper" ${u.role === 'shopkeeper' ? 'selected' : ''}>দোকানদার</option>
               <option value="delivery" ${u.role === 'delivery' ? 'selected' : ''}>ডেলিভারি বয়</option>
               <option value="customer" ${u.role === 'customer' ? 'selected' : ''}>কাস্টমার</option>
+              <!-- 🚀 নতুন যোগ করা ম্যানেজার রোল -->
+              <option value="manager" ${u.role === 'manager' ? 'selected' : ''}>ম্যানেজার</option>
               <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>অ্যাডমিন</option>
             </select>
           </div>
