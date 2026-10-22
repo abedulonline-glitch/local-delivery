@@ -118,7 +118,22 @@
   <div style="color: var(--mp-text-light); font-size: 14px;">অপেক্ষা করুন...</div>
 </div>
 
-<!-- Main App Container -->
+<!-- Login Screen (নতুন ফায়ারবেসের জন্য) -->
+<div id="dlv-login-screen" class="mp-hidden" style="padding: 20px; max-width: 400px; margin: 50px auto;">
+  <div class="mp-card" style="text-align: center;">
+    <h2 style="color: var(--mp-primary); margin-bottom: 20px;">🛵 Delivery App Login</h2>
+    <div class="dlv-form-group">
+      <input type="email" id="login-email" class="dlv-input" placeholder="ইমেইল দিন" style="margin-bottom: 10px;">
+    </div>
+    <div class="dlv-form-group">
+      <input type="password" id="login-password" class="dlv-input" placeholder="পাসওয়ার্ড দিন" style="margin-bottom: 10px;">
+    </div>
+    <button class="mp-btn mp-btn-primary" onclick="handleLogin()" id="login-btn">লগইন করুন</button>
+    <div id="login-error" style="color: red; font-size: 12px; margin-top: 10px;"></div>
+  </div>
+</div>
+  
+  <!-- Main App Container -->
 <div id="mp-app" class="mp-hidden">
   
   <!-- Topbar -->
@@ -536,37 +551,66 @@
   // INITIALIZATION & AUTH
   // ============================================================
   const loader = document.getElementById('dlv-loader');
-  const loginScreen = document.getElementById('dlv-login-screen'); // Will handle via beta.html
+  const loginScreen = document.getElementById('dlv-login-screen');
   const mainApp = document.getElementById('mp-app');
 
   onAuthStateChanged(auth, async (user) => {
-    loader.classList.remove('mp-hidden');
+    loader.classList.remove('mp-hidden'); // লোডার দেখাও
     
     if (user) {
       currentUser = user;
       try {
-        const userRef = doc(db, "users", user.uid); // 'users' কালেকশন
+        const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
           globalUserData = userSnap.data();
           userRole = globalUserData.role || 'customer';
+          
+          loginScreen.classList.add('mp-hidden');
+          mainApp.classList.remove('mp-hidden');
+          
           setupUIForRole(userRole, globalUserData);
         } else {
-          alert("আপনার ডেটা ডেটাবেসে নেই। অ্যাডমিনের সাথে যোগাযোগ করুন।");
+          alert("আপনার ডেটা ডেটাবেসে নেই।");
           await signOut(auth);
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
-        alert("সিস্টেমে সমস্যা হচ্ছে।");
       }
     } else {
-      // লগইন না থাকলে beta.html এ পাঠান
-      window.location.href = 'beta.html';
+      // 🚀 লগইন না থাকলে beta.html এ না পাঠিয়ে আমাদের নিজস্ব লগইন স্ক্রিন দেখাবো
+      mainApp.classList.add('mp-hidden');
+      loginScreen.classList.remove('mp-hidden');
     }
-    loader.classList.add('mp-hidden');
+    loader.classList.add('mp-hidden'); // লোডার লুকাও
   });
 
+   // ==================== LOGIN FUNCTION ====================
+  window.handleLogin = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    const btn = document.getElementById('login-btn');
+    
+    if(!email || !password) {
+      document.getElementById('login-error').innerText = "ইমেইল এবং পাসওয়ার্ড দিন!";
+      return;
+    }
+
+    btn.innerText = "অপেক্ষা করুন...";
+    btn.disabled = true;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // সফল হলে onAuthStateChanged অটো ট্রিগার হবে
+    } catch (error) {
+      console.error(error);
+      document.getElementById('login-error').innerText = "ভুল ইমেইল বা পাসওয়ার্ড!";
+      btn.innerText = "লগইন করুন";
+      btn.disabled = false;
+    }
+  };
+  
   window.handleLogout = async function() {
     if (!confirm('লগআউট করবেন?')) return;
     try {
