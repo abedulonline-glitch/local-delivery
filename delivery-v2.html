@@ -1140,7 +1140,6 @@
     } catch(e) { alert("রিচার্জে সমস্যা হয়েছে!"); }
   };
 
-  // ৩. কাস্টমারের OTP ভিউ এবং রিঅর্ডার
   window.openCustomerOrdersModal = function() {
     document.getElementById('dlv-customer-orders-modal').classList.add('active');
     const list = document.getElementById('customer-orders-list');
@@ -1158,30 +1157,50 @@
         const o = doc.data();
         let statusColor = o.status === 'delivered' ? '#0f9d58' : '#f9a825';
         const orderStatus = o.status ? o.status.toUpperCase() : 'PENDING';
+        const payMethod = o.paymentMethod ? o.paymentMethod.toUpperCase() : 'COD';
+        const payStatus = o.paymentStatus || 'pending';
         
-        // 🚀 OTP ডিসপ্লে (ডেলিভারি না হওয়া পর্যন্ত দেখাবে)
+        // ১. OTP ডিসপ্লে (যদি ডেলিভারি না হয়ে থাকে)
         let otpHtml = '';
         if(o.status !== 'delivered') {
           otpHtml = `<div style="background:#e8f0fe; color:#1a73e8; padding:6px; border-radius:4px; font-weight:bold; text-align:center; margin-top:8px;">🔑 OTP: ${o.otp}</div>`;
         }
 
-        // 🚀 রিঅর্ডার বাটন
-        let actionBtnHtml = '';
-        if(o.status === 'delivered') {
-          actionBtnHtml = `<button class="mp-btn" style="margin-top:8px; padding:6px; background:#f0f2f5; color:#333; font-size:12px;" onclick="placeOrder('${o.productId}', '${o.productName}', ${o.price}, '${o.shopId}', '${o.shopName}')">🔄 আবার অর্ডার করুন</button>`;
+        // ২. লাইভ ট্র্যাক বাটন (যদি ডেলিভারি বয় বিড বা অ্যাসাইন করে থাকে)
+        let trackBtnHtml = '';
+        if(o.status === 'bidding' || o.status === 'assigned') {
+          trackBtnHtml = `<button class="mp-btn" style="margin-top:8px; padding:6px; background:var(--mp-primary); color:white; font-size:12px;" onclick="openTrackModal('${doc.id}', ${o.boyLat || null}, ${o.boyLng || null}, ${o.lat || null}, ${o.lng || null})">📍 লাইভ ট্র্যাক করুন</button>`;
         }
 
+        // ৩. রেটিং ও রিঅর্ডার বাটন (যদি ডেলিভারি সম্পন্ন হয়ে যায়)
+        let deliveredHtml = '';
+        if (o.status === 'delivered') {
+           // রেটিং পার্ট
+           if(o.rating) {
+              deliveredHtml += `<div style="color: #f9a825; font-size:16px; margin-top:8px; text-align:center;">রেটিং: ${'⭐'.repeat(o.rating)}</div>`;
+           } else {
+              deliveredHtml += `<button class="mp-btn" style="margin-top:8px; padding:6px; background:#fef7e0; color:#b06000; font-size:12px;" onclick="openRatingModal('${doc.id}', '${o.deliveryBoyId}')">⭐ রেটিং দিন</button>`;
+           }
+           // রিঅর্ডার পার্ট
+           deliveredHtml += `<button class="mp-btn" style="margin-top:5px; padding:6px; background:#f0f2f5; color:#333; font-size:12px;" onclick="placeOrder('${o.productId}', '${o.productName}', ${o.price}, '${o.shopId}', '${o.shopName}')">🔄 আবার অর্ডার করুন</button>`;
+        }
+
+        // ফাইনাল কার্ড তৈরি
         html += `
           <div style="border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
             <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
-              <span>${o.productName}</span><span>₹${o.price}</span>
+              <span>${o.productName}</span>
+              <span>₹${o.price}</span>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:12px; color:#666; margin-bottom:5px;">
               <span>🏪 ${o.shopName}</span>
               <span style="color:${statusColor}; font-weight:bold;">${orderStatus}</span>
             </div>
+            <div style="font-size:11px; color:#888;">Pay: ${payMethod} (${payStatus})</div>
+            
             ${otpHtml}
-            ${actionBtnHtml}
+            ${trackBtnHtml}
+            ${deliveredHtml}
           </div>
         `;
       });
@@ -1538,54 +1557,7 @@ function setupUIForRole(role, userData) {
     }
   };
 
-  window.openCustomerOrdersModal = function() {
-    document.getElementById('dlv-customer-orders-modal').classList.add('active');
-    const list = document.getElementById('customer-orders-list');
-    list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>';
-    
-    const q = query(collection(db, "orders"), where("customerId", "==", currentUser.uid));
-    onSnapshot(q, (snap) => {
-      if(snap.empty) {
-        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">আপনি এখনো কোনো অর্ডার করেননি।</div>';
-        return;
-      }
-      
-      let html = '';
-      snap.forEach(doc => {
-        const o = doc.data();
-        let statusColor = o.status === 'delivered' ? '#0f9d58' : '#f9a825';
-        const orderStatus = o.status ? o.status.toUpperCase() : 'PENDING';
-        const payMethod = o.paymentMethod ? o.paymentMethod.toUpperCase() : 'COD';
-        const payStatus = o.paymentStatus || 'pending';
-        
-        let ratingBtnHtml = '';
-        if (o.status === 'delivered') {
-           if(o.rating) {
-              ratingBtnHtml = `<div style="color: #f9a825; font-size:16px; margin-top:8px;">রেটিং: ${'⭐'.repeat(o.rating)}</div>`;
-           } else {
-              ratingBtnHtml = `<button class="mp-btn" style="margin-top:8px; padding:6px; background:#fef7e0; color:#b06000; font-size:12px;" onclick="openRatingModal('${doc.id}', '${o.deliveryBoyId}')">⭐ রেটিং দিন</button>`;
-           }
-        }
-
-        html += `
-          <div style="border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
-              <span>${o.productName}</span>
-              <span>₹${o.price}</span>
-            </div>
-            <div style="font-size:12px; color:#666; margin-bottom:5px;">🏪 ${o.shopName}</div>
-            <div style="display:flex; justify-content:space-between; font-size:12px;">
-              <span>Status: <b style="color:${statusColor};">${orderStatus}</b></span>
-              <span>Pay: ${payMethod} (${payStatus})</span>
-            </div>
-            ${ratingBtnHtml}
-          </div>
-        `;
-      });
-      list.innerHTML = html;
-    });
-  };
-
+ 
   window.openKhataModal = async function() {
     document.getElementById('dlv-khata-modal').classList.add('active');
     const listContainer = document.getElementById('khata-shop-list');
@@ -2022,6 +1994,7 @@ window.toggleDeliveryStatus = function(checkbox) {
     if (!confirm(`আপনি ₹${bidAmount} চার্জে বিড করছেন। নিশ্চিত?`)) return;
 
     try {
+      // ১. প্রথমে ডেটাবেসে অর্ডার আপডেট হবে
       await updateDoc(doc(db, "orders", orderId), {
         status: "bidding",
         deliveryBoyId: currentUser.uid,
@@ -2029,7 +2002,14 @@ window.toggleDeliveryStatus = function(checkbox) {
         deliveryCharge: bidAmount,
         updatedAt: serverTimestamp()
       });
-    } catch (e) { alert("বিড করতে সমস্যা হয়েছে।"); }
+
+      // ২. ডেটাবেস আপডেট সফল হলে এরপর লোকেশন ট্র্যাকিং চালু হবে
+      startLocationUpdates(orderId); 
+
+    } catch (e) { 
+      console.error(e);
+      alert("বিড করতে সমস্যা হয়েছে।"); 
+    }
   };
 
     window.promptOTP = async function(orderId) {
@@ -2742,8 +2722,106 @@ window.toggleDeliveryStatus = function(checkbox) {
     } catch (e) { alert("রেটিং সেভ হয়নি!"); }
   };
 
+  // ==================== PART 4: LIVE TRACKING & ETA ====================
+  let liveTrackMap = null;
+  let trackInterval = null;
+  let currentTrackOrderId = null;
+  let deliveryMarker = null;
+  let customerMarker = null;
+
+  // ১. ডেলিভারি বয়ের লোকেশন ট্র্যাকিং শুরু করা
+  window.startLocationUpdates = function(orderId) {
+    // আগের কোনো ট্র্যাকিং চললে সেটি বন্ধ করা
+    if (window.locationUpdateInterval) clearInterval(window.locationUpdateInterval);
+
+    // প্রতি ১৫ সেকেন্ড পর পর লোকেশন আপডেট হবে
+    window.locationUpdateInterval = setInterval(() => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          try {
+            // ডেটাবেসে ডেলিভারি বয়ের বর্তমান লোকেশন আপডেট
+            await updateDoc(doc(db, "orders", orderId), {
+              boyLat: position.coords.latitude,
+              boyLng: position.coords.longitude,
+              lastLocationUpdate: serverTimestamp()
+            });
+            console.log("Location Updated");
+          } catch(e) { console.log("Location update failed", e); }
+        }, (error) => console.log("GPS Error:", error), { enableHighAccuracy: true });
+      }
+    }, 15000); // ১৫ সেকেন্ড
+  };
+
+  // ২. কাস্টমারের জন্য ম্যাপ ওপেন করা
+  window.openTrackModal = function(orderId, boyLat, boyLng, custLat, custLng) {
+    currentTrackOrderId = orderId;
+    document.getElementById('dlv-track-modal').classList.add('active');
+    
+    // ডিফল্ট লোকেশন (যদি না থাকে)
+    const dLat = boyLat || 22.5726;
+    const dLng = boyLng || 88.3639;
+    const cLat = custLat || 22.5726;
+    const cLng = custLng || 88.3639;
+
+    setTimeout(() => {
+      // ম্যাপ তৈরি
+      if (!liveTrackMap) {
+        liveTrackMap = L.map('live-track-map').setView([dLat, dLng], 14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(liveTrackMap);
+        
+        // কাস্টমার মার্কার (🏠)
+        customerMarker = L.marker([cLat, cLng], {
+          icon: L.divIcon({ html: '<div style="font-size:24px;">🏠</div>', className: 'custom-icon', iconSize: [30, 30] })
+        }).addTo(liveTrackMap).bindPopup("আপনার লোকেশন");
+
+        // ডেলিভারি বয় মার্কার (🛵)
+        deliveryMarker = L.marker([dLat, dLng], {
+          icon: L.divIcon({ html: '<div style="font-size:24px;">🛵</div>', className: 'custom-icon', iconSize: [30, 30] })
+        }).addTo(liveTrackMap).bindPopup("ডেলিভারি বয়");
+
+        // ম্যাপকে দুইজনের মাঝখানে ফিট করা
+        const bounds = L.latLngBounds([[dLat, dLng], [cLat, cLng]]);
+        liveTrackMap.fitBounds(bounds, { padding: [50, 50] });
+      }
+      liveTrackMap.invalidateSize();
+    }, 300);
+  };
+
+  window.closeTrackModal = function() {
+    document.getElementById('dlv-track-modal').classList.remove('active');
+    if(liveTrackMap) {
+      liveTrackMap.remove();
+      liveTrackMap = null;
+    }
+  };
+
+  // ৩. কাস্টমারের অর্ডার লিস্টে ট্র্যাকিং আপডেট (onSnapshot)
+  // আপনার openCustomerOrdersModal ফাংশনে onSnapshot এর ভেতরে নিচের লজিকটি বসাতে হবে।
+  // (আপনি যদি পুরো ফাংশনটি রিপ্লেস করতে চান তবে জানাবেন, আপাতত শুধু ভেতরের অংশ দেখুন)
+
 </script>
 
+<!-- Live Tracking Modal (Customer) -->
+<div id="dlv-track-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 85vh; padding: 15px;">
+    <span class="dlv-modal-close" onclick="closeTrackModal()">&times;</span>
+    <h3 style="margin-bottom: 10px; color: var(--mp-primary);">📍 লাইভ অর্ডার ট্র্যাকিং</h3>
+    
+    <!-- ETA Info -->
+    <div style="background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 13px; color: #555;">আনুমানিক সময় (ETA):</span>
+      <span id="track-eta" style="font-size: 16px; font-weight: bold; color: var(--mp-primary);">-- মিনিট</span>
+    </div>
+
+    <!-- Map Container -->
+    <div id="live-track-map" style="height: 300px; width: 100%; border-radius: 10px; border: 1px solid #ccc; z-index: 1;"></div>
+    
+    <div style="margin-top: 10px; font-size: 12px; color: #666; text-align: center;">
+      🛵 ডেলিভারি বয় আপনার দিকে এগিয়ে আসছেন...
+    </div>
+  </div>
+</div>
+  
   <!-- Shop Selection Modal -->
 <div id="dlv-shop-selector-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 80vh; overflow-y: auto; border-radius: 20px 20px 0 0; position: absolute; bottom: 0; margin: 0; width: 100%; max-width: 100%;">
