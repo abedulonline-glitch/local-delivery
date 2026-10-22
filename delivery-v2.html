@@ -163,61 +163,45 @@
       <p style="margin-top: 15px; font-size: 13px;">অ্যাকাউন্ট নেই? <a href="#" onclick="toggleAuthMode()" style="color: var(--mp-primary); font-weight: bold;">রেজিস্ট্রেশন করুন</a></p>
     </div>
 
-   <!-- Register Form -->
-<div id="auth-register-form" class="mp-hidden">
-  <h2 style="color: var(--mp-primary); margin-bottom: 20px;">📝 নতুন রেজিস্ট্রেশন</h2>
-  
-  <!-- রোল ডিসপ্লে (কাস্টমার, দোকানদার, ডেলিভারি) -->
-  <div id="reg-role-display" style="font-size: 12px; color: var(--mp-success); font-weight: bold; margin-bottom: 15px; text-align: center;"></div>
-  
-  <!-- নাম -->
-  <div class="dlv-form-group">
-    <input type="text" id="reg-name" class="dlv-input" placeholder="আপনার নাম *" style="margin-bottom: 10px;">
-  </div>
-  
-  <!-- ফোন নাম্বার -->
-  <div class="dlv-form-group">
-    <input type="tel" id="reg-phone" class="dlv-input" placeholder="মোবাইল নম্বর (১০ ডিজিট) *" style="margin-bottom: 10px;" maxlength="10">
-  </div>
-
-  <!-- 🚀 ইমেইল ও পাসওয়ার্ড সেকশন (কাস্টমার ছাড়া অন্যদের জন্য দেখাবে) -->
-  <div id="reg-email-pass-fields">
-    <div class="dlv-form-group">
-      <input type="email" id="reg-email" class="dlv-input" placeholder="ইমেইল দিন *" style="margin-bottom: 10px;">
-    </div>
-    <div class="dlv-form-group">
-      <input type="password" id="reg-password" class="dlv-input" placeholder="পাসওয়ার্ড দিন *" style="margin-bottom: 10px;">
-    </div>
-  </div>
-
-  <!-- প্রোফাইল ছবি -->
-  <div class="dlv-form-group">
-    <label style="text-align: left; display: block; font-size: 12px; color: #555; margin-bottom: 5px;">প্রোফাইল ছবি (ঐচ্ছিক)</label>
-    <input type="file" id="reg-profile-pic" accept="image/*" style="font-size: 12px;">
-  </div>
-
-  <!-- 🚀 ম্যাপ লোকেশন সেকশন (সবার জন্য বাধ্যতামূলক) -->
-  <div id="reg-location-section" class="mp-hidden">
-    <div class="dlv-form-group" style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 15px;">
-      <label style="text-align: left; display: block; font-size: 12px; color: #555; margin-bottom: 5px;">আপনার প্রাইমারি অ্যাড্রেস / দোকানের লোকেশন ম্যাপে পিন করুন *</label>
-      <button type="button" class="mp-btn" style="margin-bottom: 10px; background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px;" onclick="initRegMap()">📍 ম্যাপ ওপেন করুন</button>
+    <!-- Register Form -->
+    <div id="auth-register-form" class="mp-hidden">
+      <h2 style="color: var(--mp-primary); margin-bottom: 20px;">📝 নতুন রেজিস্ট্রেশন</h2>
+      <div id="reg-role-display" style="font-size: 12px; color: var(--mp-success); font-weight: bold; margin-bottom: 10px;"></div>
       
-      <!-- ম্যাপ কন্টেইনার -->
-      <div id="reg-map-container" style="height: 180px; width: 100%; border-radius: 8px; border: 1px solid #ccc; display: none;"></div>
+      <div class="dlv-form-group">
+        <input type="text" id="reg-name" class="dlv-input" placeholder="আপনার নাম" style="margin-bottom: 10px;">
+      </div>
+      <div class="dlv-form-group">
+        <input type="tel" id="reg-phone" class="dlv-input" placeholder="মোবাইল নম্বর" style="margin-bottom: 10px;">
+      </div>
+      <div class="dlv-form-group">
+        <input type="email" id="reg-email" class="dlv-input" placeholder="ইমেইল দিন" style="margin-bottom: 10px;">
+      </div>
+      <div class="dlv-form-group">
+        <input type="password" id="reg-password" class="dlv-input" placeholder="পাসওয়ার্ড দিন" style="margin-bottom: 10px;">
+      </div>
+      <button class="mp-btn mp-btn-success" onclick="handleRegister()" id="reg-btn">রেজিস্ট্রেশন করুন</button>
+      <div id="reg-error" style="color: red; font-size: 12px; margin-top: 10px;"></div>
+
+      <!-- 🚀 নতুন: প্রোফাইল ছবি ও লোকেশন -->
+      <div class="dlv-form-group">
+        <label style="text-align: left; display: block; font-size: 12px; color: #555;">প্রোফাইল ছবি (ঐচ্ছিক)</label>
+        <input type="file" id="reg-profile-pic" accept="image/*" style="font-size: 12px;">
+      </div>
+
+      <div id="reg-location-section" class="mp-hidden">
+        <div class="dlv-form-group">
+          <label style="text-align: left; display: block; font-size: 12px; color: #555;">আপনার দোকান/বেসের লোকেশন ম্যাপে পিন করুন *</label>
+          <button class="mp-btn" style="margin-bottom: 5px; background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 6px;" onclick="initRegMap()">📍 ম্যাপ ওপেন করুন</button>
+          <div id="reg-map-container"></div>
+          <div id="reg-location-status" style="font-size: 11px; color: var(--mp-danger); margin-top: 5px;">❌ লোকেশন সেট করা হয়নি</div>
+        </div>
+      </div>
       
-      <!-- লোকেশন স্ট্যাটাস -->
-      <div id="reg-location-status" style="font-size: 11px; color: var(--mp-danger); margin-top: 5px;">❌ লোকেশন সেট করা হয়নি</div>
+      <p style="margin-top: 15px; font-size: 13px;">অ্যাকাউন্ট আছে? <a href="#" onclick="toggleAuthMode()" style="color: var(--mp-primary); font-weight: bold;">লগইন করুন</a></p>
     </div>
+
   </div>
-
-  <!-- সাবমিট বাটন -->
-  <button class="mp-btn mp-btn-success" onclick="handleRegister()" id="reg-btn" style="margin-top: 20px;">✅ রেজিস্ট্রেশন করুন</button>
-  
-  <!-- এরর মেসেজ -->
-  <div id="reg-error" style="color: red; font-size: 12px; margin-top: 10px;"></div>
-
-  <!-- লগইন অপশন -->
-  <p style="margin-top: 20px; font-size: 13px;">অ্যাকাউন্ট আছে? <a href="#" onclick="toggleAuthMode()" style="color: var(--mp-primary); font-weight: bold;">লগইন করুন</a></p>
 </div>
   
   <!-- Main App Container -->
@@ -234,9 +218,6 @@
       </div>
 
       <span id="dlv-user-role" style="font-size: 11px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px;">Role</span>
-
-      <button onclick="shareApp()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">🔗 Share</button>
-      
       <button onclick="handleLogout()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">Logout</button>
     </div>
   </div>
@@ -845,18 +826,8 @@
 
     // ==================== AUTH LOGIC (LOGIN & REGISTER) ====================
   let registerRole = 'customer'; // ডিফল্ট রোল
-  let regMap, regMarker, regLat = null, regLng = null;
+    let regMap, regMarker, regLat = null, regLng = null;
   let regProfilePicUrl = null;
-  let referrerId = null; // কে রেফার করেছে তার আইডি
-
-  // URL থেকে রেফারার আইডি চেক করা
-  const urlParams = new URLSearchParams(window.location.search);
-  const refParam = urlParams.get('ref');
-  if (refParam) {
-    referrerId = refParam;
-    console.log("Referred by:", referrerId);
-  }
-  
 
   // রোল চেঞ্জ হলে লোকেশন সেকশন দেখানো/লুকানো
   const originalToggleAuthMode = window.toggleAuthMode;
@@ -867,18 +838,10 @@
 
   function checkRoleForLocation() {
     const regSection = document.getElementById('reg-location-section');
-    const emailPassFields = document.getElementById('reg-email-pass-fields');
-    
-    // সবাইকে ম্যাপ দেখাব (কাস্টমারও তার ঠিকানা সেট করবে)
-    regSection.classList.remove('mp-hidden');
-
-    // কাস্টমার হলে ইমেইল ও পাসওয়ার্ড লুকাব (অটো-জেনারেট হবে)
-    if (registerRole === 'customer') {
-      emailPassFields.classList.add('mp-hidden');
-      document.getElementById('reg-email').removeAttribute('required');
-      document.getElementById('reg-password').removeAttribute('required');
+    if (registerRole === 'shopkeeper' || registerRole === 'delivery') {
+      regSection.classList.remove('mp-hidden');
     } else {
-      emailPassFields.classList.remove('mp-hidden');
+      regSection.classList.add('mp-hidden');
     }
   }
 
@@ -943,27 +906,17 @@
   window.handleRegister = async function() {
     const name = document.getElementById('reg-name').value.trim();
     const phone = document.getElementById('reg-phone').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
     const btn = document.getElementById('reg-btn');
     const errorEl = document.getElementById('reg-error');
 
-    let email = document.getElementById('reg-email').value.trim();
-    let password = document.getElementById('reg-password').value;
-
-    if (!name || phone.length < 10) {
-      errorEl.innerText = "নাম এবং সঠিক ১০ ডিজিটের মোবাইল নম্বর দিন!";
+    if (!name || !phone || !email || !password) {
+      errorEl.innerText = "সব তথ্য সঠিকভাবে দিন!";
       return;
     }
 
-    // কাস্টমার হলে অটো-জেনারেট ইমেইল ও পাসওয়ার্ড
-    if (registerRole === 'customer') {
-      email = `${phone}@deliveryapp.com`; // ডামি ইমেইল
-      password = `pass_${phone}`;         // ডিফল্ট পাসওয়ার্ড
-    } else if (!email || !password) {
-      errorEl.innerText = "ইমেইল এবং পাসওয়ার্ড দিন!";
-      return;
-    }
-
-    if (!regLat || !regLng) {
+    if ((registerRole === 'shopkeeper' || registerRole === 'delivery') && (!regLat || !regLng)) {
       errorEl.innerText = "দয়া করে ম্যাপে আপনার লোকেশন পিন করুন!";
       return;
     }
@@ -972,8 +925,7 @@
     btn.disabled = true;
 
     try {
-      // ১. প্রোফাইল ছবি আপলোড (যদি থাকে)
-      let regProfilePicUrl = null;
+      // ১. ছবি থাকলে ImgBB-তে আপলোড
       const fileInput = document.getElementById('reg-profile-pic');
       if (fileInput.files.length > 0) {
         const formData = new FormData();
@@ -987,45 +939,24 @@
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // ৩. ডেটাবেসে ইউজার সেভ করা
+      // ৩. ফায়ারস্টোরে ডেটা সেভ
       await setDoc(doc(db, "users", user.uid), {
         name: name,
         phone: phone,
         email: email,
         role: registerRole,
-        walletBalance: 0, // নতুন ইউজারের ব্যালেন্স ০
+        walletBalance: 0,
         isManager: registerRole === 'manager' ? true : false,
         profilePic: regProfilePicUrl || null,
-        lat: regLat,
-        lng: regLng,
-        referredBy: referrerId || null, // কে রেফার করেছে
+        lat: regLat || null,   // লোকেশন সেভ
+        lng: regLng || null,   // লোকেশন সেভ
         createdAt: serverTimestamp()
       });
 
-      // ৪. 🚀 রেফারেল বোনাস (যদি রেফার করা হয়ে থাকে)
-      if (referrerId) {
-        const referrerRef = doc(db, "users", referrerId);
-        const referrerSnap = await getDoc(referrerRef);
-        if (referrerSnap.exists()) {
-          const currentBal = referrerSnap.data().walletBalance || 0;
-          const bonusAmount = 20; // ₹২০ বোনাস (আপনি চাইলে বাড়াতে পারেন)
-          
-          await updateDoc(referrerRef, {
-            walletBalance: currentBal + bonusAmount
-          });
-          alert(`সফলভাবে রেজিস্ট্রেশন সম্পন্ন হয়েছে!\n\nআপনার বন্ধুকে রেফার করার জন্য তাকে ₹${bonusAmount} বোনাস দেওয়া হয়েছে।`);
-        }
-      } else {
-        alert("সফলভাবে রেজিস্ট্রেশন সম্পন্ন হয়েছে!");
-      }
-
+      alert("সফলভাবে রেজিস্ট্রেশন সম্পন্ন হয়েছে!");
     } catch (error) {
       console.error(error);
-      if (error.message.includes('email-already-in-use')) {
-        errorEl.innerText = "এই ফোন নাম্বার/ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট আছে!";
-      } else {
-        errorEl.innerText = "রেজিস্ট্রেশনে সমস্যা হয়েছে!";
-      }
+      errorEl.innerText = error.message.includes('email-already-in-use') ? "এই ইমেইল আগেই ব্যবহার করা হয়েছে!" : "রেজিস্ট্রেশনে সমস্যা হয়েছে!";
       btn.innerText = "রেজিস্ট্রেশন করুন";
       btn.disabled = false;
     }
@@ -1051,7 +982,7 @@
   };
 
   // URL থেকে রোল চেক করা (লিংকে ক্লিক করলে)
- // const urlParams = new URLSearchParams(window.location.search);
+  const urlParams = new URLSearchParams(window.location.search);
   const urlRole = urlParams.get('role');
   
   if (urlRole) {
@@ -1240,18 +1171,6 @@
         </div>
       `;
     });
-  };
-  
-   // ==================== SHARE APP & REFERRAL ====================
-  window.shareApp = function() {
-    // রেফারেল লিংক তৈরি (কারেন্ট URL + ?ref=currentUser.uid)
-    const baseUrl = window.location.origin + window.location.pathname;
-    const shareLink = `${baseUrl}?ref=${currentUser.uid}`;
-    
-    const message = `আসসালামু আলাইকুম,\n\nআমাদের অ্যাপটি ব্যবহার করে খুব সহজে কাঁচাবাজার ও অন্যান্য প্রয়োজনীয় জিনিস পেয়ে যান। এখনই রেজিস্টার করলে পাচ্ছেন বিশেষ ছাড়!\n\nলিংকে ক্লিক করুন:\n${shareLink}`;
-    
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
   };
   
   window.handleLogout = async function() {
