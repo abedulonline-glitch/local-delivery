@@ -474,7 +474,7 @@
   </div>
 </div>
 
-<!-- Master Product Modal (Admin) -->
+<!-- Master Product Modal (Admin - ADD) -->
 <div id="dlv-master-product-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="closeMasterProductModal()">&times;</span>
@@ -487,22 +487,24 @@
 
     <div class="dlv-form-group">
       <label>ক্যাটাগরি *</label>
-      <select id="mp-category" class="dlv-input">
+      <select id="mp-category" class="dlv-input" onchange="checkCustomOption(this)">
         <option value="Grocery">মুদি (Grocery)</option>
-        <option value="Tiles">টাইলস ও মার্বেল</option>
-        <option value="Hardware">হার্ডওয়্যার</option>
-        <option value="Furniture">ফার্নিচার</option>
+        <option value="Restaurant">রেস্টুরেন্ট (Restaurant)</option>
+        <option value="custom">➕ কাস্টম ক্যাটাগরি</option>
       </select>
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       <div class="dlv-form-group">
         <label>ইউনিট *</label>
-        <select id="mp-unit" class="dlv-input">
+        <select id="mp-unit" class="dlv-input" onchange="checkCustomOption(this)">
           <option value="kg">কেজি (kg)</option>
           <option value="ltr">লিটার (ltr)</option>
           <option value="pcs">পিস (pcs)</option>
           <option value="box">বক্স (box)</option>
+          <option value="grm">গ্রাম (grm)</option>
+          <option value="drsjon">ডজন (drsjon)</option>
+          <option value="custom">➕ কাস্টম ইউনিট</option>
         </select>
       </div>
       <div class="dlv-form-group">
@@ -529,7 +531,126 @@
   </div>
 </div>
 
-<!-- Crop Modal (Global) -->
+<!-- Edit Master Product Modal (Admin - EDIT) -->
+<div id="dlv-edit-mp-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-edit-mp-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">✏️ প্রোডাক্ট এডিট করুন</h3>
+    
+    <input type="hidden" id="ep-id">
+    
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের নাম *</label>
+      <input type="text" id="ep-name" class="dlv-input">
+    </div>
+
+    <div class="dlv-form-group">
+      <label>ক্যাটাগরি *</label>
+      <select id="ep-category" class="dlv-input" onchange="checkCustomOption(this)">
+        <option value="Grocery">মুদি (Grocery)</option>
+        <option value="Restaurant">রেস্টুরেন্ট (Restaurant)</option>
+        <option value="custom">➕ কাস্টম ক্যাটাগরি</option>
+      </select>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>ইউনিট *</label>
+        <select id="ep-unit" class="dlv-input" onchange="checkCustomOption(this)">
+          <option value="kg">কেজি (kg)</option>
+          <option value="ltr">লিটার (ltr)</option>
+          <option value="pcs">পিস (pcs)</option>
+          <option value="box">বক্স (box)</option>
+          <option value="grm">গ্রাম (grm)</option>
+          <option value="drsjon">ডজন (drsjon)</option>
+          <option value="custom">➕ কাস্টম ইউনিট</option>
+        </select>
+      </div>
+      <div class="dlv-form-group">
+        <label>গ্রেড (Grade) *</label>
+        <select id="ep-grade" class="dlv-input">
+          <option value="A">Grade A</option>
+          <option value="B">Grade B</option>
+          <option value="C">Grade C</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের ছবি (পরিবর্তন করতে চাইলে)</label>
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'edit-mp')">📷 ক্যামেরা</button>
+        <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'edit-mp')">🖼️ গ্যালারি</button>
+      </div>
+      <img id="ep-image-preview" style="width: 100%; height: 150px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
+      <input type="file" id="ep-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'edit-mp')">
+    </div>
+
+    <button class="mp-btn mp-btn-primary" id="btn-update-mp" onclick="updateMasterProduct()" style="margin-bottom: 10px;">💾 আপডেট করুন</button>
+    <button class="mp-btn mp-btn-danger" onclick="deleteMasterProductFromEdit()">🗑️ প্রোডাক্ট ডিলিট করুন</button>
+  </div>
+</div>
+<!-- Edit Master Product Modal (Admin) -->
+<div id="dlv-edit-mp-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-edit-mp-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">✏️ প্রোডাক্ট এডিট করুন</h3>
+    
+    <input type="hidden" id="ep-id">
+    
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের নাম *</label>
+      <input type="text" id="ep-name" class="dlv-input">
+    </div>
+
+    <div class="dlv-form-group">
+      <label>ক্যাটাগরি *</label>
+      <select id="ep-category" class="dlv-input" onchange="checkCustomOption(this)">
+        <option value="Grocery">মুদি (Grocery)</option>
+        <option value="Restaurant">রেস্টুরেন্ট (Restaurant)</option>
+        <option value="custom">➕ কাস্টম ক্যাটাগরি</option>
+      </select>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>ইউনিট *</label>
+        <select id="ep-unit" class="dlv-input" onchange="checkCustomOption(this)">
+          <option value="kg">কেজি (kg)</option>
+          <option value="ltr">লিটার (ltr)</option>
+          <option value="pcs">পিস (pcs)</option>
+          <option value="box">বক্স (box)</option>
+          <option value="grm">গ্রাম (grm)</option>
+          <option value="drsjon">ডজন (drsjon)</option>
+          <option value="custom">➕ কাস্টম ইউনিট</option>
+        </select>
+      </div>
+      <div class="dlv-form-group">
+        <label>গ্রেড (Grade) *</label>
+        <select id="ep-grade" class="dlv-input">
+          <option value="A">Grade A</option>
+          <option value="B">Grade B</option>
+          <option value="C">Grade C</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের ছবি (পরিবর্তন করতে চাইলে)</label>
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'edit-mp')">📷 ক্যামেরা</button>
+        <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'edit-mp')">🖼️ গ্যালারি</button>
+      </div>
+      <img id="ep-image-preview" style="width: 100%; height: 150px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
+      <input type="file" id="ep-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'edit-mp')">
+    </div>
+
+    <button class="mp-btn mp-btn-primary" id="btn-update-mp" onclick="updateMasterProduct()" style="margin-bottom: 10px;">💾 আপডেট করুন</button>
+    <button class="mp-btn mp-btn-danger" onclick="deleteMasterProductFromEdit()">🗑️ প্রোডাক্ট ডিলিট করুন</button>
+  </div>
+</div>
+  
+  <!-- Crop Modal (Global) -->
 <div id="dlv-crop-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10001; flex-direction: column;">
   <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white;">
     <span onclick="closeCropModal()" style="font-size: 24px; cursor: pointer;">✖</span>
@@ -1682,12 +1803,12 @@ window.toggleDeliveryStatus = function(checkbox) {
       let html = '';
       productsArray.forEach(p => {
         html += `
-          <div style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
+          <div style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid #eee; align-items:center;">
             <div>
               <div style="font-size:13px; font-weight:600;">${p.name}</div>
               <div style="font-size:11px; color:#666;">${p.category} | Grade ${p.grade} | ${p.unit}</div>
             </div>
-            <button onclick="deleteMasterProduct('${p.id}')" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">🗑️</button>
+            <button onclick="openEditMasterProduct('${p.id}')" style="background:#e8f0fe; border:none; color:var(--mp-primary); cursor:pointer; font-size:14px; padding: 6px 10px; border-radius: 6px;">✏️ এডিট</button>
           </div>
         `;
       });
@@ -1703,6 +1824,100 @@ window.toggleDeliveryStatus = function(checkbox) {
     uploadedImageUrl = null;
   };
 
+   // ==================== EDIT & CUSTOM OPTION LOGIC ====================
+  
+  // কাস্টম অপশন হ্যান্ডেল করা
+  window.checkCustomOption = function(select) {
+    if (select.value === 'custom') {
+      const newValue = prompt("নতুন অপশনটি লিখুন:");
+      if (newValue && newValue.trim() !== "") {
+        const val = newValue.trim();
+        const newOption = new Option(val, val, true, true);
+        select.add(newOption);
+        select.value = val;
+      } else {
+        select.value = ""; 
+      }
+    }
+  };
+
+  // এডিট মডাল ওপেন করা
+  window.openEditMasterProduct = async function(id) {
+    try {
+      const docRef = doc(db, "master_products", id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const p = docSnap.data();
+        document.getElementById('ep-id').value = id;
+        document.getElementById('ep-name').value = p.name;
+        
+        // ক্যাটাগরি ও ইউনিট সিলেক্ট করা (যদি কাস্টম থাকে তবে সেটাও হ্যান্ডেল করবে)
+        const catSelect = document.getElementById('ep-category');
+        const unitSelect = document.getElementById('ep-unit');
+        
+        // ক্যাটাগরি চেক
+        if(!Array.from(catSelect.options).some(o => o.value === p.category)) {
+          catSelect.add(new Option(p.category, p.category));
+        }
+        catSelect.value = p.category;
+        
+        // ইউনিট চেক
+        if(!Array.from(unitSelect.options).some(o => o.value === p.unit)) {
+          unitSelect.add(new Option(p.unit, p.unit));
+        }
+        unitSelect.value = p.unit;
+        
+        document.getElementById('ep-grade').value = p.grade || 'A';
+        
+        // ইমেজ সেট করা
+        uploadedImageUrl = p.image;
+        const preview = document.getElementById('ep-image-preview');
+        if (p.image) {
+          preview.src = p.image;
+          preview.style.display = 'block';
+        } else {
+          preview.style.display = 'none';
+        }
+        
+        document.getElementById('dlv-edit-mp-modal').classList.add('active');
+      }
+    } catch (e) { alert("ডেটা আনতে সমস্যা হয়েছে!"); }
+  };
+
+  // এডিট মডাল থেকে আপডেট করা
+  window.updateMasterProduct = async function() {
+    const id = document.getElementById('ep-id').value;
+    const name = document.getElementById('ep-name').value.trim();
+    const category = document.getElementById('ep-category').value;
+    const unit = document.getElementById('ep-unit').value;
+    const grade = document.getElementById('ep-grade').value;
+    
+    if (!name) return alert("নাম দিন!");
+
+    const btn = document.getElementById('btn-update-mp');
+    btn.innerText = "⏳ আপডেট হচ্ছে..."; btn.disabled = true;
+
+    try {
+      await updateDoc(doc(db, "master_products", id), {
+        name, category, unit, grade, image: uploadedImageUrl
+      });
+      alert("সফলভাবে আপডেট হয়েছে!");
+      document.getElementById('dlv-edit-mp-modal').classList.remove('active');
+    } catch (e) { alert("আপডেট করতে সমস্যা হয়েছে!"); } 
+    finally { btn.innerText = "💾 আপডেট করুন"; btn.disabled = false; }
+  };
+
+  // এডিট মডাল থেকে ডিলিট করা
+  window.deleteMasterProductFromEdit = async function() {
+    const id = document.getElementById('ep-id').value;
+    if(!confirm("আপনি কি সত্যিই এই প্রোডাক্টটি ডিলিট করতে চান?")) return;
+    try {
+      await deleteDoc(doc(db, "master_products", id));
+      alert("ডিলিট সম্পন্ন হয়েছে!");
+      document.getElementById('dlv-edit-mp-modal').classList.remove('active');
+    } catch(e) { alert("ডিলিট করতে সমস্যা হয়েছে!"); }
+  };
+  
   window.saveMasterProduct = async function() {
     const name = document.getElementById('mp-name').value.trim();
     const category = document.getElementById('mp-category').value;
@@ -1803,7 +2018,10 @@ window.toggleDeliveryStatus = function(checkbox) {
   // ============================================================
   window.pickImageSource = function(source, context) {
     currentUploadContext = context;
-    const fileInput = context === 'mp' ? document.getElementById('mp-image-input') : document.getElementById('add-p-image-file');
+    let fileInput;
+    if (context === 'mp') fileInput = document.getElementById('mp-image-input');
+    else if (context === 'edit-mp') fileInput = document.getElementById('ep-image-input');
+    else fileInput = document.getElementById('add-p-image-file');
     
     if (source === 'camera') fileInput.setAttribute('capture', 'environment');
     else fileInput.removeAttribute('capture');
@@ -1850,7 +2068,10 @@ window.toggleDeliveryStatus = function(checkbox) {
       
       if (data.success) {
         uploadedImageUrl = data.data.url;
-        const previewId = currentUploadContext === 'mp' ? 'mp-image-preview' : 'add-p-image-preview';
+                let previewId;
+        if (currentUploadContext === 'mp') previewId = 'mp-image-preview';
+        else if (currentUploadContext === 'edit-mp') previewId = 'ep-image-preview';
+        else previewId = 'add-p-image-preview';
         const preview = document.getElementById(previewId);
         preview.src = uploadedImageUrl; preview.style.display = 'block';
         closeCropModal();
