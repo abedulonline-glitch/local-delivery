@@ -134,6 +134,16 @@
   /* Crop Modal */
   #dlv-crop-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10001; flex-direction: column; }
   @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* ============================================================
+     PART 1: AD BANNER & REGISTRATION STYLES
+     ============================================================ */
+  .dlv-ad-banner { margin-bottom: 14px; border-radius: 12px; overflow: hidden; position: relative; height: 120px; background: #e8f0fe; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+  .dlv-ad-banner img, .dlv-ad-banner iframe { width: 100%; height: 100%; object-fit: cover; border: none; }
+  .dlv-ad-badge { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; z-index: 2; }
+  
+  /* ম্যাপ পিন উইজেট */
+  #reg-map-container { height: 150px; width: 100%; border-radius: 8px; border: 1px solid #ccc; margin-top: 5px; display: none; }
 </style>
 </head>
 <body>
@@ -388,6 +398,27 @@
         </div>
       </div>
 
+           <!-- Ad Management Section (Admin) -->
+      <div class="mp-card" style="border-left: 4px solid #f9a825;">
+        <h3>📢 অ্যাড ম্যানেজমেন্ট</h3>
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">অ্যাপের টপবারে দেখানোর জন্য নতুন ইমেজ বা ভিডিও লিংক দিন।</p>
+        
+        <div class="dlv-form-group" style="display:flex; gap:10px; margin-bottom:10px;">
+          <select id="admin-ad-type" class="dlv-input" style="flex:1;">
+            <option value="image">🖼️ ইমেজ (ImgBB লিংক)</option>
+            <option value="video">🎥 ভিডিও (YouTube লিংক)</option>
+          </select>
+          <input type="text" id="admin-ad-url" class="dlv-input" style="flex:2;" placeholder="লিংক পেস্ট করুন...">
+        </div>
+        
+        <button class="mp-btn mp-btn-primary" style="margin-bottom: 15px; padding: 8px;" onclick="saveAd()">+ অ্যাড যোগ করুন</button>
+        
+        <!-- Active Ads List -->
+        <div id="admin-ad-list">
+          <!-- Ads will load here -->
+        </div>
+      </div>
+      
       <div class="mp-card">
         <h3>👥 ইউজার রোল ম্যানেজমেন্ট</h3>
         <div id="admin-user-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
@@ -1905,7 +1936,7 @@ window.toggleDeliveryStatus = function(checkbox) {
   // ============================================================
   // ADMIN FUNCTIONS
   // ============================================================
-   function loadAdminDashboardUI() {
+    function loadAdminDashboardUI() {
     if (adminUsersUnsubscribe) adminUsersUnsubscribe();
     adminUsersUnsubscribe = onSnapshot(collection(db, "users"), (snap) => {
       let shops = 0, delivery = 0, managers = 0, userHtml = '';
@@ -1944,13 +1975,104 @@ window.toggleDeliveryStatus = function(checkbox) {
     });
 
     loadMasterProducts(); // Master product load
-    loadTopAds(); // 🚀 অ্যাড লোড করার ফাংশন কল করা হলো
-
+    loadAdminAds(); // 🚀 অ্যাডমিনের অ্যাড লিস্ট লোড
+    
     const ordersQ = query(collection(db, "orders"), where("status", "==", "delivered"));
     onSnapshot(ordersQ, (snap) => {
       let revenue = 0;
       snap.forEach(d => { revenue += (d.data().price * 0.01); });
       document.getElementById('admin-total-revenue').innerText = `₹${revenue.toFixed(2)}`;
+    });
+  }
+
+  // ==================== AD MANAGEMENT LOGIC ====================
+  
+  // ১. নতুন অ্যাড সেভ করা
+  window.saveAd = async function() {
+    const type = document.getElementById('admin-ad-type').value;
+    const url = document.getElementById('admin-ad-url').value.trim();
+    
+    if(!url) return alert("দয়া করে লিংক পেস্ট করুন!");
+    
+    try {
+      await addDoc(collection(db, "ads"), {
+        type: type,
+        url: url,
+        createdAt: serverTimestamp()
+      });
+      document.getElementById('admin-ad-url').value = '';
+      alert("অ্যাড সফলভাবে যুক্ত হয়েছে!");
+    } catch(e) {
+      console.error(e);
+      alert("অ্যাড যুক্ত করতে সমস্যা হয়েছে!");
+    }
+  };
+
+  // ২. অ্যাডমিন প্যানেলে অ্যাড লিস্ট লোড ও ডিলিট করা
+  function loadAdminAds() {
+    const list = document.getElementById('admin-ad-list');
+    if(!list) return;
+
+    onSnapshot(collection(db, "ads"), (snap) => {
+      if(snap.empty) {
+        list.innerHTML = '<div style="font-size:12px; color:#999;">কোনো অ্যাড নেই।</div>';
+        return;
+      }
+      let html = '';
+      snap.forEach(docSnap => {
+        const ad = docSnap.data();
+        html += `
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; padding:8px; border-radius:6px; margin-bottom:5px;">
+            <div style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;">
+              ${ad.type === 'video' ? '🎥' : '🖼️'} ${ad.url}
+            </div>
+            <button onclick="deleteAd('${docSnap.id}')" style="background:none; border:none; color:red; font-size:16px; cursor:pointer;">🗑️</button>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  }
+
+  // ৩. অ্যাড ডিলিট করা
+  window.deleteAd = async function(id) {
+    if(!confirm("এই অ্যাডটি ডিলিট করবেন?")) return;
+    try {
+      await deleteDoc(doc(db, "ads", id));
+    } catch(e) { alert("ডিলিট করতে সমস্যা!"); }
+  };
+
+  // ৪. কাস্টমারের টপবারে অ্যাড দেখানোর লজিক (আগের ফাংশনটি আপডেট করা হলো)
+  function loadTopAds() {
+    onSnapshot(collection(db, "ads"), (snap) => {
+      if (snap.empty) {
+        document.getElementById('top-ad-container').style.display = 'none';
+        return;
+      }
+      
+      const container = document.getElementById('top-ad-container');
+      const content = document.getElementById('ad-content');
+      container.style.display = 'flex';
+      
+      const ads = [];
+      snap.forEach(doc => ads.push(doc.data()));
+      
+      // র‍্যান্ডম একটি অ্যাড সিলেক্ট করা (যাতে প্রতিবার পেজ রিফ্রেশে নতুন অ্যাড আসে)
+      const ad = ads[Math.floor(Math.random() * ads.length)];
+      
+      if (ad.type === 'video') {
+        let vidId = '';
+        if(ad.url.includes('youtube.com/watch')) vidId = ad.url.split('v=')[1]?.split('&')[0];
+        else if(ad.url.includes('youtu.be/')) vidId = ad.url.split('youtu.be/')[1]?.split('?')[0];
+        
+        if(vidId) {
+          content.innerHTML = `<iframe src="https://www.youtube.com/embed/${vidId}?autoplay=0&controls=0" allowfullscreen></iframe>`;
+        } else {
+          content.innerHTML = `<div style="padding:20px; font-size:12px;">ভিডিও লিংকটি সঠিক নয়</div>`;
+        }
+      } else {
+        content.innerHTML = `<img src="${ad.url}" onerror="this.src='https://via.placeholder.com/400x120?text=Ad+Image'">`;
+      }
     });
   }
   window.changeUserRole = async function(uid, newRole) {
