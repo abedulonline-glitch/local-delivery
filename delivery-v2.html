@@ -169,11 +169,20 @@
   <!-- Topbar -->
   <div class="mp-topbar">
     <h2 id="dlv-topbar-title">🛵 Delivery System</h2>
-    <div style="display: flex; gap: 10px; align-items: center;">
+    <div style="display: flex; gap: 8px; align-items: center;">
+      
+      <!-- 🚀 নতুন ওয়ালেট আইকন -->
+      <div onclick="openRechargeModal()" style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: bold;">
+        💰 <span id="topbar-wallet-bal">₹0.00</span>
+      </div>
+
       <span id="dlv-user-role" style="font-size: 11px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px;">Role</span>
       <button onclick="handleLogout()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">Logout</button>
     </div>
   </div>
+
+  <!-- অডিও ফাইল (ডেলিভারি বয়ের জন্য) -->
+  <audio id="dlv-notify-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
   <div class="mp-container">
     
@@ -336,17 +345,20 @@
 </div>
 
 <!-- ==================== MODALS ==================== -->
-
 <!-- Recharge Modal -->
 <div id="dlv-recharge-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content">
     <span class="dlv-modal-close" onclick="closeRechargeModal()">&times;</span>
     <h3 style="margin-bottom: 15px; color: var(--mp-primary);">💰 ওয়ালেট রিচার্জ</h3>
+    <div class="dlv-form-group">
+      <label>পরিমাণ (₹)</label>
+      <input type="number" id="recharge-amount" class="dlv-input" placeholder="যেমন: 500">
+    </div>
     <div style="text-align: center; margin-bottom: 15px;">
       <div style="width: 150px; height: 150px; background: #f0f2f5; margin: 0 auto; display: flex; justify-content: center; align-items: center; border: 2px dashed #ccc; border-radius: 10px;">
         <span style="font-size: 40px;">QR</span>
       </div>
-      <p style="font-size: 12px; color: #666; margin-top: 8px;">UPI অ্যাপ দিয়ে স্ক্যান করুন</p>
+      <p style="font-size: 12px; color: #666; margin-top: 8px;">ডেমো QR (পরবর্তীতে UPI বসবে)</p>
     </div>
     <button class="mp-btn mp-btn-primary" onclick="processRecharge()">পেমেন্ট সম্পন্ন হয়েছে</button>
   </div>
@@ -748,6 +760,120 @@
     }
   };
   
+   // ==================== SMART FEATURES UPDATE ====================
+  let previousOrderCount = 0; // সাউন্ড ট্র্যাকিংয়ের জন্য
+
+  // ১. ওয়ালেট আপডেট ও টপবার লোড
+  function updateTopbarWallet(balance) {
+    const el = document.getElementById('topbar-wallet-bal');
+    if(el) el.innerText = `₹${(balance || 0).toFixed(2)}`;
+  }
+
+  // ২. রিচার্জ ফাংশন
+  window.openRechargeModal = function() { 
+    document.getElementById('dlv-recharge-modal').classList.add('active'); 
+  };
+  window.closeRechargeModal = function() { 
+    document.getElementById('dlv-recharge-modal').classList.remove('active'); 
+  };
+  window.processRecharge = async function() {
+    const amt = parseFloat(document.getElementById('recharge-amount').value);
+    if(isNaN(amt) || amt <= 0) return alert("সঠিক পরিমাণ লিখুন!");
+
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      const newBal = (userSnap.data().walletBalance || 0) + amt;
+      
+      await updateDoc(userRef, { walletBalance: newBal });
+      updateTopbarWallet(newBal);
+      alert(`₹${amt} রিচার্জ সফল হয়েছে!`); 
+      closeRechargeModal();
+    } catch(e) { alert("রিচার্জে সমস্যা হয়েছে!"); }
+  };
+
+  // ৩. কাস্টমারের OTP ভিউ এবং রিঅর্ডার
+  window.openCustomerOrdersModal = function() {
+    document.getElementById('dlv-customer-orders-modal').classList.add('active');
+    const list = document.getElementById('customer-orders-list');
+    list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>';
+    
+    const q = query(collection(db, "orders"), where("customerId", "==", currentUser.uid));
+    onSnapshot(q, (snap) => {
+      if(snap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">আপনি এখনো কোনো অর্ডার করেননি।</div>';
+        return;
+      }
+      
+      let html = '';
+      snap.forEach(doc => {
+        const o = doc.data();
+        let statusColor = o.status === 'delivered' ? '#0f9d58' : '#f9a825';
+        const orderStatus = o.status ? o.status.toUpperCase() : 'PENDING';
+        
+        // 🚀 OTP ডিসপ্লে (ডেলিভারি না হওয়া পর্যন্ত দেখাবে)
+        let otpHtml = '';
+        if(o.status !== 'delivered') {
+          otpHtml = `<div style="background:#e8f0fe; color:#1a73e8; padding:6px; border-radius:4px; font-weight:bold; text-align:center; margin-top:8px;">🔑 OTP: ${o.otp}</div>`;
+        }
+
+        // 🚀 রিঅর্ডার বাটন
+        let actionBtnHtml = '';
+        if(o.status === 'delivered') {
+          actionBtnHtml = `<button class="mp-btn" style="margin-top:8px; padding:6px; background:#f0f2f5; color:#333; font-size:12px;" onclick="placeOrder('${o.productId}', '${o.productName}', ${o.price}, '${o.shopId}', '${o.shopName}')">🔄 আবার অর্ডার করুন</button>`;
+        }
+
+        html += `
+          <div style="border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
+              <span>${o.productName}</span><span>₹${o.price}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:#666; margin-bottom:5px;">
+              <span>🏪 ${o.shopName}</span>
+              <span style="color:${statusColor}; font-weight:bold;">${orderStatus}</span>
+            </div>
+            ${otpHtml}
+            ${actionBtnHtml}
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  };
+
+  // ৪. স্টক আউট ফিল্টার (কাস্টমারের জন্য)
+  function renderCustomerProducts() {
+    const grid = document.getElementById('cst-product-grid');
+    if (!grid) return;
+
+    onSnapshot(collection(db, "products"), (snapshot) => {
+      grid.innerHTML = '';
+      let hasProducts = false;
+
+      snapshot.forEach(docSnap => {
+        const prod = docSnap.data();
+        if(prod.stock <= 0) return; // 🚀 স্টক ০ হলে দেখাবে না
+
+        hasProducts = true;
+        grid.innerHTML += `
+          <div class="dlv-product-card">
+            <div class="dlv-product-img">
+              ${prod.image ? `<img src="${prod.image}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">` : '📦'}
+            </div>
+            <div class="dlv-product-name">${prod.name}</div>
+            <div class="dlv-product-shop">🏪 ${prod.shopName}</div>
+            <div class="dlv-product-price">₹${prod.price}</div>
+            <button class="dlv-add-btn" onclick="placeOrder('${docSnap.id}', '${prod.name}', ${prod.price}, '${prod.shopId}', '${prod.shopName}')">+ Order Now</button>
+          </div>
+        `;
+      });
+
+      if(!hasProducts) {
+        grid.innerHTML = '<div style="font-size:12px; color:#999; grid-column:1/-1; text-align:center;">কোনো প্রোডাক্ট স্টকে নেই।</div>';
+      }
+    });
+  }
+  
   window.handleLogout = async function() {
     if (!confirm('লগআউট করবেন?')) return;
     try {
@@ -761,10 +887,13 @@
   // ============================================================
   // ROLE BASED UI SETUP
   // ============================================================
-  function setupUIForRole(role, userData) {
+function setupUIForRole(role, userData) {
     mainApp.classList.remove('mp-hidden');
     document.getElementById('dlv-user-role').innerText = role.toUpperCase();
     document.getElementById('dlv-topbar-title').innerText = `🛵 ${userData.name || 'Delivery System'}`;
+
+    // ৫. টপবারে ওয়ালেট আপডেট (সব রোলের জন্য)
+    updateTopbarWallet(userData.walletBalance);
 
     // Hide all views
     ['customer', 'shopkeeper', 'delivery', 'admin'].forEach(r => {
@@ -1301,7 +1430,7 @@
   // ============================================================
   // DELIVERY BOY FUNCTIONS
   // ============================================================
-  window.toggleDeliveryStatus = function(checkbox) {
+window.toggleDeliveryStatus = function(checkbox) {
     isOnline = checkbox.checked;
     const statusText = document.getElementById('dlv-online-status');
     const ordersContainer = document.getElementById('dlv-live-orders-container');
@@ -1314,6 +1443,14 @@
       
       const q = query(collection(db, "orders"), where("status", "in", ["ready", "bidding", "assigned"]));
       unsubscribeOrders = onSnapshot(q, (snapshot) => {
+        
+        // 🚀 নতুন অর্ডার এলে সাউন্ড বাজবে
+        if(snapshot.size > previousOrderCount && previousOrderCount !== 0) {
+          const audio = document.getElementById('dlv-notify-sound');
+          if(audio) audio.play().catch(e => console.log("Audio blocked by browser"));
+        }
+        previousOrderCount = snapshot.size;
+
         const ordersList = document.getElementById('dlv-live-orders');
         const activeDetails = document.getElementById('dlv-active-order-details');
         let liveOrdersHtml = '', activeOrderHtml = '', hasActiveOrder = false;
@@ -1379,10 +1516,44 @@
     } catch (e) { alert("বিড করতে সমস্যা হয়েছে।"); }
   };
 
-  window.promptOTP = async function(orderId) {
-    const enteredOtp = prompt("কাস্টমারের কাছ থেকে ৪ ডিজিটের OTP দিন:");
-    if (!enteredOtp) return;
+    window.promptOTP = async function(orderId) {
+    // 🚀 OTP না থাকলে ক্যানসেল করার অপশন যুক্ত করা হলো
+    const enteredOtp = prompt("কাস্টমারের কাছ থেকে ৪ ডিজিটের OTP দিন:\n\n(যদি কাস্টমার OTP ভুলে যায়, তবে 'Cancel' চেপে Force Delivered ব্যবহার করুন)");
+    
+    // ১. ইউজার ক্যানসেল (Cancel) চাপলে (OTP ভুলে গেলে)
+    if (enteredOtp === null) {
+      if(confirm("আপনি কি কাস্টমারের সাথে কথা বলে অর্ডারটি ফোর্স ডেলিভারি করতে চান? (দায়িত্ব আপনার)")) {
+         try {
+            const orderRef = doc(db, "orders", orderId);
+            const orderSnap = await getDoc(orderRef);
+            if(orderSnap.exists()) {
+              const orderData = orderSnap.data();
+              
+              // অর্ডার আপডেট
+              await updateDoc(orderRef, { 
+                status: "delivered", 
+                deliveredAt: serverTimestamp(), 
+                note: "Force delivered (OTP forgotten)" 
+              });
+              
+              // ওয়ালেট আপডেট
+              await updateWalletsOnDelivery(orderData);
+              
+              alert("🎉 অর্ডারটি ফোর্স ডেলিভারি সম্পন্ন হয়েছে এবং ওয়ালেট আপডেট করা হয়েছে!");
+              updateDeliveryEarningsUI(orderData.deliveryCharge);
+            }
+         } catch(e) { 
+            console.error(e);
+            alert("ফোর্স ডেলিভারিতে সমস্যা হয়েছে!"); 
+         }
+      }
+      return;
+    }
 
+    // ২. ইউজার খালি সাবমিট করলে বা বাতিল করলে কিছুই হবে না
+    if (!enteredOtp || enteredOtp.trim() === "") return;
+
+    // ৩. স্বাভাবিক OTP চেকিং
     try {
       const orderRef = doc(db, "orders", orderId);
       const orderSnap = await getDoc(orderRef);
@@ -1390,41 +1561,18 @@
       if (orderSnap.exists()) {
         const orderData = orderSnap.data();
         
-        if (orderData.otp === enteredOtp) {
-          // ১. অর্ডার স্ট্যাটাস ডেলিভারড করা
+        if (orderData.otp === enteredOtp.trim()) {
+          // অর্ডার স্ট্যাটাস ডেলিভারড করা
           await updateDoc(orderRef, {
             status: "delivered",
             deliveredAt: serverTimestamp()
           });
           
-          // ২. ডেলিভারি বয়ের ওয়ালেটে ডেলিভারি চার্জ যোগ করা
-          const boyRef = doc(db, "users", currentUser.uid);
-          const boySnap = await getDoc(boyRef);
-          if (boySnap.exists()) {
-            const currentBal = boySnap.data().walletBalance || 0;
-            await updateDoc(boyRef, {
-              walletBalance: currentBal + (orderData.deliveryCharge || 0)
-            });
-          }
-
-          // ৩. দোকানদারের ওয়ালেটে টাকা যোগ করা (COD হলে)
-          if (orderData.paymentMethod === 'cod') {
-            const shopRef = doc(db, "users", orderData.shopId);
-            const shopSnap = await getDoc(shopRef);
-            if (shopSnap.exists()) {
-              const shopBal = shopSnap.data().walletBalance || 0;
-              await updateDoc(shopRef, {
-                walletBalance: shopBal + orderData.price
-              });
-            }
-          }
+          // ওয়ালেট আপডেট
+          await updateWalletsOnDelivery(orderData);
           
           alert("🎉 সফলভাবে ডেলিভারি সম্পন্ন হয়েছে! ওয়ালেট আপডেট করা হয়েছে।");
-          
-          // UI তে আয় আপডেট
-          let earnEl = document.getElementById('dlv-today-earnings');
-          let earnAmt = parseFloat(earnEl.innerText.replace('₹', '')) || 0;
-          earnEl.innerText = `₹${(earnAmt + (orderData.deliveryCharge || 0)).toFixed(2)}`;
+          updateDeliveryEarningsUI(orderData.deliveryCharge);
           
         } else {
           alert("❌ ভুল OTP! কাস্টমারের কাছ থেকে আবার চেক করুন।");
@@ -1436,6 +1584,45 @@
     }
   };
 
+  // ==================== HELPER FUNCTIONS (ওয়ালেট ও UI আপডেটের জন্য) ====================
+  
+  // ডেলিভারি সম্পন্ন হলে টাকা কাটাকাটি করার ফাংশন
+  async function updateWalletsOnDelivery(orderData) {
+    try {
+      // ১. ডেলিভারি বয়ের ওয়ালেটে চার্জ যোগ করা
+      const boyRef = doc(db, "users", currentUser.uid);
+      const boySnap = await getDoc(boyRef);
+      if (boySnap.exists()) {
+        const currentBal = boySnap.data().walletBalance || 0;
+        await updateDoc(boyRef, {
+          walletBalance: currentBal + (orderData.deliveryCharge || 0)
+        });
+      }
+
+      // ২. দোকানদারের ওয়ালেটে টাকা যোগ করা (যদি COD হয়)
+      if (orderData.paymentMethod === 'cod') {
+        const shopRef = doc(db, "users", orderData.shopId);
+        const shopSnap = await getDoc(shopRef);
+        if (shopSnap.exists()) {
+          const shopBal = shopSnap.data().walletBalance || 0;
+          await updateDoc(shopRef, {
+            walletBalance: shopBal + orderData.price
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Wallet update failed:", error);
+    }
+  }
+
+  // UI তে আজকের আয় রিফ্রেশ করার ফাংশন
+  function updateDeliveryEarningsUI(charge) {
+    let earnEl = document.getElementById('dlv-today-earnings');
+    if (earnEl) {
+      let earnAmt = parseFloat(earnEl.innerText.replace('₹', '')) || 0;
+      earnEl.innerText = `₹${(earnAmt + (charge || 0)).toFixed(2)}`;
+    }
+  }
   window.openGoogleMap = function(lat, lng) {
     if (!lat || !lng) return alert("লোকেশন পাওয়া যায়নি। কাস্টমারকে ফোন করুন।");
     window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
