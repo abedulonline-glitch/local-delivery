@@ -429,35 +429,36 @@
   </div>
 </div>
 
-<!-- Add Product Modal (Shopkeeper) -->
-<div id="dlv-add-product-modal" class="dlv-modal-overlay">
-  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
-    <span class="dlv-modal-close" onclick="closeAddProductModal()">&times;</span>
-    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">🛒 নতুন প্রোডাক্ট যোগ করুন</h3>
+<!-- Master Catalog Modal (For Shopkeeper to select) -->
+<div id="dlv-catalog-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 85vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-catalog-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">🛒 ক্যাটালগ থেকে প্রোডাক্ট বাছুন</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">অ্যাডমিনের দেওয়া লিস্ট থেকে প্রোডাক্ট সিলেক্ট করে আপনার রেট দিন।</p>
+    
+    <div id="catalog-list-container">
+      <!-- Products will load here -->
+      <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Set Price Modal (When a master product is clicked) -->
+<div id="dlv-set-price-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-set-price-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);" id="sp-title">রেট ও স্টক দিন</h3>
+    
     <div class="dlv-form-group">
-      <label>প্রোডাক্টের নাম *</label>
-      <input type="text" id="add-p-name" class="dlv-input" placeholder="যেমন: মিনিকেট চাল ৫ কেজি">
-    </div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-      <div class="dlv-form-group">
-        <label>দাম (₹) *</label>
-        <input type="number" id="add-p-price" class="dlv-input" placeholder="0.00">
-      </div>
-      <div class="dlv-form-group">
-        <label>স্টক *</label>
-        <input type="number" id="add-p-stock" class="dlv-input" placeholder="0">
-      </div>
+      <label>আপনার রেট (₹) *</label>
+      <input type="number" id="sp-price" class="dlv-input" placeholder="0.00">
     </div>
     <div class="dlv-form-group">
-      <label>প্রোডাক্টের ছবি</label>
-      <div style="display:flex; gap:10px; margin-bottom:10px;">
-        <button class="mp-btn" style="margin:0; background:#e8f0fe; color:var(--mp-primary); font-size:12px; padding:8px;" onclick="pickImageSource('camera', 'add-p')">📷 ক্যামেরা</button>
-        <button class="mp-btn" style="margin:0; background:#f0f2f5; color:#333; font-size:12px; padding:8px;" onclick="pickImageSource('gallery', 'add-p')">🖼️ গ্যালারি</button>
-      </div>
-      <img id="add-p-image-preview" style="width:100%; height:150px; object-fit:contain; border-radius:8px; display:none;">
-      <input type="file" id="add-p-image-file" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'add-p')">
+      <label>স্টক পরিমাণ *</label>
+      <input type="number" id="sp-stock" class="dlv-input" placeholder="0">
     </div>
-    <button class="mp-btn mp-btn-success" id="btn-save-product" onclick="saveNewProduct()">💾 সেভ করুন</button>
+
+    <button class="mp-btn mp-btn-success" onclick="saveShopProduct()">💾 সেভ করুন</button>
   </div>
 </div>
 
@@ -1206,8 +1207,7 @@
     } catch (e) { alert("পেমেন্ট আপডেটে সমস্যা হয়েছে।"); }
   };
 
-  window.openAddProductModal = function() { document.getElementById('dlv-add-product-modal').classList.add('active'); };
-  window.closeAddProductModal = function() {
+    window.closeAddProductModal = function() {
     document.getElementById('dlv-add-product-modal').classList.remove('active');
     document.getElementById('add-p-name').value = '';
     document.getElementById('add-p-price').value = '';
@@ -1216,33 +1216,85 @@
     uploadedImageUrl = null;
   };
 
-  window.saveNewProduct = async function() {
-    const name = document.getElementById('add-p-name').value.trim();
-    const price = parseFloat(document.getElementById('add-p-price').value);
-    const stock = parseInt(document.getElementById('add-p-stock').value);
-    if (!name || isNaN(price) || isNaN(stock)) return alert("দয়া করে সব তথ্য দিন।");
+  // ==================== SHOPKEEPER CATALOG LOGIC ====================
+  let selectedMasterProduct = null;
 
-    const btn = document.getElementById('btn-save-product');
-    btn.innerText = "⏳ সেভ হচ্ছে...";
-    btn.disabled = true;
+  // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা
+  window.openAddProductModal = function() {
+    document.getElementById('dlv-catalog-modal').classList.add('active');
+    const list = document.getElementById('catalog-list-container');
+    
+    onSnapshot(collection(db, "master_products"), (snap) => {
+      if(snap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
+        return;
+      }
+      
+      let html = '';
+      snap.forEach(docSnap => {
+        const p = docSnap.data();
+        html += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid #eee; cursor:pointer;" onclick='selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;")}, "${docSnap.id}")'>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:40px; height:40px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
+                ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
+              </div>
+              <div>
+                <div style="font-size:13px; font-weight:600;">${p.name}</div>
+                <div style="font-size:11px; color:#666;">${p.grade} | ${p.unit}</div>
+              </div>
+            </div>
+            <button class="mp-btn" style="width:auto; margin:0; padding:6px 10px; background:#e8f0fe; color:var(--mp-primary); font-size:11px;">রেট দিন</button>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  };
+
+  // ২. মাস্টার প্রোডাক্ট সিলেক্ট করা
+  window.selectMasterProduct = function(productData, masterId) {
+    selectedMasterProduct = { ...productData, masterId: masterId };
+    document.getElementById('sp-title').innerText = `${productData.name} - রেট দিন`;
+    document.getElementById('sp-price').value = '';
+    document.getElementById('sp-stock').value = '';
+    
+    document.getElementById('dlv-catalog-modal').classList.remove('active');
+    document.getElementById('dlv-set-price-modal').classList.add('active');
+  };
+
+  // ৩. দোকানদারের নিজের রেট সেভ করা
+  window.saveShopProduct = async function() {
+    const price = parseFloat(document.getElementById('sp-price').value);
+    const stock = parseInt(document.getElementById('sp-stock').value);
+    
+    if (isNaN(price) || isNaN(stock)) {
+      alert("দয়া করে রেট এবং স্টক সঠিকভাবে দিন!");
+      return;
+    }
 
     try {
+      // 'products' কালেকশনে দোকানদারের প্রোডাক্টটি সেভ হবে
       await addDoc(collection(db, "products"), {
         shopId: currentUser.uid,
-        shopName: document.getElementById('dlv-topbar-title').innerText.replace('🛵 ', ''),
-        name: name,
+        shopName: globalUserData.name || 'My Shop',
+        masterProductId: selectedMasterProduct.masterId,
+        name: selectedMasterProduct.name,
+        category: selectedMasterProduct.category,
+        grade: selectedMasterProduct.grade,
+        unit: selectedMasterProduct.unit,
+        image: selectedMasterProduct.image,
         price: price,
         stock: stock,
-        image: uploadedImageUrl,
         createdAt: serverTimestamp()
       });
-      alert("প্রোডাক্ট সেভ হয়েছে!");
-      closeAddProductModal();
-    } catch (error) {
-      alert("প্রোডাক্ট সেভ করতে সমস্যা হয়েছে!");
-    } finally {
-      btn.innerText = "💾 সেভ করুন";
-      btn.disabled = false;
+      
+      alert("আপনার রেট সফলভাবে সেভ হয়েছে!");
+      document.getElementById('dlv-set-price-modal').classList.remove('active');
+      
+    } catch (e) {
+      console.error(e);
+      alert("সেভ করতে সমস্যা হয়েছে!");
     }
   };
 
