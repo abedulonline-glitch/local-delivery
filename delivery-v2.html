@@ -897,30 +897,8 @@
     setTimeout(() => { regMap.invalidateSize(); }, 200);
   };
 
-  // অ্যাড লোড করার লজিক
-  function loadTopAds() {
-    onSnapshot(collection(db, "ads"), (snap) => {
-      if (snap.empty) return;
-      const container = document.getElementById('top-ad-container');
-      const content = document.getElementById('ad-content');
-      container.style.display = 'flex';
-      
-      const ads = [];
-      snap.forEach(doc => ads.push(doc.data()));
-      
-      // র‍্যান্ডম বা স্লাইডিং অ্যাড (এখানে প্রথম অ্যাডটি দেখাচ্ছি)
-      const ad = ads[0]; 
-      if (ad.type === 'video' && ad.url.includes('youtube')) {
-        // ইউটিউব লিংক থেকে ভিডিও আইডি বের করা
-        const vidId = ad.url.split('v=')[1] || ad.url.split('/').pop();
-        content.innerHTML = `<iframe src="https://www.youtube.com/embed/${vidId}?autoplay=0&controls=0" allowfullscreen></iframe>`;
-      } else {
-        content.innerHTML = `<img src="${ad.url}">`;
-      }
-    });
-  }
 
-  // লগইন ও রেজিস্ট্রেশন ফর্ম টগল করা
+ // লগইন ও রেজিস্ট্রেশন ফর্ম টগল করা
   window.toggleAuthMode = function() {
     const loginForm = document.getElementById('auth-login-form');
     const regForm = document.getElementById('auth-register-form');
