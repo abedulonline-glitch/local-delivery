@@ -2285,24 +2285,6 @@ window.toggleDeliveryStatus = function(checkbox) {
     });
   }
 
-  
-  // ৩. দোকানদারের নিজের ব্যাজ স্ট্যাটাস দেখা
-  function loadShopBadgeStatus() {
-    if (!globalUserData) return;
-    const display = document.getElementById('shop-badge-display');
-    if(!display) return;
-
-    let html = '';
-    if (globalUserData.isPremium) html += '<span class="badge-premium">🌟 Premium</span> ';
-    if (globalUserData.isVerified) html += '<span class="badge-verified">✅ Verified</span>';
-    
-    if (html === '') {
-      display.innerHTML = 'সাধারণ দোকান (কোনো ব্যাজ নেই)';
-    } else {
-      display.innerHTML = `আপনার বর্তমান ব্যাজ: ${html}`;
-    }
-  }
-
   // ==================== AUTO BADGE PURCHASE LOGIC ====================
   let pendingBadgeType = null;
   let pendingBadgePrice = 0;
