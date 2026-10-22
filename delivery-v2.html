@@ -927,34 +927,6 @@ function setupUIForRole(role, userData) {
   // ============================================================
   // CUSTOMER FUNCTIONS
   // ============================================================
-  function renderCustomerProducts() {
-    const grid = document.getElementById('cst-product-grid');
-    if (!grid) return;
-
-    // 'products' কালেকশন (দোকানদারের প্রোডাক্ট)
-    onSnapshot(collection(db, "products"), (snapshot) => {
-      grid.innerHTML = '';
-      if(snapshot.empty) {
-         grid.innerHTML = '<div style="font-size:12px; color:#999; grid-column:1/-1; text-align:center;">কোনো প্রোডাক্ট নেই।</div>';
-         return;
-      }
-      snapshot.forEach(docSnap => {
-        const prod = docSnap.data();
-        grid.innerHTML += `
-          <div class="dlv-product-card">
-            <div class="dlv-product-img">
-              ${prod.image ? `<img src="${prod.image}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">` : '📦'}
-            </div>
-            <div class="dlv-product-name">${prod.name}</div>
-            <div class="dlv-product-shop">🏪 ${prod.shopName}</div>
-            <div class="dlv-product-price">₹${prod.price}</div>
-            <button class="dlv-add-btn" onclick="placeOrder('${docSnap.id}', '${prod.name}', ${prod.price}, '${prod.shopId}', '${prod.shopName}')">+ Order Now</button>
-          </div>
-        `;
-      });
-    });
-  }
-
   window.placeOrder = function(prodId, name, price, shopId, shopName) {
     if (customerAddresses.length === 0) {
       if(!confirm("আপনি এখনো কোনো ডেলিভারি অ্যাড্রেস সেভ করেননি! অ্যাড্রেস ছাড়া অর্ডার করতে চান?")) {
