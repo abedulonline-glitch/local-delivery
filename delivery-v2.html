@@ -1238,6 +1238,7 @@ function setupUIForRole(role, userData) {
     // Load role-specific data
     if (role === 'customer') {
       renderCustomerProducts();
+      loadTopAds(); // 🚀 কাস্টমারের জন্য অ্যাড লোড করা হলো
       if (userData) {
         document.getElementById('cst-wallet-balance').innerText = `₹${(userData.walletBalance || 0).toFixed(2)}`;
         document.getElementById('cst-khata-due').innerText = `₹${(userData.khataDue || 0).toFixed(2)}`;
