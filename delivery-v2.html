@@ -144,6 +144,25 @@
   
   /* ম্যাপ পিন উইজেট */
   #reg-map-container { height: 150px; width: 100%; border-radius: 8px; border: 1px solid #ccc; margin-top: 5px; display: none; }
+
+  /* ============================================================
+     PART 2: SMART MARKET (DISTANCE SLIDER & SHOP SELECTOR)
+     ============================================================ */
+  .dlv-distance-filter { background: white; border-radius: 10px; padding: 12px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .dlv-slider-labels { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 5px; }
+  input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: var(--mp-primary); cursor: pointer; margin-top: -8px; }
+  input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #dadce0; border-radius: 2px; }
+  .dlv-distance-val { font-weight: bold; color: var(--mp-primary); font-size: 14px; }
+  
+  /* Shop Selector Bottom Sheet */
+  .dlv-shop-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
+  .dlv-shop-list-item:last-child { border-bottom: none; }
+  .dlv-shop-info { flex: 1; }
+  .dlv-shop-name { font-size: 14px; font-weight: bold; color: var(--mp-text); }
+  .dlv-shop-meta { font-size: 11px; color: #666; margin-top: 2px; }
+  .dlv-shop-price { font-size: 16px; font-weight: bold; color: var(--mp-primary); text-align: right; }
+  .dlv-best-price-tag { background: #e6f4ea; color: var(--mp-success); font-size: 9px; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-left: 5px; }
 </style>
 </head>
 <body>
@@ -276,6 +295,18 @@
       
       <div class="mp-card">
         <h3>🛒 প্রোডাক্ট এক্সপ্লোর করুন</h3>
+
+                <!-- 🚀 স্মার্ট দূরত্ব স্লাইডার -->
+        <div class="dlv-distance-filter">
+          <div class="dlv-slider-labels">
+            <span>দোকানের রেঞ্জ:</span>
+            <span class="dlv-distance-val"><span id="dist-value">5</span> কিমি</span>
+          </div>
+          <input type="range" id="distance-slider" min="1" max="15" value="5" oninput="updateDistanceRange(this.value)">
+          <div style="display:flex; justify-content:space-between; font-size:10px; color:#999; margin-top:5px;">
+            <span>১ কিমি</span><span>১৫ কিমি</span>
+          </div>
+        </div>
         
         <!-- 🚀 নতুন সার্চ বার এবং ফিল্টার -->
         <input type="text" id="cst-search-input" class="dlv-input" placeholder="🔍 প্রোডাক্ট বা ক্যাটাগরি খুঁজুন..." style="margin-bottom: 10px;" oninput="filterCustomerProducts()">
@@ -1129,25 +1160,160 @@
 
   // ৪. স্টক আউট ফিল্টার (কাস্টমারের জন্য)
    // ==================== CUSTOMER MARKETPLACE LOGIC ====================
-  let allCustomerProducts = []; // সব প্রোডাক্ট এখানে জমা থাকবে
-  let currentSearchQuery = '';
-  let currentCategory = 'all';
+  // ==================== SMART OPEN MARKET LOGIC ====================
+  let allRawProducts = []; // সব দোকানের সব প্রোডাক্ট
+  let groupedProducts = []; // গ্রুপ করা প্রোডাক্ট (যেমন শুধু একটি Tomato)
+  let maxDistance = 5; // ডিফল্ট ৫ কিমি
+  let customerLat = 22.5726; // ডিফল্ট লোকেশন (কাস্টমারের লোকেশন থাকলে আপডেট হবে)
+  let customerLng = 88.3639;
 
   function renderCustomerProducts() {
     const grid = document.getElementById('cst-product-grid');
     if (!grid) return;
 
+    // কাস্টমারের প্রোফাইল থেকে লোকেশন নেওয়া (যদি থাকে)
+    if (globalUserData && globalUserData.lat && globalUserData.lng) {
+      customerLat = globalUserData.lat;
+      customerLng = globalUserData.lng;
+    }
+
     onSnapshot(collection(db, "products"), (snapshot) => {
-      allCustomerProducts = [];
+      allRawProducts = [];
       snapshot.forEach(docSnap => {
         const prod = docSnap.data();
-        if(prod.stock > 0) { // স্টক ০ হলে দেখাবে না
-          allCustomerProducts.push({ id: docSnap.id, ...prod });
+        if(prod.stock > 0) { 
+          allRawProducts.push({ id: docSnap.id, ...prod });
         }
       });
-      filterCustomerProducts(); // ফিল্টার করে রেন্ডার করব
+      filterCustomerProducts(); // ফিল্টার ও গ্রুপ করে রেন্ডার করব
     });
   }
+
+  // দূরত্ব স্লাইডার আপডেট
+  window.updateDistanceRange = function(val) {
+    maxDistance = parseFloat(val);
+    document.getElementById('dist-value').innerText = val;
+    filterCustomerProducts();
+  };
+
+  // সার্চ, ফিল্টার এবং গ্রুপিং লজিক
+  window.filterCustomerProducts = function() {
+    const grid = document.getElementById('cst-product-grid');
+    const searchInput = document.getElementById('cst-search-input');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    
+    // ১. দূরত্ব ও সার্চ অনুযায়ী ফিল্টার
+    let validProducts = allRawProducts.filter(p => {
+      // দূরত্ব চেক (দোকানের lat, lng থাকলে)
+      let distance = 0;
+      if (p.shopLat && p.shopLng) {
+        const shopLoc = L.latLng(p.shopLat, p.shopLng);
+        const custLoc = L.latLng(customerLat, customerLng);
+        distance = shopLoc.distanceTo(custLoc) / 1000; // কিমি
+      }
+      
+      if (distance > maxDistance) return false; // স্লাইডারের বাইরে হলে বাদ
+      
+      // সার্চ চেক
+      const matchesSearch = p.name.toLowerCase().includes(query) || (p.category && p.category.toLowerCase().includes(query));
+      return matchesSearch;
+    });
+
+    // ২. প্রোডাক্ট গ্রুপিং (একই নামের প্রোডাক্ট একবার দেখানো)
+    let grouped = {};
+    validProducts.forEach(p => {
+      const key = p.name.toLowerCase() + '_' + (p.unit || '');
+      if (!grouped[key]) {
+        grouped[key] = {
+          name: p.name,
+          category: p.category,
+          unit: p.unit,
+          grade: p.grade,
+          image: p.image,
+          shops: []
+        };
+      }
+      grouped[key].shops.push(p);
+    });
+
+    groupedProducts = Object.values(grouped);
+
+    // ৩. প্রতিটি গ্রুপের ভেতরে দোকানগুলোকে দাম অনুযায়ী সাজানো (কম থেকে বেশি)
+    groupedProducts.forEach(g => {
+      g.shops.sort((a, b) => a.price - b.price);
+    });
+
+    // ৪. UI তে রেন্ডার করা
+    grid.innerHTML = '';
+    if(groupedProducts.length === 0) {
+      grid.innerHTML = '<div style="font-size:13px; color:#999; grid-column:1/-1; text-align:center; padding: 20px;">এই রেঞ্জে কোনো প্রোডাক্ট পাওয়া যায়নি। রেঞ্জ বাড়িয়ে দেখুন।</div>';
+      return;
+    }
+
+    groupedProducts.forEach(g => {
+      const lowestPriceShop = g.shops[0]; // সবচেয়ে কম দামের দোকান
+      const totalShops = g.shops.length;
+      
+      grid.innerHTML += `
+        <div class="dlv-product-card" onclick="openShopSelector('${g.name.replace(/'/g, "\\'")}')">
+          <div class="dlv-product-img-wrap">
+            ${g.image ? `<img src="${g.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
+            <span class="dlv-badge-grade">${g.grade || 'A'}</span>
+            <span class="dlv-badge-stock" style="background:var(--mp-primary);">${totalShops} Shops</span>
+          </div>
+          
+          <div class="dlv-product-name" title="${g.name}">${g.name}</div>
+          <div class="dlv-product-meta">
+            <span>⚖️ ${g.unit || 'pcs'}</span>
+          </div>
+          <div class="dlv-product-price">₹${lowestPriceShop.price}</div>
+          <button class="dlv-add-btn">দোকান দেখুন</button>
+        </div>
+      `;
+    });
+  };
+
+  // ==================== SHOP SELECTOR MODAL ====================
+  let currentGroupName = null;
+
+  window.openShopSelector = function(groupName) {
+    currentGroupName = groupName;
+    const group = groupedProducts.find(g => g.name === groupName);
+    if(!group) return;
+
+    document.getElementById('shop-selector-title').innerText = group.name;
+    const list = document.getElementById('shop-selector-list');
+    list.innerHTML = '';
+
+    group.shops.forEach((shop, index) => {
+      // দূরত্ব বের করা
+      let distText = 'দূরত্ব অজানা';
+      if (shop.shopLat && shop.shopLng) {
+        const d = (L.latLng(shop.shopLat, shop.shopLng).distanceTo(L.latLng(customerLat, customerLng)) / 1000).toFixed(1);
+        distText = `${d} কিমি দূরে`;
+      }
+
+      // আনুমানিক ডেলিভারি টাইম (প্রতি কিমিতে ৩ মিনিট + ১০ মিনিট)
+      let eta = shop.shopLat ? Math.ceil(parseFloat(distText) * 3 + 10) + ' মিনিট' : '২০-৩০ মিনিট';
+
+      const isBestPrice = index === 0 ? '<span class="dlv-best-price-tag">Best Price</span>' : '';
+
+      list.innerHTML += `
+        <div class="dlv-shop-list-item">
+          <div class="dlv-shop-info">
+            <div class="dlv-shop-name">🏪 ${shop.shopName} ${isBestPrice}</div>
+            <div class="dlv-shop-meta">📍 ${distText} | ⏱️ ${eta} | Stock: ${shop.stock}</div>
+          </div>
+          <div style="text-align: right;">
+            <div class="dlv-shop-price">₹${shop.price}</div>
+            <button class="mp-btn mp-btn-success" style="margin: 5px 0 0 0; padding: 6px 12px; font-size: 12px; width: auto;" onclick="placeOrder('${shop.id}', '${shop.name}', ${shop.price}, '${shop.shopId}', '${shop.shopName}')">Select</button>
+          </div>
+        </div>
+      `;
+    });
+
+    document.getElementById('dlv-shop-selector-modal').classList.add('active');
+  };
 
   // ক্যাটাগরি ফিল্টার হ্যান্ডেল করা
   window.filterByCategory = function(category, el) {
@@ -1715,6 +1881,8 @@ function setupUIForRole(role, userData) {
         image: selectedMasterProduct.image,
         price: price,
         stock: stock,
+        shopLat: globalUserData.lat || null,
+        shopLng: globalUserData.lng || null,
         createdAt: serverTimestamp()
       });
       
@@ -2455,6 +2623,20 @@ window.toggleDeliveryStatus = function(checkbox) {
   };
 
 </script>
+
+  <!-- Shop Selection Modal -->
+<div id="dlv-shop-selector-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 80vh; overflow-y: auto; border-radius: 20px 20px 0 0; position: absolute; bottom: 0; margin: 0; width: 100%; max-width: 100%;">
+    <div style="width: 40px; height: 4px; background: #ccc; border-radius: 4px; margin: 0 auto 15px;"></div>
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-shop-selector-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 5px; color: var(--mp-primary);" id="shop-selector-title">দোকান সিলেক্ট করুন</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">আপনার এরিয়ার সেরা দামের দোকানগুলো:</p>
+    
+    <div id="shop-selector-list">
+      <!-- Shops will be loaded here -->
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
