@@ -944,7 +944,7 @@
   const mainApp = document.getElementById('mp-app');
 
   onAuthStateChanged(auth, async (user) => {
-    loader.classList.remove('mp-hidden'); // লোডার দেখাও
+    loader.classList.remove('mp-hidden'); 
     
     if (user) {
       currentUser = user;
@@ -961,7 +961,7 @@
           
           setupUIForRole(userRole, globalUserData);
         } else {
-          alert("আপনার ডেটা ডেটাবেসে নেই।");
+          alert("আপনার ডেটা ডেটাবেসে নেই। অ্যাডমিনের সাথে যোগাযোগ করুন।");
           await signOut(auth);
         }
       } catch (error) {
@@ -972,7 +972,7 @@
       mainApp.classList.add('mp-hidden');
       loginScreen.classList.remove('mp-hidden');
     }
-    loader.classList.add('mp-hidden'); // লোডার লুকাও
+    loader.classList.add('mp-hidden'); 
   });
 
     // ==================== AUTH LOGIC (LOGIN & REGISTER) ====================
@@ -1400,7 +1400,7 @@
     if (!confirm('লগআউট করবেন?')) return;
     try {
       await signOut(auth);
-      window.location.href = 'beta.html';
+      // 🚀 beta.html এ পাঠানোর দরকার নেই। লগআউট হলেই onAuthStateChanged ট্রিগার হবে এবং লগইন স্ক্রিন দেখাবে।
     } catch (e) {
       alert('লগআউট করতে সমস্যা: ' + e.message);
     }
