@@ -422,10 +422,15 @@
     <div id="dlv-view-admin" class="mp-hidden">
       <div class="dlv-dashboard-title">👑 অ্যাডমিন কন্ট্রোল প্যানেল</div>
       
+      <!-- ১. রেভিনিউ সামারি -->
       <div class="dlv-wallet-header" style="background: linear-gradient(135deg, #1a73e8, #4285f4);">
         <div>
+          <div style="font-size: 12px; opacity: 0.9;">সিস্টেমের মোট রেভিনিউ (১%)</div>
+          <div class="dlv-wallet-balance" id="admin-total-revenue">₹0.00</div>
+        </div>
+      </div>
 
-                <!-- Share / Invite Section -->
+      <!-- ২. ইনভাইট সেকশন -->
       <div class="mp-card" style="border-left: 4px solid var(--mp-success);">
         <h3>🔗 ইনভাইট পাঠান</h3>
         <p style="font-size: 12px; color: #666; margin-bottom: 10px;">নতুন ম্যানেজার, দোকানদার বা ডেলিভারি বয়কে অ্যাপে যুক্ত করতে লিংক পাঠান।</p>
@@ -435,12 +440,8 @@
           <button class="mp-btn" style="margin: 0; background: #fef7e0; color: var(--mp-warning); font-size: 12px; padding: 8px;" onclick="shareInvite('delivery')">🛵 ডেলিভারি</button>
         </div>
       </div>
-          
-          <div style="font-size: 12px; opacity: 0.9;">সিস্টেমের মোট রেভিনিউ (১%)</div>
-          <div class="dlv-wallet-balance" id="admin-total-revenue">₹0.00</div>
-        </div>
-      </div>
 
+      <!-- ৩. কাউন্টার সামারি -->
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px;">
         <div class="mp-card" style="margin: 0; text-align: center; padding: 10px;">
           <div style="font-size: 20px;">🏪</div><div style="font-size: 11px; font-weight: 600;">দোকানদার</div>
@@ -456,7 +457,7 @@
         </div>
       </div>
 
-      <!-- Master Product Section -->
+      <!-- ৪. মাস্টার প্রোডাক্ট সেকশন -->
       <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
         <h3 style="justify-content: space-between;">
           🏷️ মাস্টার প্রোডাক্ট
@@ -467,8 +468,7 @@
         </div>
       </div>
 
-          
-    <!-- Ad Management Section (Admin) -->
+      <!-- ৫. অ্যাড ম্যানেজমেন্ট সেকশন -->
       <div class="mp-card" style="border-left: 4px solid #f9a825;">
         <h3>📢 অ্যাড ম্যানেজমেন্ট</h3>
         <p style="font-size: 12px; color: #666; margin-bottom: 10px;">অ্যাপের টপবারে দেখানোর জন্য নতুন ইমেজ বা ভিডিও দিন।</p>
@@ -490,16 +490,6 @@
           <input type="file" id="ad-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'ad')">
         </div>
 
-              <!-- Premium & Verified Badge Management (Admin) -->
-      <div class="mp-card" style="border-left: 4px solid #f9a825;">
-        <h3>🌟 প্রিমিয়াম ও ভেরিফাইড দোকান</h3>
-        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">দোকানদারদের ব্যাজ দিন। এতে অ্যাডমিন আয় বাড়বে।</p>
-        <div id="admin-badge-shop-list">
-          <!-- Shopkeepers will load here -->
-          <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
-        </div>
-      </div>
-
         <!-- ভিডিও লিংক এরিয়া -->
         <div id="ad-video-url-area" class="dlv-form-group mp-hidden" style="margin-bottom: 10px;">
           <input type="text" id="admin-ad-url" class="dlv-input" placeholder="YouTube ভিডিও লিংক পেস্ট করুন...">
@@ -510,28 +500,34 @@
         <!-- Active Ads List -->
         <div id="admin-ad-list"></div>
       </div>
-          <!-- Ads will load here -->
+
+      <!-- ৬. প্রিমিয়াম ও ভেরিফাইড ব্যাজ সেকশন -->
+      <div class="mp-card" style="border-left: 4px solid #f9a825;">
+        <h3>🌟 প্রিমিয়াম ও ভেরিফাইড দোকান</h3>
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">দোকানদারদের ব্যাজ দিন। এতে অ্যাডমিন আয় বাড়বে।</p>
+        <div id="admin-badge-shop-list">
+          <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
         </div>
       </div>
       
+      <!-- ৭. ইউজার রোল ম্যানেজমেন্ট সেকশন -->
       <div class="mp-card">
         <h3>👥 ইউজার রোল ম্যানেজমেন্ট</h3>
-        <div id="admin-user-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
+        <div id="admin-user-list">
+          <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
+        </div>
       </div>
 
+      <!-- ৮. পিনকোড ভিত্তিক ম্যানেজার সেকশন -->
       <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
         <h3>📍 পিনকোড ভিত্তিক ম্যানেজার</h3>
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-          <input type="text" id="admin-pin-input" class="dlv-input" placeholder="পিনকোড (যেমন: 700001)" style="flex: 1;">
+          <input type="text" id="admin-pin-input" class="dlv-input" placeholder="পিনকোড (যেমন 700001)" style="flex: 1;">
           <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 0 15px;" onclick="searchPinUsers()">🔍 খুঁজুন</button>
         </div>
         <div id="admin-pin-user-list"></div>
       </div>
     </div>
-
-  </div>
-</div>
-
 <!-- ==================== MODALS ==================== -->
 <!-- Recharge Modal -->
 <div id="dlv-recharge-modal" class="dlv-modal-overlay">
