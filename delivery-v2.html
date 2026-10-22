@@ -69,12 +69,38 @@
   /* Product Grid */
   .dlv-search-box { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; margin-bottom: 15px; }
   .dlv-product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .dlv-product-card { background: white; border: 1px solid #e0e0e0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; }
-  .dlv-product-img { width: 100%; height: 100px; background: #f0f2f5; border-radius: 8px; object-fit: cover; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; font-size: 30px; }
   .dlv-product-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
   .dlv-product-price { font-size: 14px; font-weight: bold; color: var(--mp-primary); margin-bottom: 2px; }
   .dlv-product-shop { font-size: 10px; color: var(--mp-text-light); margin-bottom: 8px; }
   .dlv-add-btn { background: #e8f0fe; color: var(--mp-primary); border: none; padding: 8px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: auto; }
+
+  /* ============================================================
+     PROFESSIONAL MARKETPLACE UI (UPDATED)
+     ============================================================ */
+  .dlv-search-container { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+  .dlv-search-container::-webkit-scrollbar { display: none; }
+  .dlv-cat-chip { padding: 6px 14px; background: #f1f3f4; border-radius: 20px; font-size: 12px; white-space: nowrap; cursor: pointer; border: 1px solid #dadce0; color: #333; }
+  .dlv-cat-chip.active { background: var(--mp-primary); color: white; border-color: var(--mp-primary); }
+  
+  .dlv-product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (min-width: 600px) { .dlv-product-grid { grid-template-columns: repeat(3, 1fr); } }
+  
+  .dlv-product-card { background: white; border: 1px solid #e0e0e0; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; position: relative; }
+  
+  /* ইমেজের সাইজ ফিক্স করা হলো */
+  .dlv-product-img-wrap { width: 100%; aspect-ratio: 1 / 1; background: #f8f9fa; border-radius: 8px; overflow: hidden; position: relative; margin-bottom: 8px; }
+  .dlv-product-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  
+  /* গ্রেড ও স্টক ব্যাজ */
+  .dlv-badge-grade { position: absolute; top: 6px; left: 6px; background: rgba(26, 115, 232, 0.9); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+  .dlv-badge-stock { position: absolute; top: 6px; right: 6px; background: rgba(15, 157, 88, 0.9); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+  .dlv-badge-stock.out { background: rgba(217, 48, 37, 0.9); }
+  
+  .dlv-product-name { font-size: 13px; font-weight: 600; color: #202124; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+  .dlv-product-meta { font-size: 10px; color: #666; margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .dlv-product-price { font-size: 16px; font-weight: bold; color: var(--mp-primary); margin-top: auto; margin-bottom: 8px; }
+  .dlv-add-btn { background: #e8f0fe; color: var(--mp-primary); border: none; padding: 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
+  .dlv-add-btn:active { transform: scale(0.95); }
   
   /* Shopkeeper Items */
   .shop-prod-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; }
@@ -186,7 +212,7 @@
 
   <div class="mp-container">
     
-    <!-- ==================== CUSTOMER DASHBOARD ==================== -->
+ <!-- ==================== CUSTOMER DASHBOARD ==================== -->
     <div id="dlv-view-customer" class="mp-hidden">
       <div class="dlv-wallet-header">
         <div>
@@ -217,7 +243,20 @@
       
       <div class="mp-card">
         <h3>🛒 প্রোডাক্ট এক্সপ্লোর করুন</h3>
-        <div class="dlv-product-grid" id="cst-product-grid"></div>
+        
+        <!-- 🚀 নতুন সার্চ বার এবং ফিল্টার -->
+        <input type="text" id="cst-search-input" class="dlv-input" placeholder="🔍 প্রোডাক্ট বা ক্যাটাগরি খুঁজুন..." style="margin-bottom: 10px;" oninput="filterCustomerProducts()">
+        
+        <div class="dlv-search-container" id="cst-category-filters">
+          <div class="dlv-cat-chip active" onclick="filterByCategory('all', this)">সব</div>
+          <div class="dlv-cat-chip" onclick="filterByCategory('Grocery', this)">মুদি</div>
+          <div class="dlv-cat-chip" onclick="filterByCategory('Restaurant', this)">রেস্টুরেন্ট</div>
+        </div>
+
+        <!-- প্রোডাক্ট গ্রিড -->
+        <div class="dlv-product-grid" id="cst-product-grid">
+          <!-- Product Cards will load here -->
+        </div>
       </div>
     </div>
 
@@ -963,37 +1002,75 @@
   };
 
   // ৪. স্টক আউট ফিল্টার (কাস্টমারের জন্য)
+   // ==================== CUSTOMER MARKETPLACE LOGIC ====================
+  let allCustomerProducts = []; // সব প্রোডাক্ট এখানে জমা থাকবে
+  let currentSearchQuery = '';
+  let currentCategory = 'all';
+
   function renderCustomerProducts() {
     const grid = document.getElementById('cst-product-grid');
     if (!grid) return;
 
     onSnapshot(collection(db, "products"), (snapshot) => {
-      grid.innerHTML = '';
-      let hasProducts = false;
-
+      allCustomerProducts = [];
       snapshot.forEach(docSnap => {
         const prod = docSnap.data();
-        if(prod.stock <= 0) return; // 🚀 স্টক ০ হলে দেখাবে না
-
-        hasProducts = true;
-        grid.innerHTML += `
-          <div class="dlv-product-card">
-            <div class="dlv-product-img">
-              ${prod.image ? `<img src="${prod.image}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">` : '📦'}
-            </div>
-            <div class="dlv-product-name">${prod.name}</div>
-            <div class="dlv-product-shop">🏪 ${prod.shopName}</div>
-            <div class="dlv-product-price">₹${prod.price}</div>
-            <button class="dlv-add-btn" onclick="placeOrder('${docSnap.id}', '${prod.name}', ${prod.price}, '${prod.shopId}', '${prod.shopName}')">+ Order Now</button>
-          </div>
-        `;
+        if(prod.stock > 0) { // স্টক ০ হলে দেখাবে না
+          allCustomerProducts.push({ id: docSnap.id, ...prod });
+        }
       });
-
-      if(!hasProducts) {
-        grid.innerHTML = '<div style="font-size:12px; color:#999; grid-column:1/-1; text-align:center;">কোনো প্রোডাক্ট স্টকে নেই।</div>';
-      }
+      filterCustomerProducts(); // ফিল্টার করে রেন্ডার করব
     });
   }
+
+  // ক্যাটাগরি ফিল্টার হ্যান্ডেল করা
+  window.filterByCategory = function(category, el) {
+    document.querySelectorAll('.dlv-cat-chip').forEach(c => c.classList.remove('active'));
+    if(el) el.classList.add('active');
+    currentCategory = category;
+    filterCustomerProducts();
+  };
+
+  // সার্চ ও ফিল্টার লজিক
+  window.filterCustomerProducts = function() {
+    const grid = document.getElementById('cst-product-grid');
+    const searchInput = document.getElementById('cst-search-input');
+    if(searchInput) currentSearchQuery = searchInput.value.toLowerCase().trim();
+
+    let filtered = allCustomerProducts.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(currentSearchQuery) || (p.category && p.category.toLowerCase().includes(currentSearchQuery));
+      const matchesCat = currentCategory === 'all' || (p.category && p.category === currentCategory);
+      return matchesSearch && matchesCat;
+    });
+
+    grid.innerHTML = '';
+    if(filtered.length === 0) {
+      grid.innerHTML = '<div style="font-size:13px; color:#999; grid-column:1/-1; text-align:center; padding: 20px;">কোনো প্রোডাক্ট পাওয়া যায়নি।</div>';
+      return;
+    }
+
+    filtered.forEach(prod => {
+      grid.innerHTML += `
+        <div class="dlv-product-card">
+          <div class="dlv-product-img-wrap">
+            ${prod.image ? `<img src="${prod.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
+            <span class="dlv-badge-grade">${prod.grade || 'A'}</span>
+            <span class="dlv-badge-stock">Stock: ${prod.stock}</span>
+          </div>
+          
+          <div class="dlv-product-name" title="${prod.name}">${prod.name}</div>
+          <div class="dlv-product-meta">
+            <span>⚖️ ${prod.unit || 'pcs'}</span>
+            <span>🏪 ${prod.shopName}</span>
+          </div>
+          <div class="dlv-product-price">₹${prod.price}</div>
+          <button class="dlv-add-btn" onclick="placeOrder('${prod.id}', '${prod.name}', ${prod.price}, '${prod.shopId}', '${prod.shopName}')">
+            🛒 Add to Cart
+          </button>
+        </div>
+      `;
+    });
+  };
   
   window.handleLogout = async function() {
     if (!confirm('লগআউট করবেন?')) return;
