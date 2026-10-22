@@ -2398,19 +2398,18 @@ window.toggleDeliveryStatus = function(checkbox) {
     } catch(e) { alert("সমস্যা হয়েছে!"); }
   }
 
-  // ৫. দোকানদারের ব্যাজ স্ট্যাটাস ও টগল আপডেট করা
- // function loadShopBadgeStatus() {
-  //  if (!globalUserData) return;
- //   const premToggle = document.getElementById('toggle-premium');
-  //  const verToggle = document.getElementById('toggle-verified');
-    
- //   if(premToggle) premToggle.checked = globalUserData.isPremium || false;
- //   if(verToggle) verToggle.checked = globalUserData.isVerified || false;
- // }
-
-  // ৩. দোকানদারের নিজের ব্যাজ স্ট্যাটাস দেখা
+  // ৫. দোকানদারের ব্যাজ স্ট্যাটাস ও টগল আপডেট করা (কম্বাইন্ড)
   function loadShopBadgeStatus() {
     if (!globalUserData) return;
+
+    // ১. টগল বাটন আপডেট করা
+    const premToggle = document.getElementById('toggle-premium');
+    const verToggle = document.getElementById('toggle-verified');
+    
+    if(premToggle) premToggle.checked = globalUserData.isPremium || false;
+    if(verToggle) verToggle.checked = globalUserData.isVerified || false;
+
+    // ২. টেক্সট ডিসপ্লে আপডেট করা
     const display = document.getElementById('shop-badge-display');
     if(!display) return;
 
