@@ -850,7 +850,7 @@
   let referrerId = null; // কে রেফার করেছে তার আইডি
 
   // URL থেকে রেফারার আইডি চেক করা
-  //const urlParams = new URLSearchParams(window.location.search);
+  const urlParams = new URLSearchParams(window.location.search);
   const refParam = urlParams.get('ref');
   if (refParam) {
     referrerId = refParam;
@@ -1051,7 +1051,7 @@
   };
 
   // URL থেকে রোল চেক করা (লিংকে ক্লিক করলে)
-  const urlParams = new URLSearchParams(window.location.search);
+ // const urlParams = new URLSearchParams(window.location.search);
   const urlRole = urlParams.get('role');
   
   if (urlRole) {
