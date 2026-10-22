@@ -2035,7 +2035,7 @@ window.toggleDeliveryStatus = function(checkbox) {
 
     try {
       await updateDoc(doc(db, "orders", orderId), {
-              // 🚀 বিড সফল হলে ডেলিভারি বয়ের লোকেশন আপডেট শুরু হবে
+        // 🚀 বিড সফল হলে ডেলিভারি বয়ের লোকেশন আপডেট শুরু হবে
       startLocationUpdates(orderId);
         status: "bidding",
         deliveryBoyId: currentUser.uid,
