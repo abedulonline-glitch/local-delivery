@@ -2034,16 +2034,22 @@ window.toggleDeliveryStatus = function(checkbox) {
     if (!confirm(`আপনি ₹${bidAmount} চার্জে বিড করছেন। নিশ্চিত?`)) return;
 
     try {
+      // ১. প্রথমে ডেটাবেসে অর্ডার আপডেট হবে
       await updateDoc(doc(db, "orders", orderId), {
-        // 🚀 বিড সফল হলে ডেলিভারি বয়ের লোকেশন আপডেট শুরু হবে
-      startLocationUpdates(orderId);
         status: "bidding",
         deliveryBoyId: currentUser.uid,
         deliveryBoyName: document.getElementById('dlv-topbar-title').innerText.replace('🛵 ', ''),
         deliveryCharge: bidAmount,
         updatedAt: serverTimestamp()
       });
-    } catch (e) { alert("বিড করতে সমস্যা হয়েছে।"); }
+
+      // ২. ডেটাবেস আপডেট সফল হলে এরপর লোকেশন ট্র্যাকিং চালু হবে
+      startLocationUpdates(orderId); 
+
+    } catch (e) { 
+      console.error(e);
+      alert("বিড করতে সমস্যা হয়েছে।"); 
+    }
   };
 
     window.promptOTP = async function(orderId) {
