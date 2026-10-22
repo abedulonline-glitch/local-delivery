@@ -163,6 +163,13 @@
   .dlv-shop-meta { font-size: 11px; color: #666; margin-top: 2px; }
   .dlv-shop-price { font-size: 16px; font-weight: bold; color: var(--mp-primary); text-align: right; }
   .dlv-best-price-tag { background: #e6f4ea; color: var(--mp-success); font-size: 9px; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-left: 5px; }
+
+  /* ============================================================
+     PART 3: PREMIUM & VERIFIED BADGES
+     ============================================================ */
+  .badge-premium { background: linear-gradient(45deg, #f9a825, #ffd54f); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-flex; align-items: center; gap: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .badge-verified { color: #1da1f2; font-size: 14px; display: inline-flex; align-items: center; }
+  .premium-shop-card { border: 1px solid #f9a825 !important; background: #fffde7 !important; }
 </style>
 </head>
 <body>
@@ -327,6 +334,18 @@
     <!-- ==================== SHOPKEEPER DASHBOARD ==================== -->
     <div id="dlv-view-shopkeeper" class="mp-hidden">
       <div class="dlv-dashboard-title">দোকানদার ড্যাশবোর্ড</div>
+
+            <!-- Shopkeeper Badge Status -->
+      <div class="mp-card" id="shop-badge-section" style="border-left: 4px solid var(--mp-primary); background: #e8f0fe;">
+        <h3>🌟 আপনার দোকানের স্ট্যাটাস</h3>
+        <div id="shop-badge-display" style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #666;">
+          সাধারণ দোকান (কোনো ব্যাজ নেই)
+        </div>
+        <button class="mp-btn mp-btn-primary" style="font-size: 12px; padding: 8px;" onclick="requestBadgeUpgrade()">
+          🚀 প্রিমিয়াম/ভেরিফাইড ব্যাজ কিনুন
+        </button>
+      </div>
+      
       <div class="mp-card" style="border-left: 4px solid var(--mp-danger);">
         <h3>🔔 নতুন অর্ডার (পেন্ডিং)</h3>
         <div id="shop-new-orders-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
@@ -451,6 +470,16 @@
           <img id="ad-image-preview" style="width: 100%; height: 100px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
           <input type="file" id="ad-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'ad')">
         </div>
+
+              <!-- Premium & Verified Badge Management (Admin) -->
+      <div class="mp-card" style="border-left: 4px solid #f9a825;">
+        <h3>🌟 প্রিমিয়াম ও ভেরিফাইড দোকান</h3>
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">দোকানদারদের ব্যাজ দিন। এতে অ্যাডমিন আয় বাড়বে।</p>
+        <div id="admin-badge-shop-list">
+          <!-- Shopkeepers will load here -->
+          <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
+        </div>
+      </div>
 
         <!-- ভিডিও লিংক এরিয়া -->
         <div id="ad-video-url-area" class="dlv-form-group mp-hidden" style="margin-bottom: 10px;">
@@ -1287,21 +1316,21 @@
 
     group.shops.forEach((shop, index) => {
       // দূরত্ব বের করা
-      let distText = 'দূরত্ব অজানা';
-      if (shop.shopLat && shop.shopLng) {
-        const d = (L.latLng(shop.shopLat, shop.shopLng).distanceTo(L.latLng(customerLat, customerLng)) / 1000).toFixed(1);
-        distText = `${d} কিমি দূরে`;
-      }
-
-      // আনুমানিক ডেলিভারি টাইম (প্রতি কিমিতে ৩ মিনিট + ১০ মিনিট)
+      // আনুমানিক ডেলিভারি টাইম
       let eta = shop.shopLat ? Math.ceil(parseFloat(distText) * 3 + 10) + ' মিনিট' : '২০-৩০ মিনিট';
-
+      
+      // 🚀 ব্যাজ চেক
+      let badges = '';
+      if (shop.isPremium) badges += '<span class="badge-premium">🌟 Premium</span> ';
+      if (shop.isVerified) badges += '<span class="badge-verified">✅</span> ';
+      
       const isBestPrice = index === 0 ? '<span class="dlv-best-price-tag">Best Price</span>' : '';
+      const cardClass = shop.isPremium ? 'premium-shop-card' : '';
 
       list.innerHTML += `
-        <div class="dlv-shop-list-item">
+        <div class="dlv-shop-list-item ${cardClass}">
           <div class="dlv-shop-info">
-            <div class="dlv-shop-name">🏪 ${shop.shopName} ${isBestPrice}</div>
+            <div class="dlv-shop-name">🏪 ${shop.shopName} ${badges} ${isBestPrice}</div>
             <div class="dlv-shop-meta">📍 ${distText} | ⏱️ ${eta} | Stock: ${shop.stock}</div>
           </div>
           <div style="text-align: right;">
@@ -1406,7 +1435,9 @@ function setupUIForRole(role, userData) {
     } else if (role === 'shopkeeper') {
       renderShopProducts();
       loadShopTotalDue();
+      loadShopBadgeStatus();
       loadShopNewOrders();
+      
     } else if (role === 'delivery') {
       document.getElementById('dlv-offline-msg').style.display = 'block';
       document.getElementById('dlv-live-orders-container').style.display = 'none';
@@ -1883,6 +1914,9 @@ function setupUIForRole(role, userData) {
         stock: stock,
         shopLat: globalUserData.lat || null,
         shopLng: globalUserData.lng || null,
+        // saveShopProduct ফাংশনে addDoc এর ভেতরে যোগ করুন:
+        isPremium: globalUserData.isPremium || false,
+        isVerified: globalUserData.isVerified || false,
         createdAt: serverTimestamp()
       });
       
@@ -2139,7 +2173,8 @@ window.toggleDeliveryStatus = function(checkbox) {
 
     loadMasterProducts(); // Master product load
     loadAdminAds(); // 🚀 অ্যাডমিনের অ্যাড লিস্ট লোড
-    
+    loadAdminBadgeList();
+      
     const ordersQ = query(collection(db, "orders"), where("status", "==", "delivered"));
     onSnapshot(ordersQ, (snap) => {
       let revenue = 0;
@@ -2148,7 +2183,78 @@ window.toggleDeliveryStatus = function(checkbox) {
     });
   }
 
-   // অ্যাড টাইপ পরিবর্তন হলে ইনপুট চেঞ্জ করা
+   // ==================== PREMIUM BADGES LOGIC (PART 3) ====================
+  
+  // ১. অ্যাডমিনের জন্য দোকানদার লিস্ট ও ব্যাজ টগল
+  function loadAdminBadgeList() {
+    const list = document.getElementById('admin-badge-shop-list');
+    if(!list) return;
+
+    const q = query(collection(db, "users"), where("role", "==", "shopkeeper"));
+    onSnapshot(q, (snap) => {
+      if(snap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো দোকানদার নেই।</div>';
+        return;
+      }
+      let html = '';
+      snap.forEach(docSnap => {
+        const shop = docSnap.data();
+        const isPrem = shop.isPremium ? 'checked' : '';
+        const isVer = shop.isVerified ? 'checked' : '';
+
+        html += `
+          <div style="padding: 10px 0; border-bottom: 1px solid #eee;">
+            <div style="font-weight: 600; font-size: 14px;">🏪 ${shop.name}</div>
+            <div style="display: flex; gap: 15px; margin-top: 8px;">
+              <label style="font-size: 12px; display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" ${isPrem} onchange="toggleShopBadge('${docSnap.id}', 'isPremium', this.checked)"> 
+                🌟 প্রিমিয়াম (ফি: ₹৫০০/মাস)
+              </label>
+              <label style="font-size: 12px; display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" ${isVer} onchange="toggleShopBadge('${docSnap.id}', 'isVerified', this.checked)"> 
+                ✅ ভেরিফাইড (ফি: ₹২০০)
+              </label>
+            </div>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  }
+
+  // ২. অ্যাডমিনের ব্যাজ আপডেট করা
+  window.toggleShopBadge = async function(uid, badgeType, value) {
+    try {
+      await updateDoc(doc(db, "users", uid), { [badgeType]: value });
+      // (এখানে চাইলে দোকানদারের ওয়ালেট থেকে ফি কেটে নেওয়ার লজিক বসানো যাবে)
+    } catch(e) { alert("ব্যাজ আপডেটে সমস্যা হয়েছে!"); }
+  };
+
+  // ৩. দোকানদারের নিজের ব্যাজ স্ট্যাটাস দেখা
+  function loadShopBadgeStatus() {
+    if (!globalUserData) return;
+    const display = document.getElementById('shop-badge-display');
+    if(!display) return;
+
+    let html = '';
+    if (globalUserData.isPremium) html += '<span class="badge-premium">🌟 Premium</span> ';
+    if (globalUserData.isVerified) html += '<span class="badge-verified">✅ Verified</span>';
+    
+    if (html === '') {
+      display.innerHTML = 'সাধারণ দোকান (কোনো ব্যাজ নেই)';
+    } else {
+      display.innerHTML = `আপনার বর্তমান ব্যাজ: ${html}`;
+    }
+  }
+
+  // ৪. ব্যাজ কেনার রিকোয়েস্ট (হোয়াটসঅ্যাপে অ্যাডমিনের কাছে যাবে)
+  window.requestBadgeUpgrade = function() {
+    const adminPhone = "919876543210"; // ⚠️ এখানে অ্যাডমিনের ফোন নম্বর দিন
+    const msg = `আসসালামু আলাইকুম,\n\nআমি ${globalUserData.name} (দোকান: ${globalUserData.name})।\nআমি আমার দোকানে "Premium" বা "Verified" ব্যাজ নিতে আগ্রহী।\nদয়া করে পেমেন্ট ডিটেইলস ও প্রসিডিউর জানাবেন।`;
+    window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+  
+  // অ্যাড টাইপ পরিবর্তন হলে ইনপুট চেঞ্জ করা
   window.toggleAdInputType = function() {
     const type = document.getElementById('admin-ad-type').value;
     if (type === 'image') {
