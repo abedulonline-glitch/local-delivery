@@ -216,17 +216,24 @@
       </div>
 
       <!-- 🚀 প্রোফাইল ছবি (ঐচ্ছিক) -->
+      <!-- 🚀 প্রোফেশনাল প্রোফাইল ছবি আপলোডার -->
       <div class="dlv-form-group" style="text-align: center; margin-bottom: 20px;">
         <div id="reg-profile-preview-container" 
-             style="width: 70px; height: 70px; border-radius: 50%; background: #f0f2f5; margin: 0 auto 10px; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 2px dashed #ccc; cursor: pointer; transition: 0.3s;" 
-             onclick="document.getElementById('reg-profile-pic').click()">
-          <span id="reg-profile-icon" style="font-size: 30px; color: #999;">👤</span>
+             style="width: 80px; height: 80px; border-radius: 50%; background: #f0f2f5; margin: 0 auto 10px; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 2px dashed #ccc; transition: 0.3s;">
+          <span id="reg-profile-icon" style="font-size: 35px; color: #999;">👤</span>
           <img id="reg-profile-img" style="width: 100%; height: 100%; object-fit: cover; display: none;">
         </div>
-        <label style="display: inline-block; padding: 5px 12px; background: #e8f0fe; color: var(--mp-primary); border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer;" onclick="document.getElementById('reg-profile-pic').click()">
-          📷 ছবি দিন (ঐচ্ছিক)
-        </label>
-        <input type="file" id="reg-profile-pic" accept="image/*" style="display: none;" onchange="previewRegProfilePic(event)">
+        
+        <!-- ক্যামেরা ও গ্যালারি বাটন -->
+        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 5px;">
+          <label style="padding: 6px 12px; background: #e8f0fe; color: var(--mp-primary); border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="pickImageSource('camera', 'reg')">
+            📷 ক্যামেরা
+          </label>
+          <label style="padding: 6px 12px; background: #f0f2f5; color: #333; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="pickImageSource('gallery', 'reg')">
+            🖼️ গ্যালারি
+          </label>
+        </div>
+        <div style="font-size: 11px; color: #888;">প্রোফাইল ছবি (ঐচ্ছিক)</div>
       </div>
 
       <div id="reg-location-section" class="mp-hidden">
@@ -251,31 +258,34 @@
 <div id="mp-app" class="mp-hidden">
   
    <!-- Topbar -->
+  <!-- Topbar -->
   <div class="mp-topbar">
-    <!-- বাম দিকে: নাম ও রোল -->
-    <div style="display: flex; flex-direction: column; justify-content: center;">
-      <h2 id="dlv-topbar-title" style="font-size: 14px; font-weight: 600; margin: 0; line-height: 1.2;">🛵 Delivery System</h2>
-      <span id="dlv-user-role" style="font-size: 10px; color: rgba(255,255,255,0.85); font-weight: bold; letter-spacing: 0.5px; margin-top: 2px;">ROLE</span>
+    <!-- বাম দিকে: প্রোফাইল পিক, নাম ও রোল -->
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <!-- প্রোফাইল ছবি -->
+      <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; justify-content: center; align-items: center; overflow: hidden; border: 2px solid rgba(255,255,255,0.5);">
+        <img id="topbar-profile-pic" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+        <span id="topbar-profile-icon" style="font-size: 20px;">👤</span>
+      </div>
+      
+      <!-- নাম ও রোল -->
+      <div style="display: flex; flex-direction: column; justify-content: center;">
+        <h2 id="dlv-topbar-title" style="font-size: 14px; font-weight: 600; margin: 0; line-height: 1.2;">Delivery System</h2>
+        <span id="dlv-user-role" style="font-size: 10px; color: rgba(255,255,255,0.85); font-weight: bold; letter-spacing: 0.5px; margin-top: 2px;">ROLE</span>
+      </div>
     </div>
 
     <!-- ডান দিকে: শেয়ার, ওয়ালেট ও লগআউট -->
     <div style="display: flex; gap: 6px; align-items: center;">
-      
-      <!-- শেয়ার বাটন -->
-      <button onclick="shareApp()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 8px; border-radius: 6px; font-size: 13px; cursor: pointer;" title="অ্যাপ শেয়ার করুন">
+      <button onclick="shareApp()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 8px; border-radius: 6px; font-size: 13px; cursor: pointer;">
         📤
       </button>
-
-      <!-- ওয়ালেট বাটন -->
       <div onclick="openRechargeModal()" style="background: rgba(255,255,255,0.2); padding: 5px 8px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: bold;">
         💰 <span id="topbar-wallet-bal">₹0.00</span>
       </div>
-
-      <!-- লগআউট বাটন -->
       <button onclick="handleLogout()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer;">
         Logout
       </button>
-      
     </div>
   </div>
 
@@ -1558,10 +1568,27 @@
   // ============================================================
   // ROLE BASED UI SETUP
   // ============================================================
-function setupUIForRole(role, userData) {
+  function setupUIForRole(role, userData) {
     mainApp.classList.remove('mp-hidden');
     document.getElementById('dlv-user-role').innerText = role.toUpperCase();
-    document.getElementById('dlv-topbar-title').innerText = `🛵 ${userData.name || 'Delivery System'}`;
+    
+    // নামের পাশে স্কুটির আইকনটি সরিয়ে ফেলা হলো (যেহেতু আমরা আলাদা প্রোফাইল পিক দেখাবো)
+    document.getElementById('dlv-topbar-title').innerText = userData.name || 'Delivery System';
+
+    // 🚀 টপবারে প্রোফাইল পিক লোড করা
+    const profilePicEl = document.getElementById('topbar-profile-pic');
+    const profileIconEl = document.getElementById('topbar-profile-icon');
+    
+    if (profilePicEl && profileIconEl) {
+      if (userData.profilePic) {
+        profilePicEl.src = userData.profilePic;
+        profilePicEl.style.display = 'block';
+        profileIconEl.style.display = 'none';
+      } else {
+        profilePicEl.style.display = 'none';
+        profileIconEl.style.display = 'block';
+      }
+    }
 
     // ৫. টপবারে ওয়ালেট আপডেট (সব রোলের জন্য)
     updateTopbarWallet(userData.walletBalance);
@@ -1600,7 +1627,6 @@ function setupUIForRole(role, userData) {
       document.getElementById('dlv-view-manager').classList.remove('mp-hidden');
     }
   }
-
   // ============================================================
   // CUSTOMER FUNCTIONS
   // ============================================================
