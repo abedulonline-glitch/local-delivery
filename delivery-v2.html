@@ -1755,16 +1755,47 @@ function setupUIForRole(role, userData) {
   }
 
   window.getCurrentLocation = function() {
-    if (!navigator.geolocation) return alert("ব্রাউজার লোকেশন সাপোর্ট করে না।");
-    document.getElementById('map-coords').innerText = "লোকেশন খোঁজা হচ্ছে...";
+    if (!navigator.geolocation) {
+      alert("আপনার ব্রাউজারে লোকেশন সাপোর্ট করছে না।");
+      return;
+    }
+    
+    document.getElementById('map-coords').innerText = "লোকেশন খোঁজা হচ্ছে... (GPS অন করুন)";
+    
+    // 🚀 সঠিক জিপিএস লোকেশন পাওয়ার সেটিংস
+    const options = {
+      enableHighAccuracy: true, // জিপিএস ব্যবহার করতে বাধ্য করবে
+      timeout: 15000,           // সর্বোচ্চ ১৫ সেকেন্ড অপেক্ষা করবে
+      maximumAge: 0             // পুরোনো ক্যাশ করা লোকেশন ব্যবহার করবে না
+    };
+    
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const latLng = L.latLng(position.coords.latitude, position.coords.longitude);
-        pickerMap.setView(latLng, 17);
-        setPickerMarker(latLng);
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        if (pickerMap) {
+          const latLng = L.latLng(lat, lng);
+          pickerMap.setView(latLng, 17); // ম্যাপ ওই জায়গায় জুম করবে
+          setPickerMarker(latLng);       // পিন বসাবে
+        }
       },
-      () => alert("লোকেশন পাওয়া যায়নি।"),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      (error) => {
+        console.error("GPS Error:", error);
+        let errMsg = "লোকেশন পাওয়া যায়নি। ";
+        
+        if (error.code === 1) {
+          errMsg += "দয়া করে ব্রাউজারের সেটিংসে গিয়ে লোকেশন পারমিশন (Allow Location) দিন।";
+        } else if (error.code === 2) {
+          errMsg += "আপনার মোবাইলের GPS অন করুন।";
+        } else if (error.code === 3) {
+          errMsg += "লোকেশন পেতে বেশি সময় লাগছে। আবার চেষ্টা করুন।";
+        }
+
+        alert(errMsg);
+        document.getElementById('map-coords').innerText = "লোকেশন পাওয়া যায়নি।";
+      },
+      options
     );
   };
 
