@@ -268,6 +268,11 @@
         💰 <span id="topbar-wallet-bal">₹0.00</span>
       </div>
 
+           <!-- 🚀 শেয়ার বাটন -->
+      <button onclick="shareApp()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 8px; border-radius: 6px; font-size: 14px; cursor: pointer;" title="অ্যাপ শেয়ার করুন">
+        📤
+      </button>
+      
       <span id="dlv-user-role" style="font-size: 11px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px;">Role</span>
       <button onclick="handleLogout()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">Logout</button>
     </div>
@@ -959,6 +964,12 @@
   const mainApp = document.getElementById('mp-app');
 
   onAuthStateChanged(auth, async (user) => {
+       // 🚀 URL থেকে রেফারেল আইডি সেভ করা (যদি কেউ লিংকে ক্লিক করে আসে)
+    const urlParams = new URLSearchParams(window.location.search);
+    const refId = urlParams.get('ref');
+    if (refId) {
+      localStorage.setItem('dlv_referrer_id', refId);
+    }
     loader.classList.remove('mp-hidden'); // লোডার দেখাও
     
     if (user) {
@@ -1115,6 +1126,9 @@
         profilePic: regProfilePicUrl || null,
         lat: regLat || null,   // লোকেশন সেভ
         lng: regLng || null,   // লোকেশন সেভ
+                // 🚀 রেফারেল ডেটা
+        referredBy: localStorage.getItem('dlv_referrer_id') || null,
+        hasGivenReferralReward: false, // একবারই রিওয়ার্ড দেওয়ার ট্র্যাকিং
         createdAt: serverTimestamp()
       });
 
@@ -1496,6 +1510,27 @@
         </div>
       `;
     });
+  };
+  
+   // ==================== REFER & EARN LOGIC ====================
+  
+  // ১. অ্যাপ শেয়ার করার ফাংশন
+  window.shareApp = function() {
+    if (!currentUser) return;
+    
+    // লিংকের শেষে ইউজারের UID যুক্ত করা হলো
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?ref=${currentUser.uid}`;
+    
+    let msg = `আসসালামু আলাইকুম,\n\nআমাদের নতুন ডেলিভারি অ্যাপে যুক্ত হয়ে সহজে কেনাকাটা ও ডেলিভারি করুন।\n\nঅ্যাপটি ওপেন করতে নিচের লিংকে ক্লিক করুন:\n${shareUrl}`;
+    
+    // যদি কাস্টমার হয় তবে তাকে লোভ দেখানো
+    if (userRole === 'customer') {
+      msg = `আসসালামু আলাইকুম,\n\nআমি এই অ্যাপটি ব্যবহার করছি। তুমিও যুক্ত হও এবং পেয়ে যাও নিশ্চিত ডিসকাউন্ট!\n\nআমার লিংক দিয়ে রেজিস্ট্রেশন করলে এবং ৫০০ টাকার কেনাকাটা করলে তুমি ও আমি দুজনেই বোনাস পাব!\n\nলিংক:\n${shareUrl}`;
+    }
+
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(whatsappUrl, '_blank');
   };
   
   window.handleLogout = async function() {
@@ -2109,6 +2144,8 @@ window.toggleDeliveryStatus = function(checkbox) {
                 deliveredAt: serverTimestamp(), 
                 note: "Force delivered (OTP forgotten)" 
               });
+
+              await processReferralReward(orderData);
               
               // ওয়ালেট আপডেট
               await updateWalletsOnDelivery(orderData);
@@ -2157,6 +2194,52 @@ window.toggleDeliveryStatus = function(checkbox) {
       alert("ডেলিভারি কনফার্ম করতে সমস্যা হয়েছে।");
     }
   };
+
+    // ২. ডেলিভারি সম্পন্ন হলে রিওয়ার্ড প্রসেস করা
+  async function processReferralReward(orderData) {
+    try {
+      // শর্ত ১: কাস্টমারের বিল ৫০০ টাকা বা তার বেশি হতে হবে
+      if (orderData.price < 500) return;
+
+      // কাস্টমারের ডেটা আনা
+      const customerRef = doc(db, "users", orderData.customerId);
+      const customerSnap = await getDoc(customerRef);
+      if (!customerSnap.exists()) return;
+
+      const customer = customerSnap.data();
+
+      // শর্ত ২: কাস্টমারকে রেফার করা হয়েছে কি না এবং আগে রিওয়ার্ড পেয়েছে কি না
+      if (customer.referredBy && customer.hasGivenReferralReward === false) {
+        
+        // ১. রেফারকারীর (যিনি শেয়ার করেছিলেন) ডেটা আনা
+        const referrerRef = doc(db, "users", customer.referredBy);
+        const referrerSnap = await getDoc(referrerRef);
+        
+        if (referrerSnap.exists()) {
+          const referrer = referrerSnap.data();
+          
+          // শর্ত ৩: রেফারকারী অ্যাডমিন হলে কোনো রিওয়ার্ড পাবে না
+          if (referrer.role !== 'admin') {
+            
+            // 🚀 রিওয়ার্ড লজিক (দোকানদার, ডেলিভারি বয়, কাস্টমার সবার জন্য ₹২০ ওয়ালেট বোনাস)
+            const currentBal = referrer.walletBalance || 0;
+            await updateDoc(referrerRef, {
+              walletBalance: currentBal + 20
+            });
+            
+            console.log(`Referral reward of ₹20 given to ${referrer.name}`);
+          }
+        }
+
+        // ২. কাস্টমারের অ্যাকাউন্টে রিওয়ার্ড দেওয়া হয়ে গেছে বলে মার্ক করা (যাতে দ্বিতীয়বার না পায়)
+        await updateDoc(customerRef, {
+          hasGivenReferralReward: true
+        });
+      }
+    } catch (e) {
+      console.error("Referral Reward Error:", e);
+    }
+  }
 
   // ==================== HELPER FUNCTIONS (ওয়ালেট ও UI আপডেটের জন্য) ====================
   
