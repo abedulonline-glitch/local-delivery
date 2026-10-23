@@ -463,15 +463,37 @@
         <div id="shop-product-list"></div>
       </div>
 
-      <!-- দোকানের খাতা -->
-      <div class="mp-card">
-        <h3 style="justify-content: space-between;">
-          📒 দোকানের খাতা
-          <button class="mp-btn" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px; background: var(--mp-primary); color: white;" onclick="openShopKhataModal()">খাতা দেখুন</button>
-        </h3>
-        <div style="font-size: 13px; color: var(--mp-text-light);">মোট বাকি: <strong id="shop-total-due" style="color: var(--mp-danger); font-size: 16px;">₹0.00</strong></div>
-      </div>
+      <!-- 🔒 খাতা ফিচার সেকশন (লকড ও আনলকড) -->
+<div class="mp-card" id="shop-khata-wrapper">
+  
+  <!-- লকড ভিউ -->
+  <div id="khata-locked-view" class="mp-hidden" style="text-align: center; padding: 15px 0;">
+    <div style="font-size: 35px; margin-bottom: 10px;">🔒</div>
+    <h3 style="color: var(--mp-primary);">খাতা ফিচারটি লক করা আছে</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">কাস্টমারের বাকি হিসাব রাখতে এবং ডিজিটাল খাতা ব্যবহার করতে চার্জ প্রদান করুন।</p>
+    
+    <div style="font-size: 18px; font-weight: bold; color: var(--mp-danger); margin-bottom: 15px;">
+      ফি: <span id="khata-view-fee">₹0</span> / ৩০ দিন
     </div>
+    
+    <button class="mp-btn mp-btn-success" onclick="buyKhataSubscription()" id="btn-buy-khata">🚀 খাতা চালু করুন</button>
+  </div>
+
+  <!-- আনলকড ভিউ -->
+  <div id="khata-unlocked-view" class="mp-hidden">
+    <h3 style="justify-content: space-between;">
+      📒 দোকানের খাতা
+      <button class="mp-btn" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px; background: var(--mp-primary); color: white;" onclick="openShopKhataModal()">খাতা দেখুন</button>
+    </h3>
+    <div style="font-size: 13px; color: var(--mp-text-light); margin-bottom: 5px;">
+      মোট বাকি: <strong id="shop-total-due" style="color: var(--mp-danger); font-size: 16px;">₹0.00</strong>
+    </div>
+    <div style="font-size: 11px; color: var(--mp-success);">
+      মেয়াদ শেষ হবে: <span id="khata-expiry-date">--</span>
+    </div>
+  </div>
+
+</div>
    
     <!-- ==================== DELIVERY BOY DASHBOARD ==================== -->
     <div id="dlv-view-delivery" class="mp-hidden">
@@ -1044,7 +1066,33 @@
   </div>
 </div>
   
-  <!-- Crop Modal (Global) -->
+<!-- Khata Subscription Modal -->
+<div id="dlv-khata-sub-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <h3 style="margin-bottom: 10px; color: var(--mp-primary); text-align: center;">📒 খাতা ফিচার চালু করুন</h3>
+    
+    <div style="background: #fef7e0; padding: 15px; border-radius: 8px; border-left: 4px solid var(--mp-warning); margin-bottom: 15px;">
+      <div style="font-size: 14px; font-weight: bold; color: #b06000; margin-bottom: 5px;">💳 পেমেন্ট বিবরণ</div>
+      <p style="font-size: 13px; color: #333;">আপনার ওয়ালেট থেকে <b id="khata-modal-price">₹০</b> কেটে নেওয়া হবে।</p>
+      <p style="font-size: 11px; color: #666; margin-top: 5px;">আপনার বর্তমান ব্যালেন্স: <span id="khata-modal-balance">₹০.০০</span></p>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <h4 style="font-size: 14px; margin-bottom: 8px; color: #333;">📜 শর্তাবলী:</h4>
+      <ul style="font-size: 12px; color: #555; padding-left: 20px; line-height: 1.6;">
+        <li>এই ফিচারের মেয়াদ থাকবে ৩০ দিন।</li>
+        <li>মেয়াদ শেষ হলে স্বয়ংক্রিয়ভাবে খাতা লক হয়ে যাবে।</li>
+        <li>আপনার ওয়ালেটে পর্যাপ্ত ব্যালেন্স থাকতে হবে।</li>
+      </ul>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <button class="mp-btn" style="margin: 0; background: #f0f2f5; color: #333;" onclick="document.getElementById('dlv-khata-sub-modal').classList.remove('active')">বাতিল</button>
+      <button class="mp-btn mp-btn-success" style="margin: 0;" id="btn-confirm-khata" onclick="confirmKhataPurchase()">সম্মত আছি, চালু করুন</button>
+    </div>
+  </div>
+</div>
+        <!-- Crop Modal (Global) -->
 <div id="dlv-crop-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10001; flex-direction: column;">
   <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white;">
     <span onclick="closeCropModal()" style="font-size: 24px; cursor: pointer;">✖</span>
@@ -1839,6 +1887,7 @@
       renderShopProducts();
       loadShopTotalDue();
       loadShopBadgeStatus();
+      checkKhataSubscription();
       loadShopNewOrders();
       
     } else if (role === 'delivery') {
@@ -3587,6 +3636,122 @@ window.toggleDeliveryStatus = function(checkbox) {
     }
   };
 
+// ==================== KHATA SUBSCRIPTION LOGIC (PART 2) ====================
+
+// ১. খাতার স্ট্যাটাস চেক করা (লগইন করার পর বা রিফ্রেশে কল হবে)
+async function checkKhataSubscription() {
+  if (!globalUserData) return;
+
+  const lockedView = document.getElementById('khata-locked-view');
+  const unlockedView = document.getElementById('khata-unlocked-view');
+  const feeDisplay = document.getElementById('khata-view-fee');
+
+  // অ্যাডমিনের সেট করা দাম দেখানো
+  if (feeDisplay && globalSettings.khataFee) {
+    feeDisplay.innerText = `₹${globalSettings.khataFee}`;
+  }
+
+  const now = new Date();
+  let isExpired = true;
+
+  // যদি ইউজারের খাতার মেয়াদ থাকে এবং তা ভবিষ্যতের হয়
+  if (globalUserData.khataExpiry) {
+    const expiryDate = globalUserData.khataExpiry.toDate(); // Firestore Timestamp to JS Date
+    if (expiryDate > now) {
+      isExpired = false;
+      // মেয়াদ শেষের তারিখ দেখানো
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      document.getElementById('khata-expiry-date').innerText = expiryDate.toLocaleDateString('bn-BD', options);
+    }
+  }
+
+  if (isExpired) {
+    // লক করা অবস্থা দেখানো
+    lockedView.classList.remove('mp-hidden');
+    unlockedView.classList.add('mp-hidden');
+    if (typeof loadShopTotalDue === 'function') {
+      // total due লুকানো থাকবে বা আপডেট হবে না
+    }
+  } else {
+    // আনলক করা অবস্থা দেখানো
+    lockedView.classList.add('mp-hidden');
+    unlockedView.classList.remove('mp-hidden');
+    if (typeof loadShopTotalDue === 'function') loadShopTotalDue(); // বাকির হিসাব লোড হবে
+  }
+}
+
+// ২. খাতা কেনার মডাল ওপেন করা
+window.buyKhataSubscription = function() {
+  const fee = globalSettings.khataFee || 200;
+  const balance = globalUserData.walletBalance || 0;
+
+  if (balance < fee) {
+    alert("দুঃখিত! আপনার ওয়ালেটে পর্যাপ্ত ব্যালেন্স নেই। দয়া করে রিচার্জ করুন।");
+    openRechargeModal(); // রিচার্জ মডাল ওপেন হবে
+    return;
+  }
+
+  document.getElementById('khata-modal-price').innerText = `₹${fee}`;
+  document.getElementById('khata-modal-balance').innerText = `₹${balance.toFixed(2)}`;
+  document.getElementById('dlv-khata-sub-modal').classList.add('active');
+};
+
+// ৩. খাতা কেনা কনফার্ম করা (ওয়ালেট থেকে টাকা কাটা)
+window.confirmKhataPurchase = async function() {
+  const btn = document.getElementById('btn-confirm-khata');
+  btn.innerText = "⏳ প্রসেস হচ্ছে...";
+  btn.disabled = true;
+
+  const fee = globalSettings.khataFee || 200;
+
+  try {
+    // ক) দোকানদারের ওয়ালেট থেকে টাকা কাটা
+    const shopRef = doc(db, "users", currentUser.uid);
+    const shopSnap = await getDoc(shopRef);
+    const currentBal = shopSnap.data().walletBalance || 0;
+    const newBal = currentBal - fee;
+
+    // ৩০ দিন পরের একটি ডেট তৈরি করা
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+
+    // খ) ডেটাবেস আপডেট (টাকা কাটা ও মেয়াদ সেট করা)
+    await updateDoc(shopRef, {
+      walletBalance: newBal,
+      khataExpiry: expiryDate // ফায়ারস্টোরে Date হিসেবে সেভ হবে
+    });
+
+    // গ) অ্যাডমিনের ওয়ালেটে টাকা যোগ করা
+    const adminQuery = query(collection(db, "users"), where("role", "==", "admin"));
+    const adminSnap = await getDocs(adminQuery);
+    if (!adminSnap.empty) {
+      const adminUid = adminSnap.docs[0].id;
+      const adminRef = doc(db, "users", adminUid);
+      const adminData = await getDoc(adminRef);
+      await updateDoc(adminRef, {
+        walletBalance: (adminData.data().walletBalance || 0) + fee
+      });
+    }
+
+    // ঘ) লোকাল ডেটা আপডেট ও UI রিফ্রেশ
+    globalUserData.walletBalance = newBal;
+    globalUserData.khataExpiry = { toDate: () => expiryDate }; // লোকাল অবজেক্ট হিসেবে সিমুলেট
+    
+    updateTopbarWallet(newBal);
+    await checkKhataSubscription(); // UI আপডেট (আনলক হয়ে যাবে)
+    
+    alert("🎉 অভিনন্দন! আপনার খাতা ফিচার সফলভাবে চালু হয়েছে।");
+    document.getElementById('dlv-khata-sub-modal').classList.remove('active');
+
+  } catch (e) {
+    console.error(e);
+    alert("খাতা চালু করতে সমস্যা হয়েছে!");
+  } finally {
+    btn.innerText = "সম্মত আছি, চালু করুন";
+    btn.disabled = false;
+  }
+};
+  
   // ৩. কাস্টমারের অর্ডার লিস্টে ট্র্যাকিং আপডেট (onSnapshot)
   // আপনার openCustomerOrdersModal ফাংশনে onSnapshot এর ভেতরে নিচের লজিকটি বসাতে হবে।
   // (আপনি যদি পুরো ফাংশনটি রিপ্লেস করতে চান তবে জানাবেন, আপাতত শুধু ভেতরের অংশ দেখুন)
