@@ -218,6 +218,8 @@
       <!-- 🚀 প্রোফাইল ছবি (ঐচ্ছিক) -->
       <!-- 🚀 প্রোফেশনাল প্রোফাইল ছবি আপলোডার -->
       <div class="dlv-form-group" style="text-align: center; margin-bottom: 20px;">
+
+               <input type="file" id="reg-profile-pic-file" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'reg')"> 
         <div id="reg-profile-preview-container" 
              style="width: 80px; height: 80px; border-radius: 50%; background: #f0f2f5; margin: 0 auto 10px; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 2px dashed #ccc; transition: 0.3s;">
           <span id="reg-profile-icon" style="font-size: 35px; color: #999;">👤</span>
@@ -2964,14 +2966,26 @@ window.toggleDeliveryStatus = function(checkbox) {
   // ============================================================
   window.pickImageSource = function(source, context) {
     currentUploadContext = context;
+    
     let fileInput;
     if (context === 'mp') fileInput = document.getElementById('mp-image-input');
     else if (context === 'edit-mp') fileInput = document.getElementById('ep-image-input');
-    else if (context === 'ad') fileInput = document.getElementById('ad-image-input'); // 🚀 নতুন লাইন
+    else if (context === 'ad') fileInput = document.getElementById('ad-image-input');
+    else if (context === 'reg') fileInput = document.getElementById('reg-profile-pic-file'); // 🚀 রেজিস্ট্রেশন ইনপুট
     else fileInput = document.getElementById('add-p-image-file');
     
-    if (source === 'camera') fileInput.setAttribute('capture', 'environment');
-    else fileInput.removeAttribute('capture');
+    // 🚀 যদি ইনপুট ফিল্ড খুঁজে না পাওয়া যায়, তবে এরর না দিয়ে অ্যালার্ট দেবে
+    if (!fileInput) {
+      console.error("File input not found for context:", context);
+      alert("সিস্টেমে সমস্যা হচ্ছে! ফাইল ইনপুট পাওয়া যায়নি। পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।");
+      return;
+    }
+    
+    if (source === 'camera') {
+      fileInput.setAttribute('capture', 'environment');
+    } else {
+      fileInput.removeAttribute('capture');
+    }
     fileInput.click();
   };
 
