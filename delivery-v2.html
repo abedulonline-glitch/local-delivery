@@ -187,6 +187,7 @@
 </div>
 
 <!-- Auth Screen (Login & Register) -->
+<!-- Auth Screen (Login & Register) -->
 <div id="dlv-login-screen" class="mp-hidden" style="padding: 20px; max-width: 400px; margin: 50px auto;">
   <div class="mp-card" style="text-align: center;">
     
@@ -194,10 +195,7 @@
     <div id="auth-login-form">
       <h2 style="color: var(--mp-primary); margin-bottom: 20px;">🛵 Delivery App Login</h2>
       <div class="dlv-form-group">
-        <input type="email" id="login-email" class="dlv-input" placeholder="ইমেইল দিন" style="margin-bottom: 10px;">
-      </div>
-      <div class="dlv-form-group">
-        <input type="password" id="login-password" class="dlv-input" placeholder="পাসওয়ার্ড দিন" style="margin-bottom: 10px;">
+        <input type="tel" id="login-phone" class="dlv-input" placeholder="১০ ডিজিটের মোবাইল নাম্বার" maxlength="10" style="margin-bottom: 10px;">
       </div>
       <button class="mp-btn mp-btn-primary" onclick="handleLogin()" id="login-btn">লগইন করুন</button>
       <div id="login-error" style="color: red; font-size: 12px; margin-top: 10px;"></div>
@@ -214,40 +212,34 @@
         <input type="text" id="reg-name" class="dlv-input" placeholder="আপনার নাম" style="margin-bottom: 10px;">
       </div>
       <div class="dlv-form-group">
-        <input type="tel" id="reg-phone" class="dlv-input" placeholder="মোবাইল নম্বর" style="margin-bottom: 10px;">
+        <input type="tel" id="reg-phone" class="dlv-input" placeholder="১০ ডিজিটের মোবাইল নাম্বার" maxlength="10" style="margin-bottom: 10px;">
       </div>
-      <div class="dlv-form-group">
-        <input type="email" id="reg-email" class="dlv-input" placeholder="ইমেইল দিন" style="margin-bottom: 10px;">
-      </div>
-      <div class="dlv-form-group">
-        <input type="password" id="reg-password" class="dlv-input" placeholder="পাসওয়ার্ড দিন" style="margin-bottom: 10px;">
-      </div>
-                <!-- 🚀 নতুন: প্রোফাইল ছবি ও লোকেশন -->
-            <!-- 🚀 নতুন প্রোফেশনাল প্রোফাইল ছবি আপলোডার -->
+
+      <!-- 🚀 প্রোফাইল ছবি (ঐচ্ছিক) -->
       <div class="dlv-form-group" style="text-align: center; margin-bottom: 20px;">
         <div id="reg-profile-preview-container" 
-             style="width: 85px; height: 85px; border-radius: 50%; background: #f0f2f5; margin: 0 auto 10px; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 2px dashed #ccc; cursor: pointer; transition: 0.3s;" 
+             style="width: 70px; height: 70px; border-radius: 50%; background: #f0f2f5; margin: 0 auto 10px; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 2px dashed #ccc; cursor: pointer; transition: 0.3s;" 
              onclick="document.getElementById('reg-profile-pic').click()">
-          <span id="reg-profile-icon" style="font-size: 35px; color: #999;">👤</span>
+          <span id="reg-profile-icon" style="font-size: 30px; color: #999;">👤</span>
           <img id="reg-profile-img" style="width: 100%; height: 100%; object-fit: cover; display: none;">
         </div>
-        <label style="display: inline-block; padding: 6px 14px; background: #e8f0fe; color: var(--mp-primary); border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;" onclick="document.getElementById('reg-profile-pic').click()">
-          📷 প্রোফাইল ছবি দিন (ঐচ্ছিক)
+        <label style="display: inline-block; padding: 5px 12px; background: #e8f0fe; color: var(--mp-primary); border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer;" onclick="document.getElementById('reg-profile-pic').click()">
+          📷 ছবি দিন (ঐচ্ছিক)
         </label>
         <input type="file" id="reg-profile-pic" accept="image/*" style="display: none;" onchange="previewRegProfilePic(event)">
       </div>
-      
-      <button class="mp-btn mp-btn-success" onclick="handleRegister()" id="reg-btn">রেজিস্ট্রেশন করুন</button>
-      <div id="reg-error" style="color: red; font-size: 12px; margin-top: 10px;"></div>
 
       <div id="reg-location-section" class="mp-hidden">
         <div class="dlv-form-group">
-          <label style="text-align: left; display: block; font-size: 12px; color: #555;">আপনার দোকান/বেসের লোকেশন ম্যাপে পিন করুন *</label>
+          <label style="text-align: left; display: block; font-size: 12px; color: #555;">লোকেশন ম্যাপে পিন করুন *</label>
           <button class="mp-btn" style="margin-bottom: 5px; background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 6px;" onclick="initRegMap()">📍 ম্যাপ ওপেন করুন</button>
           <div id="reg-map-container"></div>
           <div id="reg-location-status" style="font-size: 11px; color: var(--mp-danger); margin-top: 5px;">❌ লোকেশন সেট করা হয়নি</div>
         </div>
       </div>
+
+      <button class="mp-btn mp-btn-success" onclick="handleRegister()" id="reg-btn">রেজিস্ট্রেশন করুন</button>
+      <div id="reg-error" style="color: red; font-size: 12px; margin-top: 10px;"></div>
       
       <p style="margin-top: 15px; font-size: 13px;">অ্যাকাউন্ট আছে? <a href="#" onclick="toggleAuthMode()" style="color: var(--mp-primary); font-weight: bold;">লগইন করুন</a></p>
     </div>
@@ -1091,13 +1083,11 @@
   window.handleRegister = async function() {
     const name = document.getElementById('reg-name').value.trim();
     const phone = document.getElementById('reg-phone').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-password').value;
     const btn = document.getElementById('reg-btn');
     const errorEl = document.getElementById('reg-error');
 
-    if (!name || !phone || !email || !password) {
-      errorEl.innerText = "সব তথ্য সঠিকভাবে দিন!";
+    if (!name || !phone || phone.length < 10) {
+      errorEl.innerText = "সঠিক নাম এবং ১০ ডিজিটের মোবাইল নাম্বার দিন!";
       return;
     }
 
@@ -1106,11 +1096,14 @@
       return;
     }
 
+    // ফোন নাম্বারকে ইমেইলে কনভার্ট করা হচ্ছে
+    const fakeEmail = `${phone}@delivery.com`;
+
     btn.innerText = "⏳ অপেক্ষা করুন...";
     btn.disabled = true;
 
     try {
-      // ১. ছবি থাকলে ImgBB-তে আপলোড
+      // ১. ছবি থাকলে ImgBB-তে আপলোড (ঐচ্ছিক)
       const fileInput = document.getElementById('reg-profile-pic');
       if (fileInput.files.length > 0) {
         const formData = new FormData();
@@ -1120,31 +1113,32 @@
         if (imgData.success) regProfilePicUrl = imgData.data.url;
       }
 
-      // ২. অ্যাকাউন্ট তৈরি
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // ২. অ্যাকাউন্ট তৈরি (ইমেইল ও ফিক্সড পাসওয়ার্ড দিয়ে)
+      const userCredential = await createUserWithEmailAndPassword(auth, fakeEmail, DUMMY_PASSWORD);
       const user = userCredential.user;
 
       // ৩. ফায়ারস্টোরে ডেটা সেভ
       await setDoc(doc(db, "users", user.uid), {
         name: name,
-        phone: phone,
-        email: email,
+        phone: phone, // আসল ফোন নাম্বারটি সেভ করা হলো
+        email: fakeEmail, // সিস্টেমের জন্য
         role: registerRole,
         walletBalance: 0,
         isManager: registerRole === 'manager' ? true : false,
         profilePic: regProfilePicUrl || null,
-        lat: regLat || null,   // লোকেশন সেভ
-        lng: regLng || null,   // লোকেশন সেভ
-                // 🚀 রেফারেল ডেটা
-        referredBy: localStorage.getItem('dlv_referrer_id') || null,
-        hasGivenReferralReward: false, // একবারই রিওয়ার্ড দেওয়ার ট্র্যাকিং
+        lat: regLat || null,
+        lng: regLng || null,
         createdAt: serverTimestamp()
       });
 
       alert("সফলভাবে রেজিস্ট্রেশন সম্পন্ন হয়েছে!");
     } catch (error) {
       console.error(error);
-      errorEl.innerText = error.message.includes('email-already-in-use') ? "এই ইমেইল আগেই ব্যবহার করা হয়েছে!" : "রেজিস্ট্রেশনে সমস্যা হয়েছে!";
+      if(error.code === 'auth/email-already-in-use') {
+        errorEl.innerText = "এই মোবাইল নাম্বারটি দিয়ে আগেই অ্যাকাউন্ট করা হয়েছে! দয়া করে লগইন করুন।";
+      } else {
+        errorEl.innerText = "রেজিস্ট্রেশনে সমস্যা হয়েছে!";
+      }
       btn.innerText = "রেজিস্ট্রেশন করুন";
       btn.disabled = false;
     }
@@ -1185,25 +1179,34 @@
   }
   
   // ==================== LOGIN FUNCTION ====================
+   // ==================== AUTH LOGIC (PHONE AS EMAIL) ====================
+  const DUMMY_PASSWORD = "Delivery@123"; // সব ইউজারের জন্য এই ফিক্সড পাসওয়ার্ডটি ব্যবহার হবে
+
   window.handleLogin = async function() {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value.trim();
+    const phone = document.getElementById('login-phone').value.trim();
     const btn = document.getElementById('login-btn');
+    const errorEl = document.getElementById('login-error');
     
-    if(!email || !password) {
-      document.getElementById('login-error').innerText = "ইমেইল এবং পাসওয়ার্ড দিন!";
+    if(!phone || phone.length < 10) {
+      errorEl.innerText = "দয়া করে সঠিক ১০ ডিজিটের মোবাইল নাম্বার দিন!";
       return;
     }
 
+    // ফোন নাম্বারকে ইমেইলে কনভার্ট করা হচ্ছে
+    const fakeEmail = `${phone}@delivery.com`;
     btn.innerText = "অপেক্ষা করুন...";
     btn.disabled = true;
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, fakeEmail, DUMMY_PASSWORD);
       // সফল হলে onAuthStateChanged অটো ট্রিগার হবে
     } catch (error) {
       console.error(error);
-      document.getElementById('login-error').innerText = "ভুল ইমেইল বা পাসওয়ার্ড!";
+      if(error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        errorEl.innerText = "এই নাম্বারটি রেজিস্টার্ড নেই! দয়া করে রেজিস্ট্রেশন করুন।";
+      } else {
+        errorEl.innerText = "লগইনে সমস্যা হয়েছে। আবার চেষ্টা করুন।";
+      }
       btn.innerText = "লগইন করুন";
       btn.disabled = false;
     }
