@@ -366,6 +366,35 @@
     <div id="dlv-view-shopkeeper" class="mp-hidden">
       <div class="dlv-dashboard-title">দোকানদার ড্যাশবোর্ড</div>
 
+      <!-- 🚀 SaaS Standalone Mode & Delivery Settings -->
+      <div class="mp-card" style="border-left: 4px solid #7b1fa2;">
+        <h3>⚙️ স্টোর সেটিংস</h3>
+        
+        <!-- Standalone Toggle -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">
+          <div>
+            <div style="font-size: 14px; font-weight: bold; color: #7b1fa2;">নিজস্ব স্টোর মোড (SaaS)</div>
+            <div style="font-size: 11px; color: #666;">এটি অন করলে আপনি নিজের প্রোডাক্ট অ্যাড করতে পারবেন।</div>
+          </div>
+          <label class="dlv-switch">
+            <input type="checkbox" id="toggle-standalone" onchange="handleStandaloneToggle(this.checked, this)">
+            <span class="dlv-slider" style="--mp-primary: #7b1fa2;"></span>
+          </label>
+        </div>
+
+        <!-- Delivery Mode Toggle -->
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">নিজস্ব ডেলিভারি বয়</div>
+            <div style="font-size: 11px; color: #666;">এটি অন করলে অর্ডার ডেলিভারি বয়দের কাছে বিড হবে না, আপনি নিজেই ডেলিভারি দেবেন।</div>
+          </div>
+          <label class="dlv-switch">
+            <input type="checkbox" id="toggle-self-delivery" onchange="handleSelfDeliveryToggle(this.checked)">
+            <span class="dlv-slider"></span>
+          </label>
+        </div>
+      </div>
+      
       <!-- ব্যাজ স্ট্যাটাস ও টগল -->
       <div class="mp-card" style="border-left: 4px solid var(--mp-primary); background: #e8f0fe;">
         <h3>🌟 আপনার দোকানের স্ট্যাটাস</h3>
@@ -667,6 +696,74 @@
       <!-- Products will load here -->
       <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
     </div>
+  </div>
+</div>
+
+    <!-- Standalone Custom Product Modal (Shopkeeper) -->
+<div id="dlv-custom-product-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-custom-product-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: #7b1fa2;">✨ নিজস্ব প্রোডাক্ট যোগ করুন</h3>
+    
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের নাম *</label>
+      <input type="text" id="cp-name" class="dlv-input" placeholder="যেমন: নিজস্ব ব্র্যান্ডের মিনিকেট চাল">
+    </div>
+
+    <div class="dlv-form-group">
+      <label>ক্যাটাগরি * (নিজের ইচ্ছেমতো লিখুন)</label>
+      <input type="text" id="cp-category" class="dlv-input" placeholder="যেমন: আমার মুদি" list="shop-cat-list">
+      <datalist id="shop-cat-list">
+        <option value="Grocery"></option>
+        <option value="Restaurant"></option>
+        <option value="Furniture"></option>
+      </datalist>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>ইউনিট *</label>
+        <select id="cp-unit" class="dlv-input">
+          <option value="kg">কেজি (kg)</option>
+          <option value="ltr">লিটার (ltr)</option>
+          <option value="pcs">পিস (pcs)</option>
+          <option value="box">বক্স (box)</option>
+          <option value="grm">গ্রাম (grm)</option>
+          <option value="drsjon">ডজন (drsjon)</option>
+        </select>
+      </div>
+      <div class="dlv-form-group">
+        <label>গ্রেড (Grade) *</label>
+        <select id="cp-grade" class="dlv-input">
+          <option value="A">Grade A</option>
+          <option value="B">Grade B</option>
+          <option value="C">Grade C</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>দাম (₹) *</label>
+        <input type="number" id="cp-price" class="dlv-input" placeholder="0.00">
+      </div>
+      <div class="dlv-form-group">
+        <label>স্টক *</label>
+        <input type="number" id="cp-stock" class="dlv-input" placeholder="0">
+      </div>
+    </div>
+
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের ছবি</label>
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'cp')">📷 ক্যামেরা</button>
+        <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'cp')">🖼️ গ্যালারি</button>
+      </div>
+      <img id="cp-image-preview" style="width: 100%; height: 120px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
+      <input type="file" id="cp-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'cp')">
+    </div>
+
+    <button class="mp-btn mp-btn-success" id="btn-save-cp" onclick="saveCustomProduct()" style="margin-top: 10px; background: #7b1fa2;">💾 সেভ করুন</button>
   </div>
 </div>
 
@@ -2013,37 +2110,169 @@
   // ==================== SHOPKEEPER CATALOG LOGIC ====================
   let selectedMasterProduct = null;
 
-  // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা
-  window.openAddProductModal = function() {
-    document.getElementById('dlv-catalog-modal').classList.add('active');
-    const list = document.getElementById('catalog-list-container');
-    
-    onSnapshot(collection(db, "master_products"), (snap) => {
-      if(snap.empty) {
-        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
+  // ==================== SAAS STANDALONE MODE LOGIC ====================
+  let isStandaloneMode = false;
+  let isSelfDelivery = false;
+
+  // ১. স্ট্যান্ডঅ্যালোন মোড টগল
+  window.handleStandaloneToggle = async function(isChecked, toggleEl) {
+    if (isChecked) {
+      if (!confirm("সতর্কতা: নিজস্ব স্টোর মোড চালু করতে আপনার ওয়ালেট থেকে মাসিক ₹৩০০ চার্জ কাটা হবে। আপনি কি রাজি?")) {
+        toggleEl.checked = false;
         return;
       }
       
-      let html = '';
-      snap.forEach(docSnap => {
-        const p = docSnap.data();
-        html += `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid #eee; cursor:pointer;" onclick='selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;")}, "${docSnap.id}")'>
-            <div style="display:flex; align-items:center; gap:10px;">
-              <div style="width:40px; height:40px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
-                ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
-              </div>
-              <div>
-                <div style="font-size:13px; font-weight:600;">${p.name}</div>
-                <div style="font-size:11px; color:#666;">${p.grade} | ${p.unit}</div>
-              </div>
+      const balance = globalUserData.walletBalance || 0;
+      if (balance < 300) {
+        alert("দুঃখিত, আপনার ওয়ালেটে পর্যাপ্ত ব্যালেন্স নেই (প্রয়োজন ₹৩০০)। দয়া করে রিচার্জ করুন।");
+        toggleEl.checked = false;
+        return;
+      }
+
+      // টাকা কাটা ও ডেটাবেস আপডেট
+      try {
+        await updateDoc(doc(db, "users", currentUser.uid), { isStandalone: true, walletBalance: balance - 300 });
+        globalUserData.isStandalone = true;
+        globalUserData.walletBalance = balance - 300;
+        updateTopbarWallet(balance - 300);
+        isStandaloneMode = true;
+        alert("🎉 অভিনন্দন! আপনি এখন নিজস্ব স্টোর মোডে আছেন।");
+        
+        // UI রিফ্রেশ
+        renderShopProducts();
+      } catch(e) { alert("সমস্যা হয়েছে!"); }
+    } else {
+      // বন্ধ করা
+      try {
+        await updateDoc(doc(db, "users", currentUser.uid), { isStandalone: false });
+        globalUserData.isStandalone = false;
+        isStandaloneMode = false;
+        alert("স্টোর মোড বন্ধ করা হলো।");
+        renderShopProducts();
+      } catch(e) { alert("সমস্যা হয়েছে!"); }
+    }
+  };
+
+  // ২. নিজস্ব ডেলিভারি বয় টগল
+  window.handleSelfDeliveryToggle = async function(isChecked) {
+    try {
+      await updateDoc(doc(db, "users", currentUser.uid), { selfDeliveryOnly: isChecked });
+      globalUserData.selfDeliveryOnly = isChecked;
+      isSelfDelivery = isChecked;
+      alert(isChecked ? "নিজস্ব ডেলিভারি বয় চালু হলো।" : "প্ল্যাটফর্মের ডেলিভারি বয় চালু হলো।");
+    } catch(e) { alert("সমস্যা হয়েছে!"); }
+  };
+
+  // ৩. মোড অনুযায়ী প্রোডাক্ট লিস্ট রেন্ডার
+  function renderShopProducts() {
+    const list = document.getElementById('shop-product-list');
+    if (!list) return;
+    
+    // টগল বাটনগুলোর স্টেট সেট করা
+    document.getElementById('toggle-standalone').checked = globalUserData.isStandalone || false;
+    document.getElementById('toggle-self-delivery').checked = globalUserData.selfDeliveryOnly || false;
+
+    const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+    onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">কোনো প্রোডাক্ট নেই। নতুন যোগ করুন।</div>';
+        return;
+      }
+      list.innerHTML = '';
+      snapshot.forEach((docSnap) => {
+        const prod = docSnap.data();
+        list.innerHTML += `
+          <div class="shop-prod-item">
+            <div class="prod-img-thumb">${prod.image ? `<img src="${prod.image}" style="width:100%; height:100%; border-radius:8px; object-fit:cover;">` : '📦'}</div>
+            <div class="prod-details">
+              <div class="prod-title">${prod.name} ${prod.isStandalone ? '<span style="font-size:10px; color:#7b1fa2;">(নিজস্ব)</span>' : ''}</div>
+              <div class="prod-price">₹${prod.price} / ${prod.unit}</div>
+              <div class="prod-stock">স্টক: ${prod.stock} টি</div>
             </div>
-            <button class="mp-btn" style="width:auto; margin:0; padding:6px 10px; background:#e8f0fe; color:var(--mp-primary); font-size:11px;">রেট দিন</button>
           </div>
         `;
       });
-      list.innerHTML = html;
     });
+  }
+
+  // ৪. "+ Add" বাটনে ক্লিক করলে কোন মডাল খুলবে (সম্পূর্ণ কোড)
+  window.openAddProductModal = function() {
+    if (globalUserData.isStandalone) {
+      // নিজস্ব মোড হলে কাস্টম প্রোডাক্ট মডাল
+      document.getElementById('dlv-custom-product-modal').classList.add('active');
+    } else {
+      // মার্কেটপ্লেস মোড হলে অ্যাডমিনের মাস্টার ক্যাটালগ মডাল
+      document.getElementById('dlv-catalog-modal').classList.add('active');
+      const list = document.getElementById('catalog-list-container');
+      
+      onSnapshot(collection(db, "master_products"), (snap) => {
+        if(snap.empty) {
+          list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
+          return;
+        }
+        
+        let html = '';
+        snap.forEach(docSnap => {
+          const p = docSnap.data();
+          html += `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid #eee; cursor:pointer;" onclick='selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;")}, "${docSnap.id}")'>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:40px; height:40px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
+                  ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
+                </div>
+                <div>
+                  <div style="font-size:13px; font-weight:600;">${p.name}</div>
+                  <div style="font-size:11px; color:#666;">${p.grade} | ${p.unit}</div>
+                </div>
+              </div>
+              <button class="mp-btn" style="width:auto; margin:0; padding:6px 10px; background:#e8f0fe; color:var(--mp-primary); font-size:11px;">রেট দিন</button>
+            </div>
+          `;
+        });
+        list.innerHTML = html;
+      });
+    }
+  };
+
+  // ৫. নিজস্ব প্রোডাক্ট সেভ করা
+  window.saveCustomProduct = async function() {
+    const name = document.getElementById('cp-name').value.trim();
+    const category = document.getElementById('cp-category').value.trim();
+    const unit = document.getElementById('cp-unit').value;
+    const grade = document.getElementById('cp-grade').value;
+    const price = parseFloat(document.getElementById('cp-price').value);
+    const stock = parseInt(document.getElementById('cp-stock').value);
+
+    if (!name || !category || isNaN(price) || isNaN(stock)) {
+      return alert("দয়া করে সব তথ্য সঠিকভাবে দিন!");
+    }
+
+    const btn = document.getElementById('btn-save-cp');
+    btn.innerText = "⏳ সেভ হচ্ছে..."; btn.disabled = true;
+
+    try {
+      await addDoc(collection(db, "products"), {
+        shopId: currentUser.uid,
+        shopName: globalUserData.name,
+        name, category, unit, grade, price, stock,
+        image: uploadedImageUrl,
+        isStandalone: true, // 🚀 এটি নিজস্ব প্রোডাক্ট
+        shopLat: globalUserData.lat || null,
+        shopLng: globalUserData.lng || null,
+        isPremium: globalUserData.isPremium || false,
+        isVerified: globalUserData.isVerified || false,
+        createdAt: serverTimestamp()
+      });
+      alert("নিজস্ব প্রোডাক্ট সেভ হয়েছে!");
+      document.getElementById('dlv-custom-product-modal').classList.remove('active');
+      
+      // ফর্ম রিসেট
+      document.getElementById('cp-name').value = '';
+      document.getElementById('cp-image-preview').style.display = 'none';
+      uploadedImageUrl = null;
+      
+    } catch(e) { alert("সেভ করতে সমস্যা!"); }
+    finally { btn.innerText = "💾 সেভ করুন"; btn.disabled = false; }
   };
 
   // ২. মাস্টার প্রোডাক্ট সিলেক্ট করা
@@ -2577,7 +2806,8 @@ window.toggleDeliveryStatus = function(checkbox) {
     } catch(e) { alert("সমস্যা হয়েছে!"); }
   }
 
-  // ৫. দোকানদারের ব্যাজ স্ট্যাটাস ও টগল আপডেট করা (কম্বাইন্ড)
+ 
+      // ৫. দোকানদারের ব্যাজ স্ট্যাটাস ও টগল আপডেট করা (কম্বাইন্ড)
   function loadShopBadgeStatus() {
     if (!globalUserData) return;
 
@@ -2965,13 +3195,20 @@ window.toggleDeliveryStatus = function(checkbox) {
   window.pickImageSource = function(source, context) {
     currentUploadContext = context;
     let fileInput;
+    
+    // 🚀 কোন কনটেক্সটের জন্য কোন ইনপুট ফিল্ড ব্যবহার হবে তা চেক করা
     if (context === 'mp') fileInput = document.getElementById('mp-image-input');
     else if (context === 'edit-mp') fileInput = document.getElementById('ep-image-input');
-    else if (context === 'ad') fileInput = document.getElementById('ad-image-input'); // 🚀 নতুন লাইন
+    else if (context === 'ad') fileInput = document.getElementById('ad-image-input');
+    else if (context === 'reg') fileInput = document.getElementById('reg-profile-pic-file');
+    else if (context === 'cp') fileInput = document.getElementById('cp-image-input'); // 🚀 নতুন: কাস্টম প্রোডাক্টের জন্য
     else fileInput = document.getElementById('add-p-image-file');
     
+    if (!fileInput) return; // যদি ইনপুট ফিল্ড না পাওয়া যায় তবে থেমে যাবে
+
     if (source === 'camera') fileInput.setAttribute('capture', 'environment');
     else fileInput.removeAttribute('capture');
+    
     fileInput.click();
   };
 
@@ -3002,7 +3239,8 @@ window.toggleDeliveryStatus = function(checkbox) {
   window.saveCroppedImage = async function() {
     if (!cropperInstance) return;
     const statusEl = document.getElementById('crop-status');
-    statusEl.innerText = "আপলোড হচ্ছে..."; statusEl.style.color = "#0f9d58";
+    statusEl.innerText = "আপলোড হচ্ছে..."; 
+    statusEl.style.color = "#0f9d58";
 
     const canvas = cropperInstance.getCroppedCanvas({ maxWidth: 800, maxHeight: 800 });
     const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
@@ -3014,18 +3252,45 @@ window.toggleDeliveryStatus = function(checkbox) {
       const data = await response.json();
       
       if (data.success) {
-        uploadedImageUrl = data.data.url;
-                let previewId;
-        if (currentUploadContext === 'mp') previewId = 'mp-image-preview';
-        else if (currentUploadContext === 'edit-mp') previewId = 'ep-image-preview';
-        else if (currentUploadContext === 'ad') previewId = 'ad-image-preview'; // 🚀 নতুন লাইন
-        else previewId = 'add-p-image-preview';
-        const preview = document.getElementById(previewId);
-        preview.src = uploadedImageUrl; preview.style.display = 'block';
+        
+        // 🚀 ১. রেজিস্ট্রেশন প্রোফাইল ছবির জন্য
+        if (currentUploadContext === 'reg') {
+          regProfilePicUrl = data.data.url; 
+          const img = document.getElementById('reg-profile-img');
+          const icon = document.getElementById('reg-profile-icon');
+          if(img && icon) {
+            img.src = regProfilePicUrl;
+            img.style.display = 'block';
+            icon.style.display = 'none';
+          }
+        } 
+        // 🚀 ২. অন্যান্য সব প্রোডাক্ট ও অ্যাডের জন্য
+        else {
+          uploadedImageUrl = data.data.url;
+          
+          let previewId;
+          if (currentUploadContext === 'mp') previewId = 'mp-image-preview';
+          else if (currentUploadContext === 'edit-mp') previewId = 'ep-image-preview';
+          else if (currentUploadContext === 'ad') previewId = 'ad-image-preview';
+          else if (currentUploadContext === 'cp') previewId = 'cp-image-preview'; // 🚀 নতুন: কাস্টম প্রোডাক্টের প্রিভিউ
+          else previewId = 'add-p-image-preview';
+          
+          const preview = document.getElementById(previewId);
+          if(preview) {
+            preview.src = uploadedImageUrl; 
+            preview.style.display = 'block';
+          }
+        }
+        
         closeCropModal();
-      } else { throw new Error("Failed"); }
+      } else {
+        throw new Error("Failed");
+      }
     } catch (e) {
-      alert("ছবি আপলোডে সমস্যা!"); statusEl.innerText = "ব্যর্থ!"; statusEl.style.color = "red";
+      console.error(e);
+      alert("ছবি আপলোডে সমস্যা!"); 
+      statusEl.innerText = "ব্যর্থ!"; 
+      statusEl.style.color = "red";
     }
   };
 
