@@ -1977,13 +1977,22 @@
   // ============================================================
   // SHOPKEEPER FUNCTIONS
   // ============================================================
+  // ৩. মোড অনুযায়ী প্রোডাক্ট লিস্ট রেন্ডার
   function renderShopProducts() {
     const list = document.getElementById('shop-product-list');
     if (!list) return;
+    
+    // টগল বাটনগুলোর স্টেট সেট করা
+    const standaloneToggle = document.getElementById('toggle-standalone');
+    const selfDeliveryToggle = document.getElementById('toggle-self-delivery');
+    
+    if (standaloneToggle) standaloneToggle.checked = globalUserData.isStandalone || false;
+    if (selfDeliveryToggle) selfDeliveryToggle.checked = globalUserData.selfDeliveryOnly || false;
+
     const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
     onSnapshot(q, (snapshot) => {
       if (snapshot.empty) {
-        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">কোনো প্রোডাক্ট নেই।</div>';
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">কোনো প্রোডাক্ট নেই। নতুন যোগ করুন।</div>';
         return;
       }
       list.innerHTML = '';
@@ -1993,8 +2002,8 @@
           <div class="shop-prod-item">
             <div class="prod-img-thumb">${prod.image ? `<img src="${prod.image}" style="width:100%; height:100%; border-radius:8px; object-fit:cover;">` : '📦'}</div>
             <div class="prod-details">
-              <div class="prod-title">${prod.name}</div>
-              <div class="prod-price">₹${prod.price}</div>
+              <div class="prod-title">${prod.name} ${prod.isStandalone ? '<span style="font-size:10px; color:#7b1fa2;">(নিজস্ব)</span>' : ''}</div>
+              <div class="prod-price">₹${prod.price} / ${prod.unit}</div>
               <div class="prod-stock">স্টক: ${prod.stock} টি</div>
             </div>
           </div>
@@ -2163,37 +2172,6 @@
     } catch(e) { alert("সমস্যা হয়েছে!"); }
   };
 
-  // ৩. মোড অনুযায়ী প্রোডাক্ট লিস্ট রেন্ডার
-  function renderShopProducts() {
-    const list = document.getElementById('shop-product-list');
-    if (!list) return;
-    
-    // টগল বাটনগুলোর স্টেট সেট করা
-    document.getElementById('toggle-standalone').checked = globalUserData.isStandalone || false;
-    document.getElementById('toggle-self-delivery').checked = globalUserData.selfDeliveryOnly || false;
-
-    const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
-    onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">কোনো প্রোডাক্ট নেই। নতুন যোগ করুন।</div>';
-        return;
-      }
-      list.innerHTML = '';
-      snapshot.forEach((docSnap) => {
-        const prod = docSnap.data();
-        list.innerHTML += `
-          <div class="shop-prod-item">
-            <div class="prod-img-thumb">${prod.image ? `<img src="${prod.image}" style="width:100%; height:100%; border-radius:8px; object-fit:cover;">` : '📦'}</div>
-            <div class="prod-details">
-              <div class="prod-title">${prod.name} ${prod.isStandalone ? '<span style="font-size:10px; color:#7b1fa2;">(নিজস্ব)</span>' : ''}</div>
-              <div class="prod-price">₹${prod.price} / ${prod.unit}</div>
-              <div class="prod-stock">স্টক: ${prod.stock} টি</div>
-            </div>
-          </div>
-        `;
-      });
-    });
-  }
 
   // ৪. "+ Add" বাটনে ক্লিক করলে কোন মডাল খুলবে (সম্পূর্ণ কোড)
   window.openAddProductModal = function() {
