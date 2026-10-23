@@ -187,20 +187,47 @@
 </div>
 
 <!-- Auth Screen (Login & Register) -->
-<!-- Auth Screen (Login & Register) -->
 <div id="dlv-login-screen" class="mp-hidden" style="padding: 20px; max-width: 400px; margin: 50px auto;">
   <div class="mp-card" style="text-align: center;">
     
     <!-- Login Form -->
     <div id="auth-login-form">
       <h2 style="color: var(--mp-primary); margin-bottom: 20px;">🛵 Delivery App Login</h2>
-      <div class="dlv-form-group">
-        <input type="tel" id="login-phone" class="dlv-input" placeholder="১০ ডিজিটের মোবাইল নাম্বার" maxlength="10" style="margin-bottom: 10px;">
+      
+      <!-- কাস্টমার/দোকানদার লগইন (ফোন নাম্বার) -->
+      <div id="phone-login-section">
+        <div class="dlv-form-group">
+          <input type="tel" id="login-phone" class="dlv-input" placeholder="১০ ডিজিটের মোবাইল নাম্বার" maxlength="10" style="margin-bottom: 10px;">
+        </div>
+        <button class="mp-btn mp-btn-primary" onclick="handleLogin()" id="login-btn">লগইন করুন</button>
       </div>
-      <button class="mp-btn mp-btn-primary" onclick="handleLogin()" id="login-btn">লগইন করুন</button>
+
+      <!-- অ্যাডমিন লগইন (ইমেইল ও পাসওয়ার্ড) - শুরুতে হাইড থাকবে -->
+      <div id="admin-login-section" class="mp-hidden">
+        <div class="dlv-form-group">
+          <input type="email" id="login-email" class="dlv-input" placeholder="অ্যাডমিন ইমেইল দিন" style="margin-bottom: 10px;">
+        </div>
+        <div class="dlv-form-group">
+          <input type="password" id="login-password" class="dlv-input" placeholder="পাসওয়ার্ড দিন" style="margin-bottom: 10px;">
+        </div>
+        <button class="mp-btn mp-btn-success" onclick="handleAdminLogin()" id="admin-login-btn">অ্যাডমিন লগইন</button>
+        <div style="text-align: right; margin-top: 8px;">
+          <a href="#" onclick="handleForgotPassword()" style="font-size: 12px; color: var(--mp-danger); text-decoration: none;">Forgot Password?</a>
+        </div>
+      </div>
+
       <div id="login-error" style="color: red; font-size: 12px; margin-top: 10px;"></div>
       
-      <p style="margin-top: 15px; font-size: 13px;">অ্যাকাউন্ট নেই? <a href="#" onclick="toggleAuthMode()" style="color: var(--mp-primary); font-weight: bold;">রেজিস্ট্রেশন করুন</a></p>
+      <p style="margin-top: 15px; font-size: 13px;">
+        অ্যাকাউন্ট নেই? <a href="#" onclick="toggleAuthMode()" style="color: var(--mp-primary); font-weight: bold;">রেজিস্ট্রেশন করুন</a>
+      </p>
+      
+      <!-- 🚀 অ্যাডমিন লগইন টগল বাটন -->
+      <div style="margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 10px;">
+        <a href="#" id="admin-toggle-link" onclick="toggleAdminLoginMode(event)" style="font-size: 12px; color: #777; text-decoration: underline;">
+          🔑 Admin Login
+        </a>
+      </div>
     </div>
 
     <!-- Register Form -->
@@ -215,7 +242,6 @@
         <input type="tel" id="reg-phone" class="dlv-input" placeholder="১০ ডিজিটের মোবাইল নাম্বার" maxlength="10" style="margin-bottom: 10px;">
       </div>
 
-      <!-- 🚀 প্রোফাইল ছবি (ঐচ্ছিক) -->
       <!-- 🚀 প্রোফেশনাল প্রোফাইল ছবি আপলোডার -->
       <div class="dlv-form-group" style="text-align: center; margin-bottom: 20px;">
         <div id="reg-profile-preview-container" 
@@ -257,7 +283,6 @@
   <!-- Main App Container -->
 <div id="mp-app" class="mp-hidden">
   
-   <!-- Topbar -->
   <!-- Topbar -->
   <div class="mp-topbar">
     <!-- বাম দিকে: প্রোফাইল পিক, নাম ও রোল -->
@@ -1012,6 +1037,9 @@
   // ============================================================
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+   import { 
+    getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail 
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
   import { 
     getFirestore, doc, getDoc, getDocs, setDoc, collection, addDoc, onSnapshot, query, where, updateDoc, deleteDoc, serverTimestamp, orderBy 
   } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -1153,8 +1181,82 @@
     setTimeout(() => { regMap.invalidateSize(); }, 200);
   };
 
+  // ==================== ADMIN LOGIN & FORGOT PASSWORD LOGIC ====================
+  let isAdminLoginMode = false;
 
- // লগইন ও রেজিস্ট্রেশন ফর্ম টগল করা
+  // ১. অ্যাডমিন ও ইউজার লগইন ফর্ম টগল করা
+  window.toggleAdminLoginMode = function(e) {
+    if(e) e.preventDefault();
+    
+    isAdminLoginMode = !isAdminLoginMode;
+    const phoneSec = document.getElementById('phone-login-section');
+    const adminSec = document.getElementById('admin-login-section');
+    const toggleLink = document.getElementById('admin-toggle-link');
+    document.getElementById('login-error').innerText = '';
+
+    if (isAdminLoginMode) {
+      phoneSec.classList.add('mp-hidden');
+      adminSec.classList.remove('mp-hidden');
+      toggleLink.innerHTML = '👤 User Login';
+    } else {
+      phoneSec.classList.remove('mp-hidden');
+      adminSec.classList.add('mp-hidden');
+      toggleLink.innerHTML = '🔑 Admin Login';
+    }
+  };
+
+  // ২. অ্যাডমিন লগইন ফাংশন (ইমেইল দিয়ে)
+  window.handleAdminLogin = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('admin-login-btn');
+    const errorEl = document.getElementById('login-error');
+    
+    if(!email || !password) {
+      errorEl.innerText = "ইমেইল এবং পাসওয়ার্ড দিন!";
+      return;
+    }
+
+    btn.innerText = "অপেক্ষা করুন...";
+    btn.disabled = true;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // সফল হলে onAuthStateChanged অটো ট্রিগার হবে
+    } catch (error) {
+      console.error(error);
+      if(error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+        errorEl.innerText = "ভুল ইমেইল বা পাসওয়ার্ড!";
+      } else {
+        errorEl.innerText = "লগইনে সমস্যা হয়েছে।";
+      }
+      btn.innerText = "অ্যাডমিন লগইন";
+      btn.disabled = false;
+    }
+  };
+
+  // ৩. পাসওয়ার্ড রিসেট (Forgot Password) ফাংশন
+  window.handleForgotPassword = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const errorEl = document.getElementById('login-error');
+    
+    if(!email) {
+      errorEl.innerText = "পাসওয়ার্ড রিসেট করতে প্রথমে আপনার ইমেইলটি লিখুন!";
+      return;
+    }
+
+    if(!confirm(`আপনার ইমেইল (${email}) এ একটি পাসওয়ার্ড রিসেট লিংক পাঠানো হবে। নিশ্চিত?`)) return;
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert("✅ পাসওয়ার্ড রিসেট লিংক আপনার ইমেইলে পাঠানো হয়েছে! ইনবক্স চেক করুন।");
+    } catch (error) {
+      console.error(error);
+      errorEl.innerText = "ইমেইলটি খুঁজে পাওয়া যায়নি বা সমস্যা হয়েছে!";
+    }
+  };
+
+  // লগইন ও রেজিস্ট্রেশন ফর্ম টগল করা
   window.toggleAuthMode = function() {
     const loginForm = document.getElementById('auth-login-form');
     const regForm = document.getElementById('auth-register-form');
