@@ -1636,82 +1636,87 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
   };
 
   // সার্চ, ফিল্টার এবং গ্রুপিং লজিক
-  window.filterCustomerProducts = function() {
-    const grid = document.getElementById('cst-product-grid');
-    const searchInput = document.getElementById('cst-search-input');
-    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+window.filterCustomerProducts = function() {
+  const grid = document.getElementById('cst-product-grid');
+  const searchInput = document.getElementById('cst-search-input');
+  const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
+  
+  // ১. প্রথমে সার্চ এবং ক্যাটাগরি অনুযায়ী ফিল্টার
+  let filteredBySearch = allRawProducts.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery) || (p.category && p.category.toLowerCase().includes(searchQuery));
+    const matchesCat = currentCategory === 'all' || (p.category && p.category === currentCategory);
+    return matchesSearch && matchesCat;
+  });
+
+  // ২. এরপর দূরত্ব অনুযায়ী ফিল্টার
+  let validProducts = filteredBySearch.filter(p => {
+    let distance = 0;
     
-    // ১. দূরত্ব ও সার্চ অনুযায়ী ফিল্টার
-    let validProducts = allRawProducts.filter(p => {
-      // দূরত্ব চেক (দোকানের lat, lng থাকলে)
-      let distance = 0;
-      if (p.shopLat && p.shopLng) {
-        const shopLoc = L.latLng(p.shopLat, p.shopLng);
-        const custLoc = L.latLng(customerLat, customerLng);
-        distance = shopLoc.distanceTo(custLoc) / 1000; // কিমি
-      }
-      
-      if (distance > maxDistance) return false; // স্লাইডারের বাইরে হলে বাদ
-      
-      // সার্চ চেক
-      const matchesSearch = p.name.toLowerCase().includes(query) || (p.category && p.category.toLowerCase().includes(query));
-      return matchesSearch;
-    });
-
-    // ২. প্রোডাক্ট গ্রুপিং (একই নামের প্রোডাক্ট একবার দেখানো)
-    let grouped = {};
-    validProducts.forEach(p => {
-      const key = p.name.toLowerCase() + '_' + (p.unit || '');
-      if (!grouped[key]) {
-        grouped[key] = {
-          name: p.name,
-          category: p.category,
-          unit: p.unit,
-          grade: p.grade,
-          image: p.image,
-          shops: []
-        };
-      }
-      grouped[key].shops.push(p);
-    });
-
-    groupedProducts = Object.values(grouped);
-
-    // ৩. প্রতিটি গ্রুপের ভেতরে দোকানগুলোকে দাম অনুযায়ী সাজানো (কম থেকে বেশি)
-    groupedProducts.forEach(g => {
-      g.shops.sort((a, b) => a.price - b.price);
-    });
-
-    // ৪. UI তে রেন্ডার করা
-    grid.innerHTML = '';
-    if(groupedProducts.length === 0) {
-      grid.innerHTML = '<div style="font-size:13px; color:#999; grid-column:1/-1; text-align:center; padding: 20px;">এই রেঞ্জে কোনো প্রোডাক্ট পাওয়া যায়নি। রেঞ্জ বাড়িয়ে দেখুন।</div>';
-      return;
+    // 🚀 যদি দোকানের লোকেশন থাকে, তবেই দূরত্ব বের করবে। না থাকলে ধরে নিবে ০ (অর্থাৎ সব দেখাবে)
+    if (p.shopLat && p.shopLng && customerLat && customerLng) {
+      const shopLoc = L.latLng(p.shopLat, p.shopLng);
+      const custLoc = L.latLng(customerLat, customerLng);
+      distance = shopLoc.distanceTo(custLoc) / 1000; // কিমি
     }
+    
+    if (distance > maxDistance) return false; 
+    return true;
+  });
 
-    groupedProducts.forEach(g => {
-      const lowestPriceShop = g.shops[0]; // সবচেয়ে কম দামের দোকান
-      const totalShops = g.shops.length;
-      
-      grid.innerHTML += `
-        <div class="dlv-product-card" onclick="openShopSelector('${g.name.replace(/'/g, "\\'")}')">
-          <div class="dlv-product-img-wrap">
-            ${g.image ? `<img src="${g.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
-            <span class="dlv-badge-grade">${g.grade || 'A'}</span>
-            <span class="dlv-badge-stock" style="background:var(--mp-primary);">${totalShops} Shops</span>
-          </div>
-          
-          <div class="dlv-product-name" title="${g.name}">${g.name}</div>
-          <div class="dlv-product-meta">
-            <span>⚖️ ${g.unit || 'pcs'}</span>
-          </div>
-          <div class="dlv-product-price">₹${lowestPriceShop.price}</div>
-          <button class="dlv-add-btn">দোকান দেখুন</button>
+  // ৩. প্রোডাক্ট গ্রুপিং (একই নামের প্রোডাক্ট একবার দেখানো)
+  let grouped = {};
+  validProducts.forEach(p => {
+    const key = p.name.toLowerCase() + '_' + (p.unit || '');
+    if (!grouped[key]) {
+      grouped[key] = {
+        name: p.name,
+        category: p.category,
+        unit: p.unit,
+        grade: p.grade,
+        image: p.image,
+        shops: []
+      };
+    }
+    grouped[key].shops.push(p);
+  });
+
+  groupedProducts = Object.values(grouped);
+
+  // ৪. প্রতিটি গ্রুপের ভেতরে দোকানগুলোকে দাম অনুযায়ী সাজানো (কম থেকে বেশি)
+  groupedProducts.forEach(g => {
+    g.shops.sort((a, b) => a.price - b.price);
+  });
+
+  // ৫. UI তে রেন্ডার করা
+  grid.innerHTML = '';
+  if(groupedProducts.length === 0) {
+    grid.innerHTML = '<div style="font-size:13px; color:#999; grid-column:1/-1; text-align:center; padding: 20px;">এই রেঞ্জে কোনো প্রোডাক্ট পাওয়া যায়নি। রেঞ্জ বাড়িয়ে দেখুন।</div>';
+    return;
+  }
+
+  groupedProducts.forEach(g => {
+    const lowestPriceShop = g.shops[0]; // সবচেয়ে কম দামের দোকান
+    const totalShops = g.shops.length;
+    
+    grid.innerHTML += `
+      <div class="dlv-product-card" onclick="openShopSelector('${g.name.replace(/'/g, "\\'")}')">
+        <div class="dlv-product-img-wrap">
+          ${g.image ? `<img src="${g.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
+          <span class="dlv-badge-grade">${g.grade || 'A'}</span>
+          <span class="dlv-badge-stock" style="background:var(--mp-primary);">${totalShops} Shops</span>
         </div>
-      `;
-    });
-  };
-
+        
+        <div class="dlv-product-name" title="${g.name}">${g.name}</div>
+        <div class="dlv-product-meta">
+          <span>⚖️ ${g.unit || 'pcs'}</span>
+        </div>
+        <div class="dlv-product-price">₹${lowestPriceShop.price}</div>
+        <button class="dlv-add-btn">দোকান দেখুন</button>
+      </div>
+    `;
+  });
+};
   // ==================== SHOP SELECTOR MODAL ====================
   let currentGroupName = null;
 
@@ -1766,47 +1771,6 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
     if(el) el.classList.add('active');
     currentCategory = category;
     filterCustomerProducts();
-  };
-
-  // সার্চ ও ফিল্টার লজিক
-  window.filterCustomerProducts = function() {
-    const grid = document.getElementById('cst-product-grid');
-    const searchInput = document.getElementById('cst-search-input');
-    if(searchInput) currentSearchQuery = searchInput.value.toLowerCase().trim();
-
-    let filtered = allCustomerProducts.filter(p => {
-      const matchesSearch = p.name.toLowerCase().includes(currentSearchQuery) || (p.category && p.category.toLowerCase().includes(currentSearchQuery));
-      const matchesCat = currentCategory === 'all' || (p.category && p.category === currentCategory);
-      return matchesSearch && matchesCat;
-    });
-
-    grid.innerHTML = '';
-    if(filtered.length === 0) {
-      grid.innerHTML = '<div style="font-size:13px; color:#999; grid-column:1/-1; text-align:center; padding: 20px;">কোনো প্রোডাক্ট পাওয়া যায়নি।</div>';
-      return;
-    }
-
-    filtered.forEach(prod => {
-      grid.innerHTML += `
-        <div class="dlv-product-card">
-          <div class="dlv-product-img-wrap">
-            ${prod.image ? `<img src="${prod.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
-            <span class="dlv-badge-grade">${prod.grade || 'A'}</span>
-            <span class="dlv-badge-stock">Stock: ${prod.stock}</span>
-          </div>
-          
-          <div class="dlv-product-name" title="${prod.name}">${prod.name}</div>
-          <div class="dlv-product-meta">
-            <span>⚖️ ${prod.unit || 'pcs'}</span>
-            <span>🏪 ${prod.shopName}</span>
-          </div>
-          <div class="dlv-product-price">₹${prod.price}</div>
-          <button class="dlv-add-btn" onclick="placeOrder('${prod.id}', '${prod.name}', ${prod.price}, '${prod.shopId}', '${prod.shopName}')">
-            🛒 Add to Cart
-          </button>
-        </div>
-      `;
-    });
   };
   
    // ==================== REFER & EARN LOGIC ====================
@@ -2908,16 +2872,23 @@ window.toggleDeliveryStatus = function(checkbox) {
     function loadAdminDashboardUI() {
   if (adminUsersUnsubscribe) adminUsersUnsubscribe();
   adminUsersUnsubscribe = onSnapshot(collection(db, "users"), (snap) => {
-    let shops = 0, delivery = 0, managers = 0, userHtml = '';
+    // 🚀 customers ভেরিয়েবল যোগ করা হয়েছে
+    let shops = 0, delivery = 0, managers = 0, customers = 0, userHtml = '';
+    
     if (snap.empty) {
       document.getElementById('admin-user-list').innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">ডেটাবেসে কোনো ইউজার নেই।</div>';
       return;
     }
+    
     snap.forEach(docSnap => {
       const u = docSnap.data();
       if (u.role === 'shopkeeper') shops++;
       if (u.role === 'delivery') delivery++;
-      if (u.isManager === true) managers++; 
+      // 🚀 ম্যানেজার কাউন্ট আপডেট
+      if (u.role === 'manager' || u.isManager === true) managers++; 
+      // 🚀 কাস্টমার কাউন্ট আপডেট
+      if (u.role === 'customer') customers++; 
+      
       let roleText = u.role ? u.role.toUpperCase() : 'NO ROLE';
       
       userHtml += `
@@ -2937,15 +2908,17 @@ window.toggleDeliveryStatus = function(checkbox) {
         </div>
       `;
     });
+    
     document.getElementById('admin-total-shops').innerText = shops;
     document.getElementById('admin-total-delivery').innerText = delivery;
     document.getElementById('admin-total-managers').innerText = managers;
+    document.getElementById('admin-total-customers').innerText = customers; // 🚀 UI তে আপডেট
     document.getElementById('admin-user-list').innerHTML = userHtml;
   });
 
-  loadMasterProducts(); // Master product load
+  loadMasterProducts(); 
   loadSystemSettings();  
-  loadAdminAds(); // 🚀 অ্যাডমিনের অ্যাড লিস্ট লোড
+  loadAdminAds(); 
   loadAdminBadgeList();
     
   const ordersQ = query(collection(db, "orders"), where("status", "==", "delivered"));
@@ -2955,7 +2928,6 @@ window.toggleDeliveryStatus = function(checkbox) {
     document.getElementById('admin-total-revenue').innerText = `₹${revenue.toFixed(2)}`;
   });
 
-  // 🚀 নতুন যোগ করা হলো: লাইভ অর্ডার লোড করা
   const recentOrdersQ = query(collection(db, "orders"));
   onSnapshot(recentOrdersQ, (snap) => {
     const list = document.getElementById('admin-live-orders');
@@ -2963,7 +2935,7 @@ window.toggleDeliveryStatus = function(checkbox) {
     
     let orders = [];
     snap.forEach(d => orders.push(d.data()));
-    orders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)); // নতুন আগে
+    orders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)); 
     
     if (orders.length === 0) {
       list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো অর্ডার নেই।</div>';
@@ -2971,7 +2943,7 @@ window.toggleDeliveryStatus = function(checkbox) {
     }
 
     let html = '';
-    orders.slice(0, 5).forEach(o => { // সর্বশেষ ৫টি অর্ডার দেখাবে
+    orders.slice(0, 5).forEach(o => { 
       let color = o.status === 'delivered' ? 'var(--mp-success)' : 'var(--mp-warning)';
       html += `
         <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 8px 0; border-bottom: 1px solid #eee;">
