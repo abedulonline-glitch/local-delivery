@@ -1845,6 +1845,35 @@ window.filterCustomerProducts = function() {
   // Load role-specific data
   if (role === 'customer') {
     renderCustomerProducts();
+    // 🚀 কাস্টমারের লোকেশন অটোমেটিক আপডেট করা (যদি আগে থেকে সেভ না থাকে)
+if (!userData.lat || !userData.lng) {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        // ডেটাবেসে সেভ করা
+        await updateDoc(doc(db, "users", currentUser.uid), { lat: lat, lng: lng });
+        
+        // লোকাল ভেরিয়েবল আপডেট
+        globalUserData.lat = lat;
+        globalUserData.lng = lng;
+        customerLat = lat; // গ্লোবাল ভেরিয়েবল আপডেট যা দূরত্ব মাপতে কাজে লাগে
+        customerLng = lng;
+        
+        console.log("Customer location updated automatically.");
+        filterCustomerProducts(); // প্রোডাক্ট লিস্ট রিফ্রেশ করা
+      } catch(e) { console.log("Location save error:", e); }
+    }, (error) => {
+       console.log("Location permission denied.");
+    }, { enableHighAccuracy: true });
+  }
+} else {
+  // যদি আগে থেকেই লোকেশন সেভ থাকে
+  customerLat = userData.lat;
+  customerLng = userData.lng;
+}
     loadTopAds(); // 🚀 কাস্টমারের জন্য অ্যাড লোড করা হলো
     if (userData) {
       document.getElementById('cst-wallet-balance').innerText = `₹${(userData.walletBalance || 0).toFixed(2)}`;
