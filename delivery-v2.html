@@ -2321,43 +2321,61 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
 
 
   // ৪. "+ Add" বাটনে ক্লিক করলে কোন মডাল খুলবে (সম্পূর্ণ কোড)
-  window.openAddProductModal = function() {
-    if (globalUserData.isStandalone) {
-      // নিজস্ব মোড হলে কাস্টম প্রোডাক্ট মডাল
-      document.getElementById('dlv-custom-product-modal').classList.add('active');
-    } else {
-      // মার্কেটপ্লেস মোড হলে অ্যাডমিনের মাস্টার ক্যাটালগ মডাল
-      document.getElementById('dlv-catalog-modal').classList.add('active');
-      const list = document.getElementById('catalog-list-container');
+  // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্কসহ)
+window.openAddProductModal = function() {
+  document.getElementById('dlv-catalog-modal').classList.add('active');
+  const list = document.getElementById('catalog-list-container');
+  list.innerHTML = '<div style="text-align: center; color: #999;">লোড হচ্ছে...</div>';
+
+  // দোকানদারের নিজের প্রোডাক্টগুলো খোঁজা
+  const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+  
+  onSnapshot(myProductsQ, (mySnap) => {
+    // দোকানদার আগে থেকে কোন কোন মাস্টার প্রোডাক্ট অ্যাড করেছে, তার আইডি লিস্ট
+    const myAddedMasterIds = [];
+    mySnap.forEach(d => {
+      const p = d.data();
+      if(p.masterProductId) myAddedMasterIds.push(p.masterProductId);
+    });
+
+    // এবার অ্যাডমিনের মাস্টার প্রোডাক্টগুলো লোড করা
+    onSnapshot(collection(db, "master_products"), (masterSnap) => {
+      if(masterSnap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
+        return;
+      }
       
-      onSnapshot(collection(db, "master_products"), (snap) => {
-        if(snap.empty) {
-          list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
-          return;
-        }
+      let html = '';
+      masterSnap.forEach(docSnap => {
+        const p = docSnap.data();
+        const masterId = docSnap.id;
         
-        let html = '';
-        snap.forEach(docSnap => {
-          const p = docSnap.data();
-          html += `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid #eee; cursor:pointer;" onclick='selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;")}, "${docSnap.id}")'>
-              <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:40px; height:40px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
-                  ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
-                </div>
-                <div>
-                  <div style="font-size:13px; font-weight:600;">${p.name}</div>
-                  <div style="font-size:11px; color:#666;">${p.grade} | ${p.unit}</div>
-                </div>
+        // 🚀 চেক করা হচ্ছে দোকানদার এটি আগেই অ্যাড করেছে কি না
+        const isAdded = myAddedMasterIds.includes(masterId);
+
+        html += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid #eee;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:40px; height:40px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
+                ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
               </div>
-              <button class="mp-btn" style="width:auto; margin:0; padding:6px 10px; background:#e8f0fe; color:var(--mp-primary); font-size:11px;">রেট দিন</button>
+              <div>
+                <div style="font-size:13px; font-weight:600;">${p.name}</div>
+                <div style="font-size:11px; color:#666;">${p.grade} | ${p.unit}</div>
+              </div>
             </div>
-          `;
-        });
-        list.innerHTML = html;
+            
+            ${isAdded 
+              ? `<span style="font-size:11px; font-weight:bold; color:var(--mp-success); background:#e6f4ea; padding:6px 10px; border-radius:6px;">✅ যুক্ত করা হয়েছে</span>`
+              : `<button class="mp-btn" style="width:auto; margin:0; padding:6px 10px; background:#e8f0fe; color:var(--mp-primary); font-size:11px;" onclick='selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;")}, "${masterId}")'>রেট দিন</button>`
+            }
+          </div>
+        `;
       });
-    }
-  };
+      list.innerHTML = html;
+    });
+  });
+};
 
   // ৫. নিজস্ব প্রোডাক্ট সেভ করা
   window.saveCustomProduct = async function() {
