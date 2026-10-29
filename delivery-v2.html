@@ -1367,15 +1367,18 @@
 
       alert("সফলভাবে রেজিস্ট্রেশন সম্পন্ন হয়েছে!");
     } catch (error) {
-      console.error(error);
-      if(error.code === 'auth/email-already-in-use') {
-        errorEl.innerText = "এই মোবাইল নাম্বারটি দিয়ে আগেই অ্যাকাউন্ট করা হয়েছে! দয়া করে লগইন করুন।";
-      } else {
-        errorEl.innerText = "রেজিস্ট্রেশনে সমস্যা হয়েছে!";
-      }
-      btn.innerText = "রেজিস্ট্রেশন করুন";
-      btn.disabled = false;
-    }
+  console.error(error);
+  if(error.code === 'auth/email-already-in-use') {
+    errorEl.innerText = "এই মোবাইল নাম্বারটি দিয়ে আগেই অ্যাকাউন্ট করা হয়েছে! দয়া করে লগইন করুন।";
+  } else if (error.code === 'auth/weak-password') {
+    errorEl.innerText = "পাসওয়ার্ডটি খুব দুর্বল! (অ্যাডমিনের সাথে যোগাযোগ করুন)";
+  } else {
+    // আসল এররটি স্ক্রিনে দেখাবে
+    errorEl.innerText = "সমস্যা: " + error.message; 
+  }
+  btn.innerText = "রেজিস্ট্রেশন করুন";
+  btn.disabled = false;
+}
   };
 
   // WhatsApp-এ ইনভাইট লিংক শেয়ার করা
