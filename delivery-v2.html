@@ -1607,26 +1607,33 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
   let customerLng = 88.3639;
 
   function renderCustomerProducts() {
-    const grid = document.getElementById('cst-product-grid');
-    if (!grid) return;
+  const grid = document.getElementById('cst-product-grid');
+  if (!grid) return;
 
-    // কাস্টমারের প্রোফাইল থেকে লোকেশন নেওয়া (যদি থাকে)
-    if (globalUserData && globalUserData.lat && globalUserData.lng) {
-      customerLat = globalUserData.lat;
-      customerLng = globalUserData.lng;
-    }
-
-    onSnapshot(collection(db, "products"), (snapshot) => {
-      allRawProducts = [];
-      snapshot.forEach(docSnap => {
-        const prod = docSnap.data();
-        if(prod.stock > 0) { 
-          allRawProducts.push({ id: docSnap.id, ...prod });
-        }
-      });
-      filterCustomerProducts(); // ফিল্টার ও গ্রুপ করে রেন্ডার করব
-    });
+  // কাস্টমারের লোকেশন নিশ্চিতভাবে নাম্বার হিসেবে নেওয়া
+  if (globalUserData && globalUserData.lat && globalUserData.lng) {
+    customerLat = parseFloat(globalUserData.lat) || 22.5726; 
+    customerLng = parseFloat(globalUserData.lng) || 88.3639;
+  } else {
+    // যদি কাস্টমারের লোকেশন না থাকে, তবে ডিফল্ট লোকেশন ব্যবহার করবে (যাতে প্রোডাক্ট লুকিয়ে না যায়)
+    customerLat = 22.5726; 
+    customerLng = 88.3639;
   }
+
+  onSnapshot(collection(db, "products"), (snapshot) => {
+    allRawProducts = [];
+    snapshot.forEach(docSnap => {
+      const prod = docSnap.data();
+      if(prod.stock > 0) { 
+        // লোকেশন থাকলে সেটাকে Number বানিয়ে নেওয়া
+        prod.shopLat = parseFloat(prod.shopLat);
+        prod.shopLng = parseFloat(prod.shopLng);
+        allRawProducts.push({ id: docSnap.id, ...prod });
+      }
+    });
+    filterCustomerProducts(); // ফিল্টার করে রেন্ডার করব
+  });
+}
 
   // দূরত্ব স্লাইডার আপডেট
   window.updateDistanceRange = function(val) {
@@ -1653,11 +1660,14 @@ window.filterCustomerProducts = function() {
   let validProducts = filteredBySearch.filter(p => {
     let distance = 0;
     
-    // 🚀 যদি দোকানের লোকেশন থাকে, তবেই দূরত্ব বের করবে। না থাকলে ধরে নিবে ০ (অর্থাৎ সব দেখাবে)
-    if (p.shopLat && p.shopLng && customerLat && customerLng) {
+    // 🚀 চেক করা হচ্ছে দোকান ও কাস্টমার উভয়ের লোকেশন আছে কি না এবং সেগুলো নাম্বার কি না
+    if (!isNaN(p.shopLat) && !isNaN(p.shopLng) && !isNaN(customerLat) && !isNaN(customerLng)) {
       const shopLoc = L.latLng(p.shopLat, p.shopLng);
       const custLoc = L.latLng(customerLat, customerLng);
       distance = shopLoc.distanceTo(custLoc) / 1000; // কিমি
+    } else {
+      // যদি প্রোডাক্টে লোকেশন না থাকে, তবে দূরত্ব ০ ধরে নিবে (অর্থাৎ প্রোডাক্টটি দেখাবে)
+      distance = 0; 
     }
     
     if (distance > maxDistance) return false; 
@@ -1696,7 +1706,7 @@ window.filterCustomerProducts = function() {
   }
 
   groupedProducts.forEach(g => {
-    const lowestPriceShop = g.shops[0]; // সবচেয়ে কম দামের দোকান
+    const lowestPriceShop = g.shops[0]; 
     const totalShops = g.shops.length;
     
     grid.innerHTML += `
