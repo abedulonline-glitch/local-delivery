@@ -1068,15 +1068,22 @@
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-shop-location-modal').classList.remove('active')">&times;</span>
     <h3 style="margin-bottom: 15px; color: var(--mp-primary);">📍 আপনার দোকানের লোকেশন</h3>
-    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">ম্যাপে পিন করে আপনার দোকানের সঠিক লোকেশন সেট করুন।</p>
+    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">ম্যাপে পিন ধরে টেনে (Drag) আপনার দোকানের সঠিক লোকেশন সেট করুন।</p>
     
     <div id="shop-map-container" style="height: 250px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
     
-    <div style="margin-top: 10px; font-size: 12px; color: var(--mp-danger);" id="shop-map-status">❌ লোকেশন সেট করা হয়নি</div>
+    <!-- ম্যাপ কন্ট্রোল বাটন -->
+    <div style="display: flex; gap: 8px; margin-top: 8px;">
+      <button class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #e8f0fe; color: var(--mp-primary); flex: 1;" onclick="getShopCurrentLocation()">📍 আমার লোকেশন</button>
+      <button id="shop-btn-satellite" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #f0f2f5; color: #333; flex: 1;" onclick="toggleShopMapLayer()">🛰️ স্যাটেলাইট</button>
+    </div>
+
+    <div style="margin-top: 10px; font-size: 12px; color: var(--mp-danger); font-weight: bold;" id="shop-map-status">❌ লোকেশন সেট করা হয়নি</div>
     
     <button class="mp-btn mp-btn-success" style="margin-top: 10px;" onclick="saveShopLocation()">💾 লোকেশন সেভ করুন</button>
   </div>
 </div>
+
     <!-- Crop Modal (Global) -->
 <div id="dlv-crop-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10001; flex-direction: column;">
   <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white;">
@@ -2350,9 +2357,12 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
   };
 
 // ==================== SHOP LOCATION LOGIC ====================
+// ==================== ADVANCED SHOP LOCATION LOGIC ====================
 let shopMap = null;
 let shopMarker = null;
 let shopLatLng = null;
+let shopCurrentTileLayer = null;
+let shopIsSatelliteView = false;
 
 // ১. দোকানদারের লোকেশন ম্যাপ ওপেন করা
 window.openShopLocationModal = function() {
@@ -2364,29 +2374,88 @@ window.openShopLocationModal = function() {
       const initLat = globalUserData.lat || 22.5726;
       const initLng = globalUserData.lng || 88.3639;
       
-      shopMap = L.map('shop-map-container').setView([initLat, initLng], 15);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(shopMap);
+      shopMap = L.map('shop-map-container').setView([initLat, initLng], 16);
+      shopCurrentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(shopMap);
       
       // ম্যাপে ক্লিক করলে পিন বসবে
       shopMap.on('click', function(e) {
-        if (shopMarker) shopMap.removeLayer(shopMarker);
-        shopMarker = L.marker(e.latlng).addTo(shopMap);
-        shopLatLng = e.latlng;
-        document.getElementById('shop-map-status').innerHTML = '✅ লোকেশন সিলেক্ট করা হয়েছে';
-        document.getElementById('shop-map-status').style.color = 'var(--mp-success)';
+        setShopMarker(e.latlng);
       });
 
       // যদি আগে থেকে লোকেশন থাকে, তবে পিন বসানো থাকবে
       if (globalUserData.lat && globalUserData.lng) {
-        shopMarker = L.marker([initLat, initLng]).addTo(shopMap);
-        shopLatLng = L.latLng(initLat, initLng);
+        setShopMarker(L.latLng(initLat, initLng));
       }
     }
     shopMap.invalidateSize();
   }, 300);
 };
 
-// ২. দোকানের লোকেশন সেভ করা
+// ২. পিন সেট করা (ড্র্যাগেবল)
+function setShopMarker(latLng) {
+  if (shopMarker) shopMap.removeLayer(shopMarker);
+  
+  // ড্র্যাগেবল মার্কার তৈরি
+  shopMarker = L.marker(latLng, { draggable: true }).addTo(shopMap);
+  shopLatLng = latLng;
+  
+  document.getElementById('shop-map-status').innerHTML = '✅ লোকেশন সিলেক্ট করা হয়েছে';
+  document.getElementById('shop-map-status').style.color = 'var(--mp-success)';
+
+  // পিন টেনে সরালে (Drag) কো-অর্ডিনেট আপডেট হবে
+  shopMarker.on('dragend', function() {
+    const position = shopMarker.getLatLng();
+    shopLatLng = position;
+    document.getElementById('shop-map-status').innerHTML = '✅ লোকেশন আপডেট করা হয়েছে';
+  });
+}
+
+// ৩. ইউজারের কারেন্ট লোকেশন নেওয়া
+window.getShopCurrentLocation = function() {
+  if (!navigator.geolocation) {
+    alert("আপনার ব্রাউজারে লোকেশন সাপোর্ট করছে না।");
+    return;
+  }
+  
+  document.getElementById('shop-map-status').innerText = "লোকেশন খোঁজা হচ্ছে...";
+  document.getElementById('shop-map-status').style.color = "#f9a825";
+  
+  const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+  
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const latLng = L.latLng(position.coords.latitude, position.coords.longitude);
+      shopMap.setView(latLng, 17);
+      setShopMarker(latLng);
+    },
+    (error) => {
+      alert("লোকেশন পাওয়া যায়নি বা পারমিশন দেওয়া হয়নি।");
+      document.getElementById('shop-map-status').innerText = "লোকেশন পাওয়া যায়নি।";
+      document.getElementById('shop-map-status').style.color = "var(--mp-danger)";
+    },
+    options
+  );
+};
+
+// ৪. স্যাটেলাইট ভিউ টগল
+window.toggleShopMapLayer = function() {
+  const btn = document.getElementById('shop-btn-satellite');
+  if (shopIsSatelliteView) {
+    shopMap.removeLayer(shopCurrentTileLayer);
+    shopCurrentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(shopMap);
+    shopIsSatelliteView = false;
+    if (btn) btn.innerText = '🛰️ স্যাটেলাইট';
+  } else {
+    shopMap.removeLayer(shopCurrentTileLayer);
+    shopCurrentTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(shopMap);
+    shopIsSatelliteView = true;
+    if (btn) btn.innerText = '🗺️ স্ট্রিট ভিউ';
+  }
+};
+
+// ৫. দোকানের লোকেশন সেভ করা
 window.saveShopLocation = async function() {
   if (!shopLatLng) {
     alert("দয়া করে ম্যাপে একটি পিন সেট করুন!");
@@ -2400,7 +2469,7 @@ window.saveShopLocation = async function() {
       lng: shopLatLng.lng
     });
 
-    // 🚀 গুরুত্বপূর্ণ: দোকানের সব প্রোডাক্টেও নতুন লোকেশন আপডেট করা (যাতে কাস্টমার সঠিক দূরত্ব দেখে)
+    // 🚀 গুরুত্বপূর্ণ: দোকানের সব প্রোডাক্টেও নতুন লোকেশন আপডেট করা
     const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
     const myProductsSnap = await getDocs(myProductsQ);
     
