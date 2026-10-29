@@ -1643,62 +1643,47 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
   };
 
   // সার্চ, ফিল্টার এবং গ্রুপিং লজিক
-
 window.filterCustomerProducts = function() {
   const grid = document.getElementById('cst-product-grid');
   const searchInput = document.getElementById('cst-search-input');
   const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
   
-  // ১. প্রথমে সার্চ এবং ক্যাটাগরি অনুযায়ী ফিল্টার
   let filteredBySearch = allRawProducts.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery) || (p.category && p.category.toLowerCase().includes(searchQuery));
     const matchesCat = currentCategory === 'all' || (p.category && p.category === currentCategory);
     return matchesSearch && matchesCat;
   });
 
-  // ২. এরপর দূরত্ব অনুযায়ী ফিল্টার
   let validProducts = filteredBySearch.filter(p => {
     let distance = 0;
     
-    // 🚀 চেক করা হচ্ছে দোকান ও কাস্টমার উভয়ের লোকেশন আছে কি না এবং সেগুলো নাম্বার কি না
-    if (!isNaN(p.shopLat) && !isNaN(p.shopLng) && !isNaN(customerLat) && !isNaN(customerLng)) {
-      const shopLoc = L.latLng(p.shopLat, p.shopLng);
-      const custLoc = L.latLng(customerLat, customerLng);
+    // 🚀 আসল বাগ ফিক্স: null চেক করা হচ্ছে
+    let hasShopLoc = (p.shopLat !== null && p.shopLat !== undefined && !isNaN(p.shopLat) && p.shopLat !== '');
+    let hasCustLoc = (customerLat !== null && customerLat !== undefined && !isNaN(customerLat) && customerLat !== '');
+
+    if (hasShopLoc && hasCustLoc) {
+      const shopLoc = L.latLng(parseFloat(p.shopLat), parseFloat(p.shopLng));
+      const custLoc = L.latLng(parseFloat(customerLat), parseFloat(customerLng));
       distance = shopLoc.distanceTo(custLoc) / 1000; // কিমি
-    } else {
-      // যদি প্রোডাক্টে লোকেশন না থাকে, তবে দূরত্ব ০ ধরে নিবে (অর্থাৎ প্রোডাক্টটি দেখাবে)
-      distance = 0; 
+      
+      if (distance > maxDistance) return false; // দূরত্ব বেশি হলে বাদ
     }
-    
-    if (distance > maxDistance) return false; 
+    // যদি কাস্টমারের লোকেশন না থাকে, তবে প্রোডাক্ট দেখাবে (ফিল্টার আটকাবে না)
     return true;
   });
 
-  // ৩. প্রোডাক্ট গ্রুপিং (একই নামের প্রোডাক্ট একবার দেখানো)
   let grouped = {};
   validProducts.forEach(p => {
     const key = p.name.toLowerCase() + '_' + (p.unit || '');
     if (!grouped[key]) {
-      grouped[key] = {
-        name: p.name,
-        category: p.category,
-        unit: p.unit,
-        grade: p.grade,
-        image: p.image,
-        shops: []
-      };
+      grouped[key] = { name: p.name, category: p.category, unit: p.unit, grade: p.grade, image: p.image, shops: [] };
     }
     grouped[key].shops.push(p);
   });
 
   groupedProducts = Object.values(grouped);
+  groupedProducts.forEach(g => { g.shops.sort((a, b) => a.price - b.price); });
 
-  // ৪. প্রতিটি গ্রুপের ভেতরে দোকানগুলোকে দাম অনুযায়ী সাজানো (কম থেকে বেশি)
-  groupedProducts.forEach(g => {
-    g.shops.sort((a, b) => a.price - b.price);
-  });
-
-  // ৫. UI তে রেন্ডার করা
   grid.innerHTML = '';
   if(groupedProducts.length === 0) {
     grid.innerHTML = '<div style="font-size:13px; color:#999; grid-column:1/-1; text-align:center; padding: 20px;">এই রেঞ্জে কোনো প্রোডাক্ট পাওয়া যায়নি। রেঞ্জ বাড়িয়ে দেখুন।</div>';
@@ -1716,11 +1701,8 @@ window.filterCustomerProducts = function() {
           <span class="dlv-badge-grade">${g.grade || 'A'}</span>
           <span class="dlv-badge-stock" style="background:var(--mp-primary);">${totalShops} Shops</span>
         </div>
-        
         <div class="dlv-product-name" title="${g.name}">${g.name}</div>
-        <div class="dlv-product-meta">
-          <span>⚖️ ${g.unit || 'pcs'}</span>
-        </div>
+        <div class="dlv-product-meta"><span>⚖️ ${g.unit || 'pcs'}</span></div>
         <div class="dlv-product-price">₹${lowestPriceShop.price}</div>
         <button class="dlv-add-btn">দোকান দেখুন</button>
       </div>
@@ -1854,6 +1836,27 @@ window.filterCustomerProducts = function() {
 
   // Load role-specific data
   if (role === 'customer') {
+    // 🚀 ফায়ারবেস থেকে সেভ করা অ্যাড্রেস লোড করা
+if (userData.addresses && Array.isArray(userData.addresses)) {
+  customerAddresses = userData.addresses;
+  if(customerAddresses.length > 0) {
+    const latest = customerAddresses[customerAddresses.length - 1];
+    const el = document.getElementById('customer-saved-address');
+    if(el) {
+      el.innerHTML = `
+        <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border-left: 3px solid var(--mp-primary);">
+          <b>${latest.type === 'Home' ? '🏠 বাড়ি' : latest.type === 'Office' ? '🏢 অফিস' : '📍 অন্যান্য'}</b><br>
+          ${latest.text} ${latest.landmark ? `(${latest.landmark})` : ''}
+        </div>
+      `;
+    }
+    // লোকেশন আপডেট
+    if (latest.lat && latest.lng) {
+      customerLat = latest.lat;
+      customerLng = latest.lng;
+    }
+  }
+}
     renderCustomerProducts();
     // 🚀 কাস্টমারের লোকেশন অটোমেটিক আপডেট করা (যদি আগে থেকে সেভ না থাকে)
 if (!userData.lat || !userData.lng) {
@@ -2139,15 +2142,40 @@ if (!userData.lat || !userData.lng) {
     }
   };
 
-  window.saveNewAddress = function() {
-    const type = document.getElementById('new-addr-type').value;
-    const text = document.getElementById('new-addr-text').value.trim();
-    const landmark = document.getElementById('new-addr-landmark').value.trim();
-    if (!text) return alert("দয়া করে সম্পূর্ণ ঠিকানা লিখুন।");
+  window.saveNewAddress = async function() {
+  const type = document.getElementById('new-addr-type').value;
+  const text = document.getElementById('new-addr-text').value.trim();
+  const landmark = document.getElementById('new-addr-landmark').value.trim();
+  if (!text) return alert("দয়া করে সম্পূর্ণ ঠিকানা লিখুন।");
 
-    const newAddr = { type, text, landmark, lat: pickedLatLng ? pickedLatLng.lat : null, lng: pickedLatLng ? pickedLatLng.lng : null };
-    customerAddresses.push(newAddr);
+  const newAddr = { 
+    type: type, 
+    text: text, 
+    landmark: landmark, 
+    lat: pickedLatLng ? pickedLatLng.lat : null, 
+    lng: pickedLatLng ? pickedLatLng.lng : null 
+  };
+  
+  customerAddresses.push(newAddr);
+  
+  try {
+    // 🚀 ফায়ারবেসে অ্যাড্রেস সেভ করা
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      addresses: customerAddresses,
+      lat: newAddr.lat,
+      lng: newAddr.lng
+    });
     
+    // লোকাল ডেটা আপডেট
+    globalUserData.addresses = customerAddresses;
+    if (newAddr.lat && newAddr.lng) {
+      globalUserData.lat = newAddr.lat;
+      globalUserData.lng = newAddr.lng;
+      customerLat = newAddr.lat;
+      customerLng = newAddr.lng;
+    }
+
+    // UI তে দেখানো
     const el = document.getElementById('customer-saved-address');
     el.innerHTML = `
       <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border-left: 3px solid var(--mp-primary);">
@@ -2159,7 +2187,15 @@ if (!userData.lat || !userData.lng) {
     document.getElementById('new-addr-text').value = '';
     document.getElementById('new-addr-landmark').value = '';
     document.getElementById('dlv-address-modal').classList.remove('active');
-  };
+    
+    alert("অ্যাড্রেস সেভ হয়েছে!");
+    filterCustomerProducts(); // প্রোডাক্ট রিফ্রেশ করা (নতুন লোকেশন অনুযায়ী)
+    
+  } catch(e) {
+    console.error(e);
+    alert("অ্যাড্রেস সেভ করতে সমস্যা হয়েছে!");
+  }
+};
 
   // ============================================================
   // SHOPKEEPER FUNCTIONS
