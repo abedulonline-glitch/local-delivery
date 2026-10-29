@@ -398,6 +398,16 @@
       <div class="mp-card" style="border-left: 4px solid #7b1fa2;">
         <h3>⚙️ স্টোর সেটিংস</h3>
         
+        <!-- 📍 স্টোর লোকেশন সেটিংস (দোকানদারের জন্য) -->
+<div class="mp-card" style="border-left: 4px solid var(--mp-danger);">
+  <h3 style="justify-content: space-between;">
+    📍 স্টোর লোকেশন
+    <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openShopLocationModal()">লোকেশন সেট করুন</button>
+  </h3>
+  <div style="font-size: 12px; color: #666;" id="shop-location-text">
+    লোকেশন সেট করা হয়নি। কাস্টমারকে সঠিক দূরত্ব দেখাতে লোকেশন সেট করুন।
+  </div>
+</div>
         <!-- Standalone Toggle -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">
           <div>
@@ -1053,7 +1063,21 @@
   </div>
 </div>
   
-  <!-- Crop Modal (Global) -->
+<!-- Shop Location Modal -->
+<div id="dlv-shop-location-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-shop-location-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">📍 আপনার দোকানের লোকেশন</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">ম্যাপে পিন করে আপনার দোকানের সঠিক লোকেশন সেট করুন।</p>
+    
+    <div id="shop-map-container" style="height: 250px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
+    
+    <div style="margin-top: 10px; font-size: 12px; color: var(--mp-danger);" id="shop-map-status">❌ লোকেশন সেট করা হয়নি</div>
+    
+    <button class="mp-btn mp-btn-success" style="margin-top: 10px;" onclick="saveShopLocation()">💾 লোকেশন সেভ করুন</button>
+  </div>
+</div>
+    <!-- Crop Modal (Global) -->
 <div id="dlv-crop-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10001; flex-direction: column;">
   <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white;">
     <span onclick="closeCropModal()" style="font-size: 24px; cursor: pointer;">✖</span>
@@ -1813,64 +1837,70 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
   // ROLE BASED UI SETUP
   // ============================================================
   function setupUIForRole(role, userData) {
-    mainApp.classList.remove('mp-hidden');
-    document.getElementById('dlv-user-role').innerText = role.toUpperCase();
-    
-    // নামের পাশে স্কুটির আইকনটি সরিয়ে ফেলা হলো (যেহেতু আমরা আলাদা প্রোফাইল পিক দেখাবো)
-    document.getElementById('dlv-topbar-title').innerText = userData.name || 'Delivery System';
+  mainApp.classList.remove('mp-hidden');
+  document.getElementById('dlv-user-role').innerText = role.toUpperCase();
+  
+  // নামের পাশে স্কুটির আইকনটি সরিয়ে ফেলা হলো (যেহেতু আমরা আলাদা প্রোফাইল পিক দেখাবো)
+  document.getElementById('dlv-topbar-title').innerText = userData.name || 'Delivery System';
 
-    // 🚀 টপবারে প্রোফাইল পিক লোড করা
-    const profilePicEl = document.getElementById('topbar-profile-pic');
-    const profileIconEl = document.getElementById('topbar-profile-icon');
-    
-    if (profilePicEl && profileIconEl) {
-      if (userData.profilePic) {
-        profilePicEl.src = userData.profilePic;
-        profilePicEl.style.display = 'block';
-        profileIconEl.style.display = 'none';
-      } else {
-        profilePicEl.style.display = 'none';
-        profileIconEl.style.display = 'block';
-      }
-    }
-
-    // ৫. টপবারে ওয়ালেট আপডেট (সব রোলের জন্য)
-    updateTopbarWallet(userData.walletBalance);
-
-    // Hide all views (এখানে 'manager' যোগ করা হয়েছে)
-    ['customer', 'shopkeeper', 'delivery', 'admin', 'manager'].forEach(r => {
-      const view = document.getElementById(`dlv-view-${r}`);
-      if (view) view.classList.add('mp-hidden');
-    });
-
-    // Show active view
-    const activeView = document.getElementById(`dlv-view-${role}`);
-    if (activeView) activeView.classList.remove('mp-hidden');
-
-    // Load role-specific data
-    if (role === 'customer') {
-      renderCustomerProducts();
-      loadTopAds(); // 🚀 কাস্টমারের জন্য অ্যাড লোড করা হলো
-      if (userData) {
-        document.getElementById('cst-wallet-balance').innerText = `₹${(userData.walletBalance || 0).toFixed(2)}`;
-        document.getElementById('cst-khata-due').innerText = `₹${(userData.khataDue || 0).toFixed(2)}`;
-      }
-    } else if (role === 'shopkeeper') {
-      renderShopProducts();
-      loadShopTotalDue();
-      loadShopBadgeStatus();
-      loadShopNewOrders();
-      
-    } else if (role === 'delivery') {
-      document.getElementById('dlv-offline-msg').style.display = 'block';
-      document.getElementById('dlv-live-orders-container').style.display = 'none';
-    } else if (role === 'admin') {
-      loadAdminDashboardUI();
-    } else if (role === 'manager') {
-      // ম্যানেজারের জন্য ড্যাশবোর্ড (আপাতত অ্যাডমিনের মতোই দেখাবে, তবে শুধু তার পিনের ডেটা দেখবে)
-      document.getElementById('dlv-view-manager').classList.remove('mp-hidden');
+  // 🚀 টপবারে প্রোফাইল পিক লোড করা
+  const profilePicEl = document.getElementById('topbar-profile-pic');
+  const profileIconEl = document.getElementById('topbar-profile-icon');
+  
+  if (profilePicEl && profileIconEl) {
+    if (userData.profilePic) {
+      profilePicEl.src = userData.profilePic;
+      profilePicEl.style.display = 'block';
+      profileIconEl.style.display = 'none';
+    } else {
+      profilePicEl.style.display = 'none';
+      profileIconEl.style.display = 'block';
     }
   }
+
+  // ৫. টপবারে ওয়ালেট আপডেট (সব রোলের জন্য)
+  updateTopbarWallet(userData.walletBalance);
+
+  // Hide all views (এখানে 'manager' যোগ করা হয়েছে)
+  ['customer', 'shopkeeper', 'delivery', 'admin', 'manager'].forEach(r => {
+    const view = document.getElementById(`dlv-view-${r}`);
+    if (view) view.classList.add('mp-hidden');
+  });
+
+  // Show active view
+  const activeView = document.getElementById(`dlv-view-${role}`);
+  if (activeView) activeView.classList.remove('mp-hidden');
+
+  // Load role-specific data
+  if (role === 'customer') {
+    renderCustomerProducts();
+    loadTopAds(); // 🚀 কাস্টমারের জন্য অ্যাড লোড করা হলো
+    if (userData) {
+      document.getElementById('cst-wallet-balance').innerText = `₹${(userData.walletBalance || 0).toFixed(2)}`;
+      document.getElementById('cst-khata-due').innerText = `₹${(userData.khataDue || 0).toFixed(2)}`;
+    }
+  } else if (role === 'shopkeeper') {
+    renderShopProducts();
+    loadShopTotalDue();
+    loadShopBadgeStatus();
+    loadShopNewOrders();
+    
+    // 🚀 স্টোর লোকেশন স্ট্যাটাস আপডেট
+    if (userData.lat && userData.lng) {
+      const locText = document.getElementById('shop-location-text');
+      if(locText) locText.innerHTML = `<span style="color:var(--mp-success);">✅ লোকেশন সেট করা আছে</span>`;
+    }
+    
+  } else if (role === 'delivery') {
+    document.getElementById('dlv-offline-msg').style.display = 'block';
+    document.getElementById('dlv-live-orders-container').style.display = 'none';
+  } else if (role === 'admin') {
+    loadAdminDashboardUI();
+  } else if (role === 'manager') {
+    // ম্যানেজারের জন্য ড্যাশবোর্ড (আপাতত অ্যাডমিনের মতোই দেখাবে, তবে শুধু তার পিনের ডেটা দেখবে)
+    document.getElementById('dlv-view-manager').classList.remove('mp-hidden');
+  }
+}
   // ============================================================
   // CUSTOMER FUNCTIONS
   // ============================================================
@@ -2319,8 +2349,85 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
     } catch(e) { alert("সমস্যা হয়েছে!"); }
   };
 
+// ==================== SHOP LOCATION LOGIC ====================
+let shopMap = null;
+let shopMarker = null;
+let shopLatLng = null;
 
-  // ৪. "+ Add" বাটনে ক্লিক করলে কোন মডাল খুলবে (সম্পূর্ণ কোড)
+// ১. দোকানদারের লোকেশন ম্যাপ ওপেন করা
+window.openShopLocationModal = function() {
+  document.getElementById('dlv-shop-location-modal').classList.add('active');
+  
+  setTimeout(() => {
+    if (!shopMap) {
+      // ডিফল্ট লোকেশন বা আগের সেভ করা লোকেশন
+      const initLat = globalUserData.lat || 22.5726;
+      const initLng = globalUserData.lng || 88.3639;
+      
+      shopMap = L.map('shop-map-container').setView([initLat, initLng], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(shopMap);
+      
+      // ম্যাপে ক্লিক করলে পিন বসবে
+      shopMap.on('click', function(e) {
+        if (shopMarker) shopMap.removeLayer(shopMarker);
+        shopMarker = L.marker(e.latlng).addTo(shopMap);
+        shopLatLng = e.latlng;
+        document.getElementById('shop-map-status').innerHTML = '✅ লোকেশন সিলেক্ট করা হয়েছে';
+        document.getElementById('shop-map-status').style.color = 'var(--mp-success)';
+      });
+
+      // যদি আগে থেকে লোকেশন থাকে, তবে পিন বসানো থাকবে
+      if (globalUserData.lat && globalUserData.lng) {
+        shopMarker = L.marker([initLat, initLng]).addTo(shopMap);
+        shopLatLng = L.latLng(initLat, initLng);
+      }
+    }
+    shopMap.invalidateSize();
+  }, 300);
+};
+
+// ২. দোকানের লোকেশন সেভ করা
+window.saveShopLocation = async function() {
+  if (!shopLatLng) {
+    alert("দয়া করে ম্যাপে একটি পিন সেট করুন!");
+    return;
+  }
+
+  try {
+    // ইউজার প্রোফাইলে লোকেশন আপডেট
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      lat: shopLatLng.lat,
+      lng: shopLatLng.lng
+    });
+
+    // 🚀 গুরুত্বপূর্ণ: দোকানের সব প্রোডাক্টেও নতুন লোকেশন আপডেট করা (যাতে কাস্টমার সঠিক দূরত্ব দেখে)
+    const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+    const myProductsSnap = await getDocs(myProductsQ);
+    
+    const updates = [];
+    myProductsSnap.forEach(pDoc => {
+      updates.push(updateDoc(doc(db, "products", pDoc.id), {
+        shopLat: shopLatLng.lat,
+        shopLng: shopLatLng.lng
+      }));
+    });
+    await Promise.all(updates);
+
+    // লোকাল ডেটা আপডেট
+    globalUserData.lat = shopLatLng.lat;
+    globalUserData.lng = shopLatLng.lng;
+
+    alert("🎉 দোকানের লোকেশন সফলভাবে সেভ হয়েছে!");
+    document.getElementById('dlv-shop-location-modal').classList.remove('active');
+    
+    // UI আপডেট
+    document.getElementById('shop-location-text').innerHTML = `<span style="color:var(--mp-success);">✅ লোকেশন সেট করা আছে</span>`;
+
+  } catch (e) {
+    console.error(e);
+    alert("লোকেশন সেভ করতে সমস্যা হয়েছে!");
+  }
+};
   // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্কসহ)
 window.openAddProductModal = function() {
   document.getElementById('dlv-catalog-modal').classList.add('active');
