@@ -510,140 +510,146 @@
     </div>
 
         <!-- ==================== ADMIN DASHBOARD ==================== -->
-    <div id="dlv-view-admin" class="mp-hidden">
-      <div class="dlv-dashboard-title">👑 অ্যাডমিন কন্ট্রোল প্যানেল</div>
-      
-      <!-- রেভিনিউ সামারি -->
-      <div class="dlv-wallet-header" style="background: linear-gradient(135deg, #1a73e8, #4285f4);">
-        <div>
-          <div style="font-size: 12px; opacity: 0.9;">সিস্টেমের মোট রেভিনিউ (১%)</div>
-          <div class="dlv-wallet-balance" id="admin-total-revenue">₹0.00</div>
-        </div>
+    <!-- ==================== ADMIN DASHBOARD ==================== -->
+<div id="dlv-view-admin" class="mp-hidden">
+  <div class="dlv-dashboard-title">👑 অ্যাডমিন কন্ট্রোল প্যানেল</div>
+  
+  <!-- রেভিনিউ সামারি -->
+  <div class="dlv-wallet-header" style="background: linear-gradient(135deg, #1a73e8, #4285f4);">
+    <div>
+      <div style="font-size: 12px; opacity: 0.9;">সিস্টেমের মোট রেভিনিউ (১%)</div>
+      <div class="dlv-wallet-balance" id="admin-total-revenue">₹0.00</div>
+    </div>
+  </div>
+
+  <!-- ইনভাইট সেকশন -->
+  <div class="mp-card" style="border-left: 4px solid var(--mp-success);">
+    <h3>🔗 ইনভাইট পাঠান</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">নতুন ইউজারকে অ্যাপে যুক্ত করতে লিংক পাঠান।</p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <button class="mp-btn" style="margin: 0; background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px;" onclick="shareInvite('manager')">👨‍💼 ম্যানেজার</button>
+      <button class="mp-btn" style="margin: 0; background: #e6f4ea; color: var(--mp-success); font-size: 12px; padding: 8px;" onclick="shareInvite('shopkeeper')">🏪 দোকানদার</button>
+      <button class="mp-btn" style="margin: 0; background: #fef7e0; color: var(--mp-warning); font-size: 12px; padding: 8px;" onclick="shareInvite('delivery')">🛵 ডেলিভারি বয়</button>
+      <button class="mp-btn" style="margin: 0; background: #f3e8fd; color: #7b1fa2; font-size: 12px; padding: 8px;" onclick="shareInvite('customer')">👤 কাস্টমার</button>
+    </div>
+  </div>
+
+  <!-- কাউন্টিং স্ট্যাটাস (৪টি কার্ড) -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+    <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
+      <div style="font-size: 24px;">🏪</div><div style="font-size: 12px; font-weight: 600;">দোকানদার</div>
+      <div style="font-size: 18px; font-weight: bold; color: var(--mp-primary);" id="admin-total-shops">0</div>
+    </div>
+    <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
+      <div style="font-size: 24px;">🛵</div><div style="font-size: 12px; font-weight: 600;">ডেলিভারি বয়</div>
+      <div style="font-size: 18px; font-weight: bold; color: var(--mp-success);" id="admin-total-delivery">0</div>
+    </div>
+    <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
+      <div style="font-size: 24px;">👨‍💼</div><div style="font-size: 12px; font-weight: 600;">ম্যানেজার</div>
+      <div style="font-size: 18px; font-weight: bold; color: var(--mp-warning);" id="admin-total-managers">0</div>
+    </div>
+    <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
+      <div style="font-size: 24px;">👤</div><div style="font-size: 12px; font-weight: 600;">কাস্টমার</div>
+      <div style="font-size: 18px; font-weight: bold; color: #7b1fa2;" id="admin-total-customers">0</div>
+    </div>
+  </div>
+
+  <!-- সিস্টেম সেটিংস (ফুল উইডথ) -->
+  <div class="mp-card" style="border-left: 4px solid #5f6368;">
+    <h3>⚙️ সিস্টেম সেটিংস (চার্জ ও ফি)</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">এখানে পরিবর্তন করলে পুরো অ্যাপে সাথে সাথে প্রভাব পড়বে।</p>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div class="dlv-form-group">
+        <label style="font-size: 11px;">গ্লোবাল কমিশন (%)</label>
+        <input type="number" id="sys-commission" class="dlv-input" placeholder="যেমন: 1" step="0.1">
       </div>
-
-      <!-- ইনভাইট সেকশন -->
-      <div class="mp-card" style="border-left: 4px solid var(--mp-success); margin-bottom: 14px;">
-        <h3>🔗 ইনভাইট পাঠান</h3>
-        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">নতুন ইউজারকে অ্যাপে যুক্ত করতে লিংক পাঠান।</p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <button class="mp-btn" style="margin: 0; background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px;" onclick="shareInvite('manager')">👨‍💼 ম্যানেজার</button>
-          <button class="mp-btn" style="margin: 0; background: #e6f4ea; color: var(--mp-success); font-size: 12px; padding: 8px;" onclick="shareInvite('shopkeeper')">🏪 দোকানদার</button>
-          <button class="mp-btn" style="margin: 0; background: #fef7e0; color: var(--mp-warning); font-size: 12px; padding: 8px;" onclick="shareInvite('delivery')">🛵 ডেলিভারি বয়</button>
-          <button class="mp-btn" style="margin: 0; background: #f3e8fd; color: #7b1fa2; font-size: 12px; padding: 8px;" onclick="shareInvite('customer')">👤 কাস্টমার</button>
-        <!-- কাউন্টিং স্ট্যাটাস (৪টি কার্ড) -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-        <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
-          <div style="font-size: 24px;">🏪</div><div style="font-size: 12px; font-weight: 600;">দোকানদার</div>
-          <div style="font-size: 18px; font-weight: bold; color: var(--mp-primary);" id="admin-total-shops">0</div>
-        </div>
-        <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
-          <div style="font-size: 24px;">🛵</div><div style="font-size: 12px; font-weight: 600;">ডেলিভারি বয়</div>
-          <div style="font-size: 18px; font-weight: bold; color: var(--mp-success);" id="admin-total-delivery">0</div>
-        </div> 
-        <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
-          <div style="font-size: 24px;">👨‍💼</div><div style="font-size: 12px; font-weight: 600;">ম্যানেজার</div>
-          <div style="font-size: 18px; font-weight: bold; color: var(--mp-warning);" id="admin-total-managers">0</div>
-        </div>
-        <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
-          <div style="font-size: 24px;">👤</div><div style="font-size: 12px; font-weight: 600;">কাস্টমার</div>
-          <div style="font-size: 18px; font-weight: bold; color: #7b1fa2;" id="admin-total-customers">0</div>
-        </div>
+      <div class="dlv-form-group">
+        <label style="font-size: 11px;">খাতা ফিচার ফি (₹/মাস)</label>
+        <input type="number" id="sys-khata-fee" class="dlv-input" placeholder="যেমন: 200">
       </div>
-             <!-- ⚙️ System Settings (Admin) -->
-      <div class="mp-card" style="border-left: 4px solid #5f6368;">
-        <h3>⚙️ সিস্টেম সেটিংস (চার্জ ও ফি)</h3>
-        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">এখানে পরিবর্তন করলে পুরো অ্যাপে সাথে সাথে প্রভাব পড়বে।</p>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <div class="dlv-form-group">
-            <label style="font-size: 11px;">গ্লোবাল কমিশন (%)</label>
-            <input type="number" id="sys-commission" class="dlv-input" placeholder="যেমন: 1" step="0.1">
-          </div>
-          <div class="dlv-form-group">
-            <label style="font-size: 11px;">খাতা ফিচার ফি (₹/মাস)</label>
-            <input type="number" id="sys-khata-fee" class="dlv-input" placeholder="যেমন: 200">
-          </div>
-          <div class="dlv-form-group">
-            <label style="font-size: 11px;">প্রিমিয়াম ব্যাজ ফি (₹)</label>
-            <input type="number" id="sys-premium-fee" class="dlv-input" placeholder="যেমন: 500">
-          </div>
-          <div class="dlv-form-group">
-            <label style="font-size: 11px;">ভেরিফাইড ব্যাজ ফি (₹)</label>
-            <input type="number" id="sys-verified-fee" class="dlv-input" placeholder="যেমন: 200">
-          </div>
-          <div class="dlv-form-group" style="grid-column: 1 / -1;">
-            <label style="font-size: 11px;">নিজস্ব স্টোর (SaaS) মোড ফি (₹/মাস)</label>
-            <input type="number" id="sys-standalone-fee" class="dlv-input" placeholder="যেমন: 300">
-          </div>
-        </div>
-
-        <button class="mp-btn mp-btn-primary" style="margin-top: 10px;" onclick="saveSystemSettings()" id="btn-save-settings">💾 সেটিংস সেভ করুন</button>
+      <div class="dlv-form-group">
+        <label style="font-size: 11px;">প্রিমিয়াম ব্যাজ ফি (₹)</label>
+        <input type="number" id="sys-premium-fee" class="dlv-input" placeholder="যেমন: 500">
       </div>
-          
-
-      <!-- মাস্টার প্রোডাক্ট সেকশন -->
-      <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
-        <h3 style="justify-content: space-between;">
-          🏷️ মাস্টার প্রোডাক্ট
-          <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
-        </h3>
-        <div id="admin-master-product-list">
-          <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
-        </div>
+      <div class="dlv-form-group">
+        <label style="font-size: 11px;">ভেরিফাইড ব্যাজ ফি (₹)</label>
+        <input type="number" id="sys-verified-fee" class="dlv-input" placeholder="যেমন: 200">
       </div>
-
-      <!-- অ্যাড ম্যানেজমেন্ট সেকশন -->
-      <div class="mp-card" style="border-left: 4px solid #f9a825;">
-        <h3>📢 অ্যাড ম্যানেজমেন্ট</h3>
-        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">অ্যাপের টপবারে দেখানোর জন্য নতুন ইমেজ বা ভিডিও দিন।</p>
-        
-        <div class="dlv-form-group" style="margin-bottom:10px;">
-          <select id="admin-ad-type" class="dlv-input" onchange="toggleAdInputType()">
-            <option value="image">🖼️ ইমেজ (সরাসরি আপলোড)</option>
-            <option value="video">🎥 ভিডিও (YouTube লিংক)</option>
-          </select>
-        </div>
-
-        <div id="ad-image-upload-area" style="margin-bottom: 10px;">
-          <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-            <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'ad')">📷 ক্যামেরা</button>
-            <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'ad')">🖼️ গ্যালারি</button>
-          </div>
-          <img id="ad-image-preview" style="width: 100%; height: 100px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
-          <input type="file" id="ad-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'ad')">
-        </div>
-
-        <div id="ad-video-url-area" class="dlv-form-group mp-hidden" style="margin-bottom: 10px;">
-          <input type="text" id="admin-ad-url" class="dlv-input" placeholder="YouTube ভিডিও লিংক পেস্ট করুন...">
-        </div>
-        
-        <button class="mp-btn mp-btn-primary" style="margin-bottom: 15px; padding: 8px;" onclick="saveAd()">+ অ্যাড যোগ করুন</button>
-        <div id="admin-ad-list"></div>
-      </div>
-
-      <!-- প্রিমিয়াম ও ভেরিফাইড ব্যাজ ম্যানেজমেন্ট -->
-      <div class="mp-card" style="border-left: 4px solid #f9a825;">
-        <h3>🌟 প্রিমিয়াম ও ভেরিফাইড দোকান</h3>
-        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">দোকানদারদের ব্যাজ দিন। এতে অ্যাডমিন আয় বাড়বে।</p>
-        <div id="admin-badge-shop-list"></div>
-      </div>
-
-      <!-- ইউজার রোল ম্যানেজমেন্ট -->
-      <div class="mp-card">
-        <h3>👥 ইউজার রোল ম্যানেজমেন্ট</h3>
-        <div id="admin-user-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
-      </div>
-
-      <!-- পিনকোড ভিত্তিক ম্যানেজার -->
-      <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
-        <h3>📍 পিনকোড ভিত্তিক ম্যানেজার</h3>
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-          <input type="text" id="admin-pin-input" class="dlv-input" placeholder="পিনকোড (যেমন: 700001)" style="flex: 1;">
-          <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 0 15px;" onclick="searchPinUsers()">🔍 খুঁজুন</button>
-        </div>
-        <div id="admin-pin-user-list"></div>
+      <div class="dlv-form-group" style="grid-column: 1 / -1;">
+        <label style="font-size: 11px;">নিজস্ব স্টোর (SaaS) মোড ফি (₹/মাস)</label>
+        <input type="number" id="sys-standalone-fee" class="dlv-input" placeholder="যেমন: 300">
       </div>
     </div>
+
+    <button class="mp-btn mp-btn-primary" style="margin-top: 10px;" onclick="saveSystemSettings()" id="btn-save-settings">💾 সেটিংস সেভ করুন</button>
+  </div>
+
+  <!-- লাইভ অর্ডার ফিড (নতুন স্মার্ট সেকশন) -->
+  <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
+    <h3>📊 সর্বশেষ অর্ডারসমূহ (লাইভ)</h3>
+    <div id="admin-live-orders" style="max-height: 200px; overflow-y: auto;">
+      <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
+    </div>
+  </div>
+
+  <!-- মাস্টার প্রোডাক্ট সেকশন -->
+  <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
+    <h3 style="justify-content: space-between;">
+      🏷️ মাস্টার প্রোডাক্ট
+      <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
+    </h3>
+    <div id="admin-master-product-list">
+      <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
+    </div>
+  </div>
+
+  <!-- অ্যাড ম্যানেজমেন্ট সেকশন -->
+  <div class="mp-card" style="border-left: 4px solid #f9a825;">
+    <h3>📢 অ্যাড ম্যানেজমেন্ট</h3>
+    <div class="dlv-form-group" style="margin-bottom:10px;">
+      <select id="admin-ad-type" class="dlv-input" onchange="toggleAdInputType()">
+        <option value="image">🖼️ ইমেজ (সরাসরি আপলোড)</option>
+        <option value="video">🎥 ভিডিও (YouTube লিংক)</option>
+      </select>
+    </div>
+    <div id="ad-image-upload-area" style="margin-bottom: 10px;">
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'ad')">📷 ক্যামেরা</button>
+        <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'ad')">🖼️ গ্যালারি</button>
+      </div>
+      <img id="ad-image-preview" style="width: 100%; height: 100px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
+      <input type="file" id="ad-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'ad')">
+    </div>
+    <div id="ad-video-url-area" class="dlv-form-group mp-hidden" style="margin-bottom: 10px;">
+      <input type="text" id="admin-ad-url" class="dlv-input" placeholder="YouTube ভিডিও লিংক পেস্ট করুন...">
+    </div>
+    <button class="mp-btn mp-btn-primary" style="margin-bottom: 15px; padding: 8px;" onclick="saveAd()">+ অ্যাড যোগ করুন</button>
+    <div id="admin-ad-list"></div>
+  </div>
+
+  <!-- প্রিমিয়াম ও ভেরিফাইড ব্যাজ ম্যানেজমেন্ট -->
+  <div class="mp-card" style="border-left: 4px solid #f9a825;">
+    <h3>🌟 প্রিমিয়াম ও ভেরিফাইড দোকান</h3>
+    <div id="admin-badge-shop-list"></div>
+  </div>
+
+  <!-- ইউজার রোল ম্যানেজমেন্ট -->
+  <div class="mp-card">
+    <h3>👥 ইউজার রোল ম্যানেজমেন্ট</h3>
+    <div id="admin-user-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
+  </div>
+
+  <!-- পিনকোড ভিত্তিক ম্যানেজার -->
+  <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
+    <h3>📍 পিনকোড ভিত্তিক ম্যানেজার</h3>
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+      <input type="text" id="admin-pin-input" class="dlv-input" placeholder="পিনকোড (যেমন: 700001)" style="flex: 1;">
+      <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 0 15px;" onclick="searchPinUsers()">🔍 খুঁজুন</button>
+    </div>
+    <div id="admin-pin-user-list"></div>
+  </div>
+</div>
 <!-- ==================== MODALS ==================== -->
 <!-- Recharge Modal -->
 <div id="dlv-recharge-modal" class="dlv-modal-overlay">
@@ -2706,56 +2712,86 @@ window.toggleDeliveryStatus = function(checkbox) {
   // ADMIN FUNCTIONS
   // ============================================================
     function loadAdminDashboardUI() {
-    if (adminUsersUnsubscribe) adminUsersUnsubscribe();
-    adminUsersUnsubscribe = onSnapshot(collection(db, "users"), (snap) => {
-      let shops = 0, delivery = 0, managers = 0, userHtml = '';
-      if (snap.empty) {
-        document.getElementById('admin-user-list').innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">ডেটাবেসে কোনো ইউজার নেই।</div>';
-        return;
-      }
-      snap.forEach(docSnap => {
-        const u = docSnap.data();
-        if (u.role === 'shopkeeper') shops++;
-        if (u.role === 'delivery') delivery++;
-        if (u.isManager === true) managers++; 
-        let roleText = u.role ? u.role.toUpperCase() : 'NO ROLE';
-        
-        userHtml += `
-          <div style="border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <div style="font-size: 14px; font-weight: 600;">${u.name || 'Unknown User'}</div>
-              <div style="font-size: 11px; color: #666;">${roleText}</div>
-            </div>
-            <select onchange="changeUserRole('${docSnap.id}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; background: white;">
-              <option value="" disabled selected>রোল দিন</option>
-              <option value="shopkeeper" ${u.role === 'shopkeeper' ? 'selected' : ''}>দোকানদার</option>
-              <option value="delivery" ${u.role === 'delivery' ? 'selected' : ''}>ডেলিভারি বয়</option>
-              <option value="customer" ${u.role === 'customer' ? 'selected' : ''}>কাস্টমার</option>
-              <option value="manager" ${u.role === 'manager' ? 'selected' : ''}>ম্যানেজার</option>
-              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>অ্যাডমিন</option>
-            </select>
-          </div>
-        `;
-      });
-      document.getElementById('admin-total-shops').innerText = shops;
-      document.getElementById('admin-total-delivery').innerText = delivery;
-      document.getElementById('admin-total-managers').innerText = managers;
-      document.getElementById('admin-user-list').innerHTML = userHtml;
-    });
-
-    loadMasterProducts(); // Master product load
-    loadSystemSettings();  
-    loadAdminAds(); // 🚀 অ্যাডমিনের অ্যাড লিস্ট লোড
-    loadAdminBadgeList();
+  if (adminUsersUnsubscribe) adminUsersUnsubscribe();
+  adminUsersUnsubscribe = onSnapshot(collection(db, "users"), (snap) => {
+    let shops = 0, delivery = 0, managers = 0, userHtml = '';
+    if (snap.empty) {
+      document.getElementById('admin-user-list').innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">ডেটাবেসে কোনো ইউজার নেই।</div>';
+      return;
+    }
+    snap.forEach(docSnap => {
+      const u = docSnap.data();
+      if (u.role === 'shopkeeper') shops++;
+      if (u.role === 'delivery') delivery++;
+      if (u.isManager === true) managers++; 
+      let roleText = u.role ? u.role.toUpperCase() : 'NO ROLE';
       
-    const ordersQ = query(collection(db, "orders"), where("status", "==", "delivered"));
-    onSnapshot(ordersQ, (snap) => {
-      let revenue = 0;
-      snap.forEach(d => { revenue += (d.data().price * 0.01); });
-      document.getElementById('admin-total-revenue').innerText = `₹${revenue.toFixed(2)}`;
+      userHtml += `
+        <div style="border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 14px; font-weight: 600;">${u.name || 'Unknown User'}</div>
+            <div style="font-size: 11px; color: #666;">${roleText}</div>
+          </div>
+          <select onchange="changeUserRole('${docSnap.id}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; background: white;">
+            <option value="" disabled selected>রোল দিন</option>
+            <option value="shopkeeper" ${u.role === 'shopkeeper' ? 'selected' : ''}>দোকানদার</option>
+            <option value="delivery" ${u.role === 'delivery' ? 'selected' : ''}>ডেলিভারি বয়</option>
+            <option value="customer" ${u.role === 'customer' ? 'selected' : ''}>কাস্টমার</option>
+            <option value="manager" ${u.role === 'manager' ? 'selected' : ''}>ম্যানেজার</option>
+            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>অ্যাডমিন</option>
+          </select>
+        </div>
+      `;
     });
-  }
+    document.getElementById('admin-total-shops').innerText = shops;
+    document.getElementById('admin-total-delivery').innerText = delivery;
+    document.getElementById('admin-total-managers').innerText = managers;
+    document.getElementById('admin-user-list').innerHTML = userHtml;
+  });
 
+  loadMasterProducts(); // Master product load
+  loadSystemSettings();  
+  loadAdminAds(); // 🚀 অ্যাডমিনের অ্যাড লিস্ট লোড
+  loadAdminBadgeList();
+    
+  const ordersQ = query(collection(db, "orders"), where("status", "==", "delivered"));
+  onSnapshot(ordersQ, (snap) => {
+    let revenue = 0;
+    snap.forEach(d => { revenue += (d.data().price * 0.01); });
+    document.getElementById('admin-total-revenue').innerText = `₹${revenue.toFixed(2)}`;
+  });
+
+  // 🚀 নতুন যোগ করা হলো: লাইভ অর্ডার লোড করা
+  const recentOrdersQ = query(collection(db, "orders"));
+  onSnapshot(recentOrdersQ, (snap) => {
+    const list = document.getElementById('admin-live-orders');
+    if(!list) return;
+    
+    let orders = [];
+    snap.forEach(d => orders.push(d.data()));
+    orders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)); // নতুন আগে
+    
+    if (orders.length === 0) {
+      list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো অর্ডার নেই।</div>';
+      return;
+    }
+
+    let html = '';
+    orders.slice(0, 5).forEach(o => { // সর্বশেষ ৫টি অর্ডার দেখাবে
+      let color = o.status === 'delivered' ? 'var(--mp-success)' : 'var(--mp-warning)';
+      html += `
+        <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 8px 0; border-bottom: 1px solid #eee;">
+          <div>
+            <b>${o.productName}</b> (₹${o.price}) <br>
+            <span style="color: #666; font-size: 11px;">কাস্টমার: ${o.customerName}</span>
+          </div>
+          <div style="color: ${color}; font-weight: bold;">${o.status.toUpperCase()}</div>
+        </div>
+      `;
+    });
+    list.innerHTML = html;
+  });
+}
     // ==================== SYSTEM SETTINGS LOGIC (PART 1) ====================
   let globalSettings = {}; // পুরো অ্যাপে ব্যবহারের জন্য গ্লোবাল ভেরিয়েবল
 
