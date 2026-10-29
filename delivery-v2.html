@@ -604,15 +604,21 @@
   </div>
 
   <!-- মাস্টার প্রোডাক্ট সেকশন -->
-  <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
-    <h3 style="justify-content: space-between;">
-      🏷️ মাস্টার প্রোডাক্ট
-      <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
-    </h3>
-    <div id="admin-master-product-list">
-      <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
-    </div>
+  <!-- মাস্টার প্রোডাক্ট সেকশন -->
+<div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
+  <h3 style="justify-content: space-between;">
+    🏷️ মাস্টার প্রোডাক্ট
+    <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
+  </h3>
+  
+  <!-- 🚀 সার্চ বার -->
+  <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
+  
+  <!-- 🚀 স্ক্রলেবল লিস্ট কন্টেইনার (ওয়ার্ডপ্রেস স্টাইল) -->
+  <div id="admin-master-product-list" style="max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 5px;">
+    <div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">লোড হচ্ছে...</div>
   </div>
+</div>
 
   <!-- অ্যাড ম্যানেজমেন্ট সেকশন -->
   <div class="mp-card" style="border-left: 4px solid #f9a825;">
@@ -3420,48 +3426,92 @@ window.toggleDeliveryStatus = function(checkbox) {
   };
 
   // Master Products
-  function loadMasterProducts() {
-    if (masterProductsUnsub) masterProductsUnsub();
-    const listContainer = document.getElementById('admin-master-product-list');
-    if(!listContainer) return;
-    
-    const q = query(collection(db, "master_products"));
-    masterProductsUnsub = onSnapshot(q, (snap) => {
-      if (snap.empty) {
-        listContainer.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো প্রোডাক্ট নেই। নতুন যোগ করুন।</div>';
-        return;
-      }
-      let productsArray = [];
-      snap.forEach(docSnap => productsArray.push({ id: docSnap.id, ...docSnap.data() }));
-      productsArray.sort((a, b) => {
-        const tA = a.createdAt ? a.createdAt.toMillis() : 0;
-        const tB = b.createdAt ? b.createdAt.toMillis() : 0;
-        return tB - tA;
-      });
+  // ==================== MASTER PRODUCTS (SEARCH & SCROLL) ====================
+let masterProductsUnsub = null;
+let allMasterProducts = []; // সব প্রোডাক্ট এখানে জমা থাকবে
 
-      let html = '';
-      productsArray.forEach(p => {
-        html += `
-          <div style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid #eee; align-items:center;">
-            <div>
-              <div style="font-size:13px; font-weight:600;">${p.name}</div>
-              <div style="font-size:11px; color:#666;">${p.category} | Grade ${p.grade} | ${p.unit}</div>
-            </div>
-            <button onclick="openEditMasterProduct('${p.id}')" style="background:#e8f0fe; border:none; color:var(--mp-primary); cursor:pointer; font-size:14px; padding: 6px 10px; border-radius: 6px;">✏️ এডিট</button>
-          </div>
-        `;
-      });
-      listContainer.innerHTML = html;
+// ১. প্রোডাক্ট লোড করা
+function loadMasterProducts() {
+  if (masterProductsUnsub) masterProductsUnsub();
+  const listContainer = document.getElementById('admin-master-product-list');
+  if(!listContainer) return;
+  
+  const q = query(collection(db, "master_products"));
+  
+  masterProductsUnsub = onSnapshot(q, (snap) => {
+    allMasterProducts = [];
+    if (snap.empty) {
+      listContainer.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">কোনো প্রোডাক্ট নেই। নতুন যোগ করুন।</div>';
+      return;
+    }
+
+    snap.forEach(docSnap => {
+      allMasterProducts.push({ id: docSnap.id, ...docSnap.data() });
     });
+
+    // নতুন আগে দেখানোর জন্য সর্ট
+    allMasterProducts.sort((a, b) => {
+      const tA = a.createdAt ? a.createdAt.toMillis() : 0;
+      const tB = b.createdAt ? b.createdAt.toMillis() : 0;
+      return tB - tA;
+    });
+
+    // রেন্ডার করা
+    renderAdminMasterProducts(allMasterProducts);
+  });
+}
+
+// ২. প্রোডাক্ট রেন্ডার করা (ওয়ার্ডপ্রেস স্টাইল)
+function renderAdminMasterProducts(productsToRender) {
+  const listContainer = document.getElementById('admin-master-product-list');
+  if(!listContainer) return;
+
+  if (productsToRender.length === 0) {
+    listContainer.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">কোনো প্রোডাক্ট পাওয়া যায়নি।</div>';
+    return;
   }
 
-  window.openMasterProductModal = function() { document.getElementById('dlv-master-product-modal').classList.add('active'); };
-  window.closeMasterProductModal = function() {
-    document.getElementById('dlv-master-product-modal').classList.remove('active');
-    document.getElementById('mp-name').value = '';
-    document.getElementById('mp-image-preview').style.display = 'none';
-    uploadedImageUrl = null;
-  };
+  let html = '';
+  productsToRender.forEach(p => {
+    html += `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 5px; border-bottom: 1px solid #eee;">
+        
+        <!-- বাম দিক: ছবি ও নাম -->
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 40px; height: 40px; border-radius: 6px; background: #f0f2f5; display: flex; justify-content: center; align-items: center; overflow: hidden;">
+            ${p.image ? `<img src="${p.image}" style="width:100%; height:100%; object-fit:cover;">` : '📦'}
+          </div>
+          <div>
+            <div style="font-size:13px; font-weight:600; color:#202124;">${p.name}</div>
+            <div style="font-size:11px; color:#666;">${p.category} | Grade ${p.grade} | ${p.unit}</div>
+          </div>
+        </div>
+
+        <!-- ডান দিক: এডিট বাটন -->
+        <button onclick="openEditMasterProduct('${p.id}')" style="background:#e8f0fe; border:none; color:var(--mp-primary); cursor:pointer; font-size:12px; padding: 6px 10px; border-radius: 6px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+          ✏️ এডিট
+        </button>
+        
+      </div>
+    `;
+  });
+  listContainer.innerHTML = html;
+}
+
+// ৩. সার্চ করার লজিক (রিয়েল-টাইম ফিল্টার)
+window.filterAdminMasterProducts = function(searchQuery) {
+  const q = searchQuery.toLowerCase().trim();
+  if (!q) {
+    renderAdminMasterProducts(allMasterProducts); // কিছু না লিখলে সব দেখাবে
+    return;
+  }
+
+  const filtered = allMasterProducts.filter(p => 
+    p.name.toLowerCase().includes(q) || 
+    (p.category && p.category.toLowerCase().includes(q))
+  );
+  renderAdminMasterProducts(filtered);
+};
 
    // ==================== EDIT & CUSTOM OPTION LOGIC ====================
   
