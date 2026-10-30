@@ -360,34 +360,42 @@
       </div>
       
       <div class="mp-card">
-        <h3>🛒 প্রোডাক্ট এক্সপ্লোর করুন</h3>
+  <h3>🛒 প্রোডাক্ট এক্সপ্লোর করুন</h3>
+  
+  <!-- 🚀 নতুন AI সার্চ কন্টেইনার (ক্যামেরাসহ) -->
+  <div style="position: relative; margin-bottom: 15px;">
+    <input type="text" id="cst-search-input" class="dlv-input" placeholder="🔍 প্রোডাক্ট বা ক্যাটাগরি খুঁজুন..." oninput="handleTextSearch(this.value)" style="padding-right: 40px; margin-bottom: 0;">
+    
+    <!-- 📷 ক্যামেরা আইকন -->
+    <label for="camera-upload" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 20px; cursor: pointer; color: var(--mp-primary);">
+      📷
+    </label>
+    <input type="file" id="camera-upload" accept="image/*" capture="environment" style="display: none;" onchange="handleImageSearch(event)">
+  </div>
 
-                <!-- 🚀 স্মার্ট দূরত্ব স্লাইডার -->
-        <div class="dlv-distance-filter">
-          <div class="dlv-slider-labels">
-            <span>দোকানের রেঞ্জ:</span>
-            <span class="dlv-distance-val"><span id="dist-value">5</span> কিমি</span>
-          </div>
-          <input type="range" id="distance-slider" min="1" max="15" value="5" oninput="updateDistanceRange(this.value)">
-          <div style="display:flex; justify-content:space-between; font-size:10px; color:#999; margin-top:5px;">
-            <span>১ কিমি</span><span>১৫ কিমি</span>
-          </div>
-        </div>
-        
-        <!-- 🚀 নতুন সার্চ বার এবং ফিল্টার -->
-        <input type="text" id="cst-search-input" class="dlv-input" placeholder="🔍 প্রোডাক্ট বা ক্যাটাগরি খুঁজুন..." style="margin-bottom: 10px;" oninput="filterCustomerProducts()">
-        
-        <div class="dlv-search-container" id="cst-category-filters">
-          <div class="dlv-cat-chip active" onclick="filterByCategory('all', this)">সব</div>
-          <div class="dlv-cat-chip" onclick="filterByCategory('Grocery', this)">মুদি</div>
-          <div class="dlv-cat-chip" onclick="filterByCategory('Restaurant', this)">রেস্টুরেন্ট</div>
-        </div>
+  <!-- ইমেজ প্রিভিউ এরিয়া (সার্চের জন্য) -->
+  <div id="search-image-preview-container" style="display: none; text-align: center; margin-bottom: 15px;">
+    <img id="search-image-preview" style="max-height: 100px; border-radius: 8px; border: 2px solid var(--mp-primary);">
+    <p style="font-size: 12px; color: #666; margin-top: 5px;">এই ছবি দিয়ে সার্চ করা হচ্ছে... <span onclick="clearImageSearch()" style="color: red; cursor: pointer; text-decoration: underline;">বাতিল করুন</span></p>
+  </div>
 
-        <!-- প্রোডাক্ট গ্রিড -->
-        <div class="dlv-product-grid" id="cst-product-grid">
-          <!-- Product Cards will load here -->
-        </div>
-      </div>
+  <!-- AI মডেল লোড হওয়ার প্রোগ্রেস বার -->
+  <div id="ai-loading-status" style="display: none; text-align: center; font-size: 12px; color: var(--mp-primary); margin-bottom: 10px;">
+    🧠 AI মডেল লোড হচ্ছে... অপেক্ষা করুন।
+  </div>
+
+  <!-- ক্যাটাগরি ফিল্টার -->
+  <div class="dlv-search-container" id="cst-category-filters" style="margin-top: 10px;">
+    <div class="dlv-cat-chip active" onclick="filterByCategory('all', this)">সব</div>
+    <div class="dlv-cat-chip" onclick="filterByCategory('Grocery', this)">মুদি</div>
+    <div class="dlv-cat-chip" onclick="filterByCategory('Restaurant', this)">রেস্টুরেন্ট</div>
+  </div>
+
+  <!-- প্রোডাক্ট গ্রিড -->
+  <div class="dlv-product-grid" id="cst-product-grid" style="margin-top: 10px;">
+    <!-- Product Cards will load here -->
+  </div>
+</div>
     </div>
 
         <!-- ==================== SHOPKEEPER DASHBOARD ==================== -->
@@ -1629,6 +1637,8 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
   onSnapshot(collection(db, "products"), (snapshot) => {
     allRawProducts = [];
     snapshot.forEach(docSnap => {
+    initFuseSearch(); // 🚀 এই লাইনটি যোগ করুন
+    filterCustomerProducts();   
       const prod = docSnap.data();
       if(prod.stock > 0) { 
         // লোকেশন থাকলে সেটাকে Number বানিয়ে নেওয়া
@@ -3942,6 +3952,145 @@ window.closeMasterProductModal = function() {
   // আপনার openCustomerOrdersModal ফাংশনে onSnapshot এর ভেতরে নিচের লজিকটি বসাতে হবে।
   // (আপনি যদি পুরো ফাংশনটি রিপ্লেস করতে চান তবে জানাবেন, আপাতত শুধু ভেতরের অংশ দেখুন)
 
+// ==================== ULTIMATE SMART SEARCH SYSTEM ====================
+let fuse = null; // Fuse.js ইনস্ট্যান্স
+let clipModel = null; // CLIP AI মডেল
+let isAiModelLoading = false;
+
+// ১. Fuse.js ইনিশিয়ালাইজ করা (প্রোডাক্ট লোড হওয়ার পর)
+function initFuseSearch() {
+  if (!allRawProducts || allRawProducts.length === 0) return;
+  fuse = new Fuse(allRawProducts, {
+    keys: ['name', 'category', 'shopName'],
+    threshold: 0.4, // বানান ভুল হলেও ম্যাচ করবে
+    includeScore: true
+  });
+}
+
+// ২. টেক্সট সার্চ হ্যান্ডলার
+window.handleTextSearch = function(query) {
+  if (!query.trim()) {
+    filterCustomerProducts(); // খালি থাকলে সব দেখাবে
+    return;
+  }
+  
+  if (!fuse) initFuseSearch();
+  
+  const results = fuse.search(query);
+  const filteredProducts = results.map(r => r.item);
+  
+  // গ্রিড আপডেট করা (আপনার আগের রেন্ডার ফাংশন দিয়ে)
+  renderFilteredProductsToGrid(filteredProducts);
+};
+
+// ৩. ছবি সার্চ হ্যান্ডলার (AI CLIP)
+window.handleImageSearch = async function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // ছবির প্রিভিউ দেখানো
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('search-image-preview').src = e.target.result;
+    document.getElementById('search-image-preview-container').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+
+  // AI মডেল লোড করা (যদি আগে থেকে লোড না থাকে)
+  if (!clipModel) {
+    if (isAiModelLoading) return alert("AI মডেল লোড হচ্ছে, অপেক্ষা করুন...");
+    isAiModelLoading = true;
+    document.getElementById('ai-loading-status').style.display = 'block';
+    
+    try {
+      clipModel = await window.transformersPipeline('feature-extraction', 'Xenova/clip-vit-base-patch32', {
+        progress_callback: (data) => {
+          if (data.status === 'progress') {
+            document.getElementById('ai-loading-status').innerText = `🧠 AI মডেল ডাউনলোড হচ্ছে: ${Math.round(data.progress)}%`;
+          }
+        }
+      });
+      document.getElementById('ai-loading-status').innerText = "✅ AI মডেল প্রস্তুত!";
+      setTimeout(() => document.getElementById('ai-loading-status').style.display = 'none', 2000);
+    } catch (error) {
+      console.error("AI Model Error:", error);
+      alert("AI মডেল লোড করতে সমস্যা হয়েছে।");
+      isAiModelLoading = false;
+      return;
+    }
+    isAiModelLoading = false;
+  }
+
+  // 🚀 ছবিটিকে ভেক্টরে রূপান্তর করা
+  const imageUrl = URL.createObjectURL(file);
+  const imageVectors = await clipModel(imageUrl, { pooling: 'mean', normalize: true });
+  const queryVector = Array.from(imageVectors.data);
+
+  // 🚀 সব প্রোডাক্টের ছবির সাথে তুলনা করা
+  let scoredProducts = [];
+  
+  for (const prod of allRawProducts) {
+    if (!prod.image) continue; // ছবি না থাকলে বাদ
+
+    try {
+      const prodImageVectors = await clipModel(prod.image, { pooling: 'mean', normalize: true });
+      const prodVector = Array.from(prodImageVectors.data);
+
+      // Cosine Similarity হিসাব
+      let dotProduct = 0;
+      for (let i = 0; i < queryVector.length; i++) {
+        dotProduct += queryVector[i] * prodVector[i];
+      }
+      scoredProducts.push({ product: prod, score: dotProduct });
+    } catch (e) {
+      console.warn(`Could not process image for ${prod.name}`, e);
+    }
+  }
+
+  scoredProducts.sort((a, b) => b.score - a.score);
+  const bestMatches = scoredProducts.filter(sp => sp.score > 0.6).map(sp => sp.product);
+  
+  if (bestMatches.length === 0) {
+    document.getElementById('cst-product-grid').innerHTML = '<div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">এই ছবির সাথে মিল এমন কোনো প্রোডাক্ট পাওয়া যায়নি।</div>';
+  } else {
+    renderFilteredProductsToGrid(bestMatches);
+  }
+};
+
+// ৪. প্রোডাক্ট গ্রিড রেন্ডার করার হেল্পার ফাংশন
+function renderFilteredProductsToGrid(products) {
+  const grid = document.getElementById('cst-product-grid');
+  grid.innerHTML = '';
+  
+  if (products.length === 0) {
+    grid.innerHTML = '<div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">কোনো প্রোডাক্ট পাওয়া যায়নি।</div>';
+    return;
+  }
+
+  products.forEach(prod => {
+    grid.innerHTML += `
+      <div class="dlv-product-card">
+        <div class="dlv-product-img-wrap">
+          ${prod.image ? `<img src="${prod.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
+          <span class="dlv-badge-grade">${prod.grade || 'A'}</span>
+          <span class="dlv-badge-stock">Stock: ${prod.stock}</span>
+        </div>
+        <div class="dlv-product-name">${prod.name}</div>
+        <div class="dlv-product-meta"><span>⚖️ ${prod.unit || 'pcs'}</span><span>🏪 ${prod.shopName}</span></div>
+        <div class="dlv-product-price">₹${prod.price}</div>
+        <button class="dlv-add-btn" onclick="placeOrder('${prod.id}', '${prod.name}', ${prod.price}, '${prod.shopId}', '${prod.shopName}')">🛒 Add to Cart</button>
+      </div>
+    `;
+  });
+}
+
+// ৫. ছবি সার্চ বাতিল করা
+window.clearImageSearch = function() {
+  document.getElementById('search-image-preview-container').style.display = 'none';
+  document.getElementById('camera-upload').value = '';
+  document.getElementById('cst-search-input').value = '';
+  filterCustomerProducts(); 
+};
 </script>
 
 <!-- Live Tracking Modal (Customer) -->
