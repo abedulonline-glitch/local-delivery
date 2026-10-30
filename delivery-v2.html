@@ -553,7 +553,49 @@
       </div>
     </div>
 
-        <!-- ==================== ADMIN DASHBOARD ==================== -->
+       
+      <!-- ==================== MANAGER DASHBOARD ==================== -->
+    <div id="dlv-view-manager" class="mp-hidden">
+      <div class="dlv-dashboard-title">👨‍💼 ম্যানেজার ড্যাশবোর্ড</div>
+      
+      <!-- দায়িত্বের পিনকোড -->
+      <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
+        <h3>📍 আমার দায়িত্বের এলাকা</h3>
+        <div id="manager-pin-list" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+          <div style="font-size:13px; color:#999;">লোড হচ্ছে...</div>
+        </div>
+      </div>
+
+      <!-- স্ট্যাটাস কাউন্টার (২x২ গ্রিড) -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+        <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
+          <div style="font-size: 24px;">🏪</div><div style="font-size: 12px; font-weight: 600;">আমার দোকান</div>
+          <div style="font-size: 18px; font-weight: bold; color: var(--mp-primary);" id="mgr-total-shops">0</div>
+        </div>
+        <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
+          <div style="font-size: 24px;">🛵</div><div style="font-size: 12px; font-weight: 600;">ডেলিভারি বয়</div>
+          <div style="font-size: 18px; font-weight: bold; color: var(--mp-success);" id="mgr-total-delivery">0</div>
+        </div>
+        <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
+          <div style="font-size: 24px;">👤</div><div style="font-size: 12px; font-weight: 600;">কাস্টমার</div>
+          <div style="font-size: 18px; font-weight: bold; color: #7b1fa2;" id="mgr-total-customers">0</div>
+        </div>
+        <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
+          <div style="font-size: 24px;">📦</div><div style="font-size: 12px; font-weight: 600;">পেন্ডিং অর্ডার</div>
+          <div style="font-size: 18px; font-weight: bold; color: var(--mp-danger);" id="mgr-pending-orders">0</div>
+        </div>
+      </div>
+
+      <!-- লাইভ ম্যাপ সেকশন -->
+      <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
+        <h3 style="justify-content: space-between;">
+          🗺️ লাইভ ট্র্যাকিং
+          <span style="font-size: 10px; background: #e8f0fe; color: var(--mp-primary); padding: 4px 8px; border-radius: 4px;">🏪 দোকান | 🛵 ডেলিভারি</span>
+        </h3>
+        <div id="manager-live-map" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
+      </div>
+    </div>
+    
     <!-- ==================== ADMIN DASHBOARD ==================== -->
 <div id="dlv-view-admin" class="mp-hidden">
   <div class="dlv-dashboard-title">👑 অ্যাডমিন কন্ট্রোল প্যানেল</div>
@@ -1512,6 +1554,18 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
       const userCredential = await createUserWithEmailAndPassword(auth, fakeEmail, DUMMY_PASSWORD);
       const user = userCredential.user;
 
+           // 🚀 ম্যাপের লোকেশন থেকে পিনকোড বের করা (Nominatim API)
+      let userPinCode = "000000";
+      if (regLat && regLng) {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${regLat}&lon=${regLng}&format=json`);
+          const data = await res.json();
+          if (data.address && data.address.postcode) {
+            userPinCode = data.address.postcode;
+          }
+        } catch (e) { console.log("Pin fetch error:", e); }
+      }
+      
       // ৩. ফায়ারস্টোরে ডেটা সেভ
       await setDoc(doc(db, "users", user.uid), {
         name: name,
@@ -1586,7 +1640,7 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
     }
   }
   
-  // ==================== LOGIN FUNCTION ====================
+ 
    // ==================== AUTH LOGIC (PHONE AS EMAIL) ====================
   const DUMMY_PASSWORD = "Delivery@123"; // সব ইউজারের জন্য এই ফিক্সড পাসওয়ার্ডটি ব্যবহার হবে
 
@@ -2040,11 +2094,12 @@ window.filterCustomerProducts = function() {
     } else if (role === 'admin') {
       loadAdminDashboardUI();
       
-    } else if (role === 'manager') {
-      // 🚀 ম্যানেজার ভিউ চেক (নাল এরর এড়াতে)
+        } else if (role === 'manager') {
+      // 🚀 ম্যানেজার ভিউ চেক
       const managerView = document.getElementById('dlv-view-manager');
       if (managerView) {
         managerView.classList.remove('mp-hidden');
+        loadManagerDashboard(userData); // 🚀 ম্যানেজার ড্যাশবোর্ড লোড করা
       }
     }
   }
@@ -4239,7 +4294,106 @@ window.clearImageSearch = function() {
   document.getElementById('cst-search-input').value = '';
   filterCustomerProducts(); 
 };
-</script>
+
+  // ==================== MANAGER DASHBOARD LOGIC ====================
+  let managerMap = null;
+  let managerMarkers = [];
+  let managerUnsubscribe = null;
+
+  async function loadManagerDashboard(userData) {
+    const pins = userData.managerPins || [];
+    
+    // ১. পিনকোডগুলো UI তে দেখানো
+    const pinList = document.getElementById('manager-pin-list');
+    if (pins.length === 0) {
+      pinList.innerHTML = '<span style="font-size:13px; color:red;">আপনাকে এখনো কোনো পিনকোড অ্যাসাইন করা হয়নি। অ্যাডমিনের সাথে যোগাযোগ করুন।</span>';
+      return;
+    }
+    pinList.innerHTML = pins.map(p => `<span style="background: #e8f0fe; color: var(--mp-primary); padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px;">📍 ${p}</span>`).join('');
+
+    // ২. লিফলেট ম্যাপ তৈরি করা (ডিফল্ট লোকেশন)
+    setTimeout(() => {
+      if (!managerMap) {
+        managerMap = L.map('manager-live-map').setView([22.5726, 88.3639], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(managerMap);
+      }
+      managerMap.invalidateSize();
+    }, 300);
+
+    // ৩. ম্যানেজারের পিনের আন্ডারে থাকা ইউজারদের ডেটা রিয়েল-টাইমে আনা
+    if (managerUnsubscribe) managerUnsubscribe();
+    
+    // Firestore 'in' কুয়েরি (সর্বোচ্চ ১০টি পিনকোড সাপোর্ট করে)
+    const usersQ = query(collection(db, "users"), where("pinCode", "in", pins.slice(0, 10))); 
+    
+    managerUnsubscribe = onSnapshot(usersQ, (snap) => {
+      let shops = 0, delivery = 0, customers = 0;
+      let shopLocations = [];
+      let deliveryLocations = [];
+
+      snap.forEach(docSnap => {
+        const u = docSnap.data();
+        
+        if (u.role === 'shopkeeper') {
+          shops++;
+          if(u.lat && u.lng) shopLocations.push(u);
+        }
+        if (u.role === 'delivery') {
+          delivery++;
+          if(u.lat && u.lng) deliveryLocations.push(u);
+        }
+        if (u.role === 'customer') customers++;
+      });
+
+      // UI কাউন্টার আপডেট
+      document.getElementById('mgr-total-shops').innerText = shops;
+      document.getElementById('mgr-total-delivery').innerText = delivery;
+      document.getElementById('mgr-total-customers').innerText = customers;
+
+      // ম্যাপের পুরোনো মার্কারগুলো পরিষ্কার করা
+      managerMarkers.forEach(m => managerMap.removeLayer(m));
+      managerMarkers = [];
+
+      // 🏪 দোকানগুলো ম্যাপে প্লট করা
+      shopLocations.forEach(shop => {
+        const marker = L.marker([parseFloat(shop.lat), parseFloat(shop.lng)], {
+          icon: L.divIcon({ html: '<div style="font-size:20px;">🏪</div>', className: 'custom-icon', iconSize: [30, 30] })
+        }).addTo(managerMap).bindPopup(`<b>দোকান:</b> ${shop.name}<br><b>পিন:</b> ${shop.pinCode}`);
+        managerMarkers.push(marker);
+      });
+
+      // 🛵 ডেলিভারি বয়দের ম্যাপে প্লট করা
+      deliveryLocations.forEach(boy => {
+        const marker = L.marker([parseFloat(boy.lat), parseFloat(boy.lng)], {
+          icon: L.divIcon({ html: '<div style="font-size:20px;">🛵</div>', className: 'custom-icon', iconSize: [30, 30] })
+        }).addTo(managerMap).bindPopup(`<b>ডেলিভারি বয়:</b> ${boy.name}<br><b>পিন:</b> ${boy.pinCode}`);
+        managerMarkers.push(marker);
+      });
+
+      // ম্যাপের ভিউ ফিট করা (যদি লোকেশন থাকে)
+      if (shopLocations.length > 0 || deliveryLocations.length > 0) {
+        const bounds = L.latLngBounds(managerMarkers.map(m => m.getLatLng()));
+        managerMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+      }
+    });
+
+    // ৪. পেন্ডিং অর্ডার কাউন্ট করা
+    const ordersQ = query(collection(db, "orders"), where("status", "==", "pending"));
+    onSnapshot(ordersQ, (snap) => {
+      let pendingCount = 0;
+      snap.forEach(docSnap => {
+        const o = docSnap.data();
+        // যদি অর্ডারের লোকেশন ম্যানেজারের পিনের মধ্যে হয় (এখানে আমরা শুধু কাউন্ট করছি)
+        if (pins.includes(o.pinCode)) { 
+          pendingCount++;
+        }
+      });
+      document.getElementById('mgr-total-orders') ? document.getElementById('mgr-total-orders').innerText = pendingCount : null;
+      document.getElementById('mgr-pending-orders').innerText = pendingCount;
+    });
+  }
+
+  </script>
 
 <!-- Live Tracking Modal (Customer) -->
 <div id="dlv-track-modal" class="dlv-modal-overlay">
