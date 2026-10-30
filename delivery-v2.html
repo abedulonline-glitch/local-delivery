@@ -2177,59 +2177,62 @@ if (!userData.lat || !userData.lng) {
   };
 
   window.saveNewAddress = async function() {
-  const type = document.getElementById('new-addr-type').value;
-  const text = document.getElementById('new-addr-text').value.trim();
-  const landmark = document.getElementById('new-addr-landmark').value.trim();
-  if (!text) return alert("দয়া করে সম্পূর্ণ ঠিকানা লিখুন।");
-
-  const newAddr = { 
-    type: type, 
-    text: text, 
-    landmark: landmark, 
-    lat: pickedLatLng ? pickedLatLng.lat : null, 
-    lng: pickedLatLng ? pickedLatLng.lng : null 
-  };
-  
-  customerAddresses.push(newAddr);
-  
-  try {
-    // 🚀 ফায়ারবেসে অ্যাড্রেস সেভ করা
-    await updateDoc(doc(db, "users", currentUser.uid), {
-      addresses: customerAddresses,
-      lat: newAddr.lat,
-      lng: newAddr.lng
-    });
+    const type = document.getElementById('new-addr-type').value;
+    const text = document.getElementById('new-addr-text').value.trim();
+    const landmark = document.getElementById('new-addr-landmark').value.trim();
     
-    // লোকাল ডেটা আপডেট
-    globalUserData.addresses = customerAddresses;
-    if (newAddr.lat && newAddr.lng) {
-      globalUserData.lat = newAddr.lat;
-      globalUserData.lng = newAddr.lng;
-      customerLat = newAddr.lat;
-      customerLng = newAddr.lng;
+    if (!text) return alert("দয়া করে সম্পূর্ণ ঠিকানা লিখুন।");
+
+    // 🚀 undefined বা null ভ্যালু বাদ দেওয়া হচ্ছে
+    const newAddr = { 
+      type: type || "Other", 
+      text: text, 
+      landmark: landmark || "", // খালি হলে ফাঁকা স্ট্রিং
+      lat: pickedLatLng ? Number(pickedLatLng.lat) : null, 
+      lng: pickedLatLng ? Number(pickedLatLng.lng) : null 
+    };
+    
+    customerAddresses.push(newAddr);
+    
+    try {
+      // 🚀 setDoc with merge ব্যবহার করা হচ্ছে (updateDoc এর চেয়ে নিরাপদ)
+      const userRef = doc(db, "users", currentUser.uid);
+      await setDoc(userRef, {
+        addresses: customerAddresses,
+        lat: newAddr.lat,
+        lng: newAddr.lng
+      }, { merge: true });
+      
+      // লোকাল ডেটা আপডেট
+      globalUserData.addresses = customerAddresses;
+      if (newAddr.lat && newAddr.lng) {
+        globalUserData.lat = newAddr.lat;
+        globalUserData.lng = newAddr.lng;
+        customerLat = newAddr.lat;
+        customerLng = newAddr.lng;
+      }
+
+      // UI তে দেখানো
+      const el = document.getElementById('customer-saved-address');
+      el.innerHTML = `
+        <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border-left: 3px solid var(--mp-primary);">
+          <b>${type === 'Home' ? '🏠 বাড়ি' : type === 'Office' ? '🏢 অফিস' : '📍 অন্যান্য'}</b><br>
+          ${text} ${landmark ? `(${landmark})` : ''}
+        </div>
+      `;
+      
+      document.getElementById('new-addr-text').value = '';
+      document.getElementById('new-addr-landmark').value = '';
+      document.getElementById('dlv-address-modal').classList.remove('active');
+      
+      alert("অ্যাড্রেস সেভ হয়েছে!");
+      filterCustomerProducts();
+      
+    } catch(e) {
+      console.error("Save Address Error:", e); // 🚀 কনসোলে বিস্তারিত দেখাবে
+      alert("অ্যাড্রেস সেভ করতে সমস্যা হয়েছে!\n" + e.message);
     }
-
-    // UI তে দেখানো
-    const el = document.getElementById('customer-saved-address');
-    el.innerHTML = `
-      <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border-left: 3px solid var(--mp-primary);">
-        <b>${type === 'Home' ? '🏠 বাড়ি' : type === 'Office' ? '🏢 অফিস' : '📍 অন্যান্য'}</b><br>
-        ${text} ${landmark ? `(${landmark})` : ''}
-      </div>
-    `;
-    
-    document.getElementById('new-addr-text').value = '';
-    document.getElementById('new-addr-landmark').value = '';
-    document.getElementById('dlv-address-modal').classList.remove('active');
-    
-    alert("অ্যাড্রেস সেভ হয়েছে!");
-    filterCustomerProducts(); // প্রোডাক্ট রিফ্রেশ করা (নতুন লোকেশন অনুযায়ী)
-    
-  } catch(e) {
-    console.error(e);
-    alert("অ্যাড্রেস সেভ করতে সমস্যা হয়েছে!");
-  }
-};
+  };
 
   // ============================================================
   // SHOPKEEPER FUNCTIONS
