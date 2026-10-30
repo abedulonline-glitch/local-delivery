@@ -4303,27 +4303,32 @@ window.clearImageSearch = function() {
   async function loadManagerDashboard(userData) {
     const pins = userData.managerPins || [];
     
-    // ১. পিনকোডগুলো UI তে দেখানো
-    const pinList = document.getElementById('manager-pin-list');
-    if (pins.length === 0) {
-      pinList.innerHTML = '<span style="font-size:13px; color:red;">আপনাকে এখনো কোনো পিনকোড অ্যাসাইন করা হয়নি। অ্যাডমিনের সাথে যোগাযোগ করুন।</span>';
-      return;
-    }
-    pinList.innerHTML = pins.map(p => `<span style="background: #e8f0fe; color: var(--mp-primary); padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px;">📍 ${p}</span>`).join('');
-
-    // ২. লিফলেট ম্যাপ তৈরি করা (ডিফল্ট লোকেশন)
+    // ১. ম্যাপ তৈরি করা (সবসময় লোড হবে, ডেটা থাকুক বা না থাকুক)
     setTimeout(() => {
       if (!managerMap) {
-        managerMap = L.map('manager-live-map').setView([22.5726, 88.3639], 11);
+        managerMap = L.map('manager-live-map').setView([22.5726, 88.3639], 12); // ডিফল্ট কলকাতা
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(managerMap);
       }
       managerMap.invalidateSize();
     }, 300);
 
+    // ২. পিনকোডগুলো UI তে দেখানো
+    const pinList = document.getElementById('manager-pin-list');
+    if (pins.length === 0) {
+      pinList.innerHTML = '<span style="font-size:13px; color:red;">আপনাকে এখনো কোনো পিনকোড অ্যাসাইন করা হয়নি। অ্যাডমিনের সাথে যোগাযোগ করুন।</span>';
+      // ম্যাপের পুরোনো মার্কার থাকলে মুছে ফেলা
+      if(managerMarkers) {
+        managerMarkers.forEach(m => managerMap.removeLayer(m));
+        managerMarkers = [];
+      }
+      return; // পিন না থাকলে ডেটা খোঁজা বন্ধ করবে
+    }
+    
+    pinList.innerHTML = pins.map(p => `<span style="background: #e8f0fe; color: var(--mp-primary); padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px;">📍 ${p}</span>`).join('');
+
     // ৩. ম্যানেজারের পিনের আন্ডারে থাকা ইউজারদের ডেটা রিয়েল-টাইমে আনা
     if (managerUnsubscribe) managerUnsubscribe();
     
-    // Firestore 'in' কুয়েরি (সর্বোচ্চ ১০টি পিনকোড সাপোর্ট করে)
     const usersQ = query(collection(db, "users"), where("pinCode", "in", pins.slice(0, 10))); 
     
     managerUnsubscribe = onSnapshot(usersQ, (snap) => {
@@ -4354,7 +4359,7 @@ window.clearImageSearch = function() {
       managerMarkers.forEach(m => managerMap.removeLayer(m));
       managerMarkers = [];
 
-      // 🏪 দোকানগুলো ম্যাপে প্লট করা
+      // দোকান ও ডেলিভারি বয় প্লট করা
       shopLocations.forEach(shop => {
         const marker = L.marker([parseFloat(shop.lat), parseFloat(shop.lng)], {
           icon: L.divIcon({ html: '<div style="font-size:20px;">🏪</div>', className: 'custom-icon', iconSize: [30, 30] })
@@ -4362,7 +4367,6 @@ window.clearImageSearch = function() {
         managerMarkers.push(marker);
       });
 
-      // 🛵 ডেলিভারি বয়দের ম্যাপে প্লট করা
       deliveryLocations.forEach(boy => {
         const marker = L.marker([parseFloat(boy.lat), parseFloat(boy.lng)], {
           icon: L.divIcon({ html: '<div style="font-size:20px;">🛵</div>', className: 'custom-icon', iconSize: [30, 30] })
@@ -4370,25 +4374,21 @@ window.clearImageSearch = function() {
         managerMarkers.push(marker);
       });
 
-      // ম্যাপের ভিউ ফিট করা (যদি লোকেশন থাকে)
-      if (shopLocations.length > 0 || deliveryLocations.length > 0) {
+      // ম্যাপের ভিউ ফিট করা
+      if (managerMarkers.length > 0) {
         const bounds = L.latLngBounds(managerMarkers.map(m => m.getLatLng()));
         managerMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
       }
     });
 
-    // ৪. পেন্ডিং অর্ডার কাউন্ট করা
+    // ৪. পেন্ডিং অর্ডার কাউন্ট
     const ordersQ = query(collection(db, "orders"), where("status", "==", "pending"));
     onSnapshot(ordersQ, (snap) => {
       let pendingCount = 0;
       snap.forEach(docSnap => {
         const o = docSnap.data();
-        // যদি অর্ডারের লোকেশন ম্যানেজারের পিনের মধ্যে হয় (এখানে আমরা শুধু কাউন্ট করছি)
-        if (pins.includes(o.pinCode)) { 
-          pendingCount++;
-        }
+        if (pins.includes(o.pinCode)) pendingCount++;
       });
-      document.getElementById('mgr-total-orders') ? document.getElementById('mgr-total-orders').innerText = pendingCount : null;
       document.getElementById('mgr-pending-orders').innerText = pendingCount;
     });
   }
