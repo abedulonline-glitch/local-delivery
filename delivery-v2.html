@@ -591,15 +591,14 @@
         <h3 style="justify-content: space-between;">
           🗺️ লাইভ ট্র্যাকিং
           <span style="font-size: 10px; background: #e8f0fe; color: var(--mp-primary); padding: 4px 8px; border-radius: 4px;">🏪 দোকান | 🛵 ডেলিভারি</span>
-        
-                <!-- 🚀 ম্যাপ কন্ট্রোল বাটন -->
+        </h3>
+               <!-- 🚀 ম্যাপ কন্ট্রোল বাটন -->
         <div style="display: flex; gap: 8px; margin-bottom: 10px;">
           <button type="button" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #e8f0fe; color: var(--mp-primary); flex: 1;" onclick="setManagerMapView('street')">🗺️ স্ট্রিট ভিউ</button>
           <button type="button" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #f0f2f5; color: #333; flex: 1;" onclick="setManagerMapView('satellite')">🛰️ স্যাটেলাইট ভিউ</button>
         </div>
 
         <div id="manager-live-map" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
-        </h3>
         <div id="manager-live-map" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
       </div>
     </div>
@@ -4303,7 +4302,7 @@ window.clearImageSearch = function() {
   filterCustomerProducts(); 
 };
 
-   // ==================== MANAGER DASHBOARD LOGIC ====================
+    // ==================== MANAGER DASHBOARD LOGIC ====================
   let managerMap = null;
   let managerMarkers = [];
   let managerUnsubscribe = null;
