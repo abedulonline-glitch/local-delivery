@@ -553,7 +553,15 @@
       </div>
     </div>
 
-        <!-- ==================== ADMIN DASHBOARD ==================== -->
+      <!-- ==================== MANAGER DASHBOARD ==================== -->
+    <div id="dlv-view-manager" class="mp-hidden">
+      <div class="dlv-dashboard-title">👨‍💼 ম্যানেজার প্যানেল</div>
+      <div class="mp-card">
+        <h3>📊 লাইভ স্ট্যাটাস</h3>
+        <p style="font-size: 13px; color: var(--mp-text-light);">ম্যানেজার প্যানেল ডেভেলপমেন্টের অধীনে আছে।</p>
+      </div>
+    </div>
+    
     <!-- ==================== ADMIN DASHBOARD ==================== -->
 <div id="dlv-view-admin" class="mp-hidden">
   <div class="dlv-dashboard-title">👑 অ্যাডমিন কন্ট্রোল প্যানেল</div>
@@ -2046,7 +2054,15 @@ if (!userData.lat || !userData.lng) {
     loadAdminDashboardUI();
   } else if (role === 'manager') {
     // ম্যানেজারের জন্য ড্যাশবোর্ড (আপাতত অ্যাডমিনের মতোই দেখাবে, তবে শুধু তার পিনের ডেটা দেখবে)
-    document.getElementById('dlv-view-manager').classList.remove('mp-hidden');
+        } else if (role === 'manager') {
+      // ম্যানেজারের জন্য ড্যাশবোর্ড
+      const managerView = document.getElementById('dlv-view-manager');
+      if (managerView) {
+        managerView.classList.remove('mp-hidden');
+      } else {
+        console.warn("Manager view not found in HTML. Please add the 'dlv-view-manager' div.");
+      }
+    }
   }
 }
   // ============================================================
