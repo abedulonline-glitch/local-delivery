@@ -366,6 +366,17 @@
         <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px;" onclick="openAddressModal()">+ নতুন অ্যাড্রেস সেভ করুন</button>
       </div>
       
+   <!-- 🚀 স্মার্ট দূরত্ব স্লাইডার -->
+<div class="dlv-distance-filter" style="background: #f8f9fa; padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee;">
+  <div class="dlv-slider-labels" style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 5px;">
+    <span>দোকানের রেঞ্জ:</span>
+    <span class="dlv-distance-val" style="color: var(--mp-primary); font-size: 14px;"><span id="dist-value">5</span> কিমি</span>
+  </div>
+  <input type="range" id="distance-slider" min="1" max="15" value="5" oninput="updateDistanceRange(this.value)" style="width: 100%; cursor: pointer;">
+  <div style="display:flex; justify-content:space-between; font-size:10px; color:#999; margin-top:5px;">
+    <span>১ কিমি</span><span>১৫ কিমি</span>
+  </div>
+</div>
       <div class="mp-card">
   <h3>🛒 প্রোডাক্ট এক্সপ্লোর করুন</h3>
   
