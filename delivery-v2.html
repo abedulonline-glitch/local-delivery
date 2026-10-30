@@ -2813,44 +2813,82 @@ window.openAddProductModal = function() {
 
   // ৫. নিজস্ব প্রোডাক্ট সেভ করা
   window.saveCustomProduct = async function() {
-    const name = document.getElementById('cp-name').value.trim();
-    const category = document.getElementById('cp-category').value.trim();
-    const unit = document.getElementById('cp-unit').value;
-    const grade = document.getElementById('cp-grade').value;
-    const price = parseFloat(document.getElementById('cp-price').value);
-    const stock = parseInt(document.getElementById('cp-stock').value);
+  const name = document.getElementById('cp-name').value.trim();
+  const category = document.getElementById('cp-category').value.trim();
+  const unit = document.getElementById('cp-unit').value;
+  const grade = document.getElementById('cp-grade').value;
+  const price = parseFloat(document.getElementById('cp-price').value);
+  const stock = parseInt(document.getElementById('cp-stock').value);
 
-    if (!name || !category || isNaN(price) || isNaN(stock)) {
-      return alert("দয়া করে সব তথ্য সঠিকভাবে দিন!");
-    }
+  if (!name || !category || isNaN(price) || isNaN(stock)) {
+    return alert("দয়া করে সব তথ্য সঠিকভাবে দিন!");
+  }
 
-    const btn = document.getElementById('btn-save-cp');
-    btn.innerText = "⏳ সেভ হচ্ছে..."; btn.disabled = true;
+  const btn = document.getElementById('btn-save-cp');
+  btn.innerText = "⏳ সেভ হচ্ছে..."; 
+  btn.disabled = true;
 
+  // 🚀 ১. AI ভেক্টর জেনারেশন লজিক শুরু
+  let generatedVector = null;
+
+  if (uploadedImageUrl && window.transformersPipeline) {
     try {
-      await addDoc(collection(db, "products"), {
-        shopId: currentUser.uid,
-        shopName: globalUserData.name,
-        name, category, unit, grade, price, stock,
-        image: uploadedImageUrl,
-        isStandalone: true, // 🚀 এটি নিজস্ব প্রোডাক্ট
-        shopLat: globalUserData.lat || null,
-        shopLng: globalUserData.lng || null,
-        isPremium: globalUserData.isPremium || false,
-        isVerified: globalUserData.isVerified || false,
-        createdAt: serverTimestamp()
-      });
-      alert("নিজস্ব প্রোডাক্ট সেভ হয়েছে!");
-      document.getElementById('dlv-custom-product-modal').classList.remove('active');
+      btn.innerText = "🧠 AI প্রসেস হচ্ছে..."; // ইউজারকে জানানো যে AI কাজ করছে
       
-      // ফর্ম রিসেট
-      document.getElementById('cp-name').value = '';
-      document.getElementById('cp-image-preview').style.display = 'none';
-      uploadedImageUrl = null;
+      // মডেল লোড করা (যদি আগে থেকে লোড না থাকে)
+      if (!clipModel) {
+        console.log("Loading AI Model for vector generation...");
+        clipModel = await window.transformersPipeline('feature-extraction', 'Xenova/clip-vit-base-patch32');
+      }
       
-    } catch(e) { alert("সেভ করতে সমস্যা!"); }
-    finally { btn.innerText = "💾 সেভ করুন"; btn.disabled = false; }
-  };
+      // ছবির ভেক্টর বের করা
+      const imgResult = await clipModel(uploadedImageUrl, { pooling: 'mean', normalize: true });
+      generatedVector = Array.from(imgResult.data); 
+      console.log("Vector generated successfully!");
+      
+    } catch (error) {
+      console.error("Vector generation failed:", error);
+      // ভেক্টর তৈরি না হলেও প্রোডাক্ট সেভ হবে, শুধু ইমেজ সার্চে পাওয়া যাবে না
+    }
+  }
+
+  try {
+    // 🚀 ২. ডেটাবেসে সেভ করা (ভেক্টরসহ)
+    await addDoc(collection(db, "products"), {
+      shopId: currentUser.uid,
+      shopName: globalUserData.name,
+      name: name, 
+      category: category, 
+      unit: unit, 
+      grade: grade, 
+      price: price, 
+      stock: stock,
+      image: uploadedImageUrl,
+      imageVector: generatedVector, // 🚀 এখানে ভেক্টরটি সেভ হচ্ছে
+      isStandalone: true, 
+      shopLat: globalUserData.lat || null,
+      shopLng: globalUserData.lng || null,
+      isPremium: globalUserData.isPremium || false,
+      isVerified: globalUserData.isVerified || false,
+      createdAt: serverTimestamp()
+    });
+    
+    alert("নিজস্ব প্রোডাক্ট সেভ হয়েছে!");
+    document.getElementById('dlv-custom-product-modal').classList.remove('active');
+    
+    // ফর্ম রিসেট
+    document.getElementById('cp-name').value = '';
+    document.getElementById('cp-image-preview').style.display = 'none';
+    uploadedImageUrl = null;
+    
+  } catch(e) { 
+    console.error(e);
+    alert("সেভ করতে সমস্যা!"); 
+  } finally { 
+    btn.innerText = "💾 সেভ করুন"; 
+    btn.disabled = false; 
+  }
+};
 
   // ২. মাস্টার প্রোডাক্ট সিলেক্ট করা
   window.selectMasterProduct = function(productData, masterId) {
@@ -4226,7 +4264,7 @@ window.handleImageSearch = async function(event) {
   };
   reader.readAsDataURL(file);
 
-  // AI মডেল লোড করা (যদি আগে থেকে লোড না থাকে)
+  // AI মডেল লোড করা
   if (!clipModel) {
     if (isAiModelLoading) return alert("AI মডেল লোড হচ্ছে, অপেক্ষা করুন...");
     isAiModelLoading = true;
@@ -4251,20 +4289,18 @@ window.handleImageSearch = async function(event) {
     isAiModelLoading = false;
   }
 
-  // 🚀 ছবিটিকে ভেক্টরে রূপান্তর করা
+  // 🚀 সার্চ করা ছবির ভেক্টর তৈরি
   const imageUrl = URL.createObjectURL(file);
   const imageVectors = await clipModel(imageUrl, { pooling: 'mean', normalize: true });
   const queryVector = Array.from(imageVectors.data);
 
-  // 🚀 সব প্রোডাক্টের ছবির সাথে তুলনা করা
+  // 🚀 ডেটাবেসের প্রোডাক্টগুলোর সেভ করা ভেক্টরের সাথে তুলনা করা
   let scoredProducts = [];
   
   for (const prod of allRawProducts) {
-    if (!prod.image) continue; // ছবি না থাকলে বাদ
-
-    try {
-      const prodImageVectors = await clipModel(prod.image, { pooling: 'mean', normalize: true });
-      const prodVector = Array.from(prodImageVectors.data);
+    // যদি প্রোডাক্টে ভেক্টর সেভ করা থাকে
+    if (prod.imageVector && prod.imageVector.length > 0) {
+      const prodVector = prod.imageVector;
 
       // Cosine Similarity হিসাব
       let dotProduct = 0;
@@ -4272,8 +4308,6 @@ window.handleImageSearch = async function(event) {
         dotProduct += queryVector[i] * prodVector[i];
       }
       scoredProducts.push({ product: prod, score: dotProduct });
-    } catch (e) {
-      console.warn(`Could not process image for ${prod.name}`, e);
     }
   }
 
