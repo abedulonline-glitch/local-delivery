@@ -272,15 +272,19 @@
   <input type="file" id="reg-profile-pic-file" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'reg')">
 </div>
 
-           <div id="reg-location-section" class="mp-hidden" style="margin-bottom: 15px; border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fafafa;">
+      <div id="reg-location-section" class="mp-hidden" style="margin-bottom: 15px; border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fafafa;">
         <div class="dlv-form-group" style="margin-bottom: 0;">
           <label style="text-align: left; display: block; font-size: 12px; color: #555; font-weight: bold;">📍 আপনার দোকান/বেসের লোকেশন ম্যাপে পিন করুন *</label>
-          <p style="font-size: 11px; color: #888; margin-bottom: 8px;">রেজিস্ট্রেশন করার আগে অবশ্যই ম্যাপে লোকেশন সেট করতে হবে।</p>
+          <p style="font-size: 11px; color: #888; margin-bottom: 8px;">ম্যাপে পিন ধরে টেনে সঠিক লোকেশন সেট করুন।</p>
           
-          <button type="button" class="mp-btn" style="margin-bottom: 8px; background: #e8f0fe; color: var(--mp-primary); font-size: 13px; padding: 8px;" onclick="initRegMap()">📍 ম্যাপ ওপেন করুন</button>
+          <div id="reg-map-container" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1; display: none;"></div>
           
-          <div id="reg-map-container" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid #ccc; display: none; z-index: 1;"></div>
-          
+          <!-- 🚀 ম্যাপ কন্ট্রোল বাটন -->
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button type="button" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #e8f0fe; color: var(--mp-primary); flex: 1;" onclick="getRegCurrentLocation()">📍 আমার লোকেশন</button>
+            <button type="button" id="reg-btn-satellite" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #f0f2f5; color: #333; flex: 1;" onclick="toggleRegMapLayer()">🛰️ স্যাটেলাইট</button>
+          </div>
+
           <div id="reg-location-status" style="font-size: 12px; color: var(--mp-danger); margin-top: 5px; font-weight: bold;">❌ লোকেশন সেট করা হয়নি</div>
         </div>
       </div>
@@ -1238,10 +1242,17 @@
     loader.classList.add('mp-hidden'); // লোডার লুকাও
   });
 
-    // ==================== AUTH LOGIC (LOGIN & REGISTER) ====================
+     // ==================== AUTH LOGIC (LOGIN & REGISTER) ====================
   let registerRole = 'customer'; // ডিফল্ট রোল
-    let regMap, regMarker, regLat = null, regLng = null;
   let regProfilePicUrl = null;
+  
+  // 🚀 স্মার্ট ম্যাপের জন্য নতুন ভেরিয়েবল
+  let regMap = null;
+  let regMarker = null;
+  let regLat = null;
+  let regLng = null;
+  let regCurrentTileLayer = null;
+  let regIsSatelliteView = false;
 
   // রোল চেঞ্জ হলে লোকেশন সেকশন দেখানো/লুকানো
   const originalToggleAuthMode = window.toggleAuthMode;
@@ -1259,27 +1270,103 @@
     }
   }
 
+  // ==================== SMART REGISTRATION MAP LOGIC ====================
+  
   // ম্যাপ ইনিশিয়ালাইজ করা
   window.initRegMap = function() {
     const mapDiv = document.getElementById('reg-map-container');
     mapDiv.style.display = 'block';
     
+    setTimeout(() => {
       if (!regMap) {
-        regMap = L.map('reg-map-container').setView([22.5726, 88.3639], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+        // ডিফল্ট লোকেশন (কলকাতা)
+        regMap = L.map('reg-map-container').setView([22.5726, 88.3639], 15);
+        
+        regCurrentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
           attribution: '© OpenStreetMap' 
         }).addTo(regMap);
-      
-      regMap.on('click', function(e) {
-        if (regMarker) regMap.removeLayer(regMarker);
-        regMarker = L.marker(e.latlng).addTo(regMap);
-        regLat = e.latlng.lat;
-        regLng = e.latlng.lng;
-        document.getElementById('reg-location-status').innerHTML = '✅ লোকেশন সেট করা হয়েছে';
-        document.getElementById('reg-location-status').style.color = 'var(--mp-success)';
-      });
+        
+        // ম্যাপে ক্লিক করলে পিন বসবে
+        regMap.on('click', function(e) {
+          setRegMarker(e.latlng);
+        });
+      }
+      regMap.invalidateSize();
+    }, 200);
+  };
+
+  // পিন সেট করার হেল্পার ফাংশন (ড্র্যাগেবল)
+  function setRegMarker(latLng) {
+    if (regMarker) regMap.removeLayer(regMarker);
+    
+    regMarker = L.marker(latLng, { draggable: true }).addTo(regMap);
+    regLat = latLng.lat;
+    regLng = latLng.lng;
+    
+    const statusEl = document.getElementById('reg-location-status');
+    statusEl.innerHTML = '✅ লোকেশন সেট করা হয়েছে';
+    statusEl.style.color = 'var(--mp-success)';
+
+    // পিন টেনে সরালে (Drag) আপডেট হবে
+    regMarker.on('dragend', function() {
+      const position = regMarker.getLatLng();
+      regLat = position.lat;
+      regLng = position.lng;
+      statusEl.innerHTML = '✅ লোকেশন আপডেট করা হয়েছে';
+    });
+  }
+
+  // নিজের বর্তমান লোকেশন নেওয়া
+  window.getRegCurrentLocation = function() {
+    if (!navigator.geolocation) return alert("ব্রাউজার লোকেশন সাপোর্ট করে না।");
+    
+    const statusEl = document.getElementById('reg-location-status');
+    statusEl.innerText = "লোকেশন খোঁজা হচ্ছে...";
+    statusEl.style.color = "#f9a825";
+    
+    const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latLng = L.latLng(position.coords.latitude, position.coords.longitude);
+        
+        // ম্যাপ লোড না হলে লোড করা
+        if (!regMap) {
+          window.initRegMap();
+          setTimeout(() => {
+            regMap.setView(latLng, 17);
+            setRegMarker(latLng);
+          }, 300);
+        } else {
+          regMap.setView(latLng, 17);
+          setRegMarker(latLng);
+        }
+      },
+      (error) => {
+        alert("লোকেশন পাওয়া যায়নি বা পারমিশন দেওয়া হয়নি।");
+        statusEl.innerText = "লোকেশন পাওয়া যায়নি।";
+        statusEl.style.color = "var(--mp-danger)";
+      },
+      options
+    );
+  };
+
+  // স্যাটেলাইট ভিউ টগল
+  window.toggleRegMapLayer = function() {
+    const btn = document.getElementById('reg-btn-satellite');
+    if (!regMap) return;
+
+    if (regIsSatelliteView) {
+      regMap.removeLayer(regCurrentTileLayer);
+      regCurrentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(regMap);
+      regIsSatelliteView = false;
+      if (btn) btn.innerText = '🛰️ স্যাটেলাইট';
+    } else {
+      regMap.removeLayer(regCurrentTileLayer);
+      regCurrentTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(regMap);
+      regIsSatelliteView = true;
+      if (btn) btn.innerText = '🗺️ স্ট্রিট ভিউ';
     }
-    setTimeout(() => { regMap.invalidateSize(); }, 200);
   };
 
   // ==================== ADMIN LOGIN & FORGOT PASSWORD LOGIC ====================
