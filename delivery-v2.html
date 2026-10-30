@@ -591,6 +591,14 @@
         <h3 style="justify-content: space-between;">
           🗺️ লাইভ ট্র্যাকিং
           <span style="font-size: 10px; background: #e8f0fe; color: var(--mp-primary); padding: 4px 8px; border-radius: 4px;">🏪 দোকান | 🛵 ডেলিভারি</span>
+        
+                <!-- 🚀 ম্যাপ কন্ট্রোল বাটন -->
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+          <button type="button" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #e8f0fe; color: var(--mp-primary); flex: 1;" onclick="setManagerMapView('street')">🗺️ স্ট্রিট ভিউ</button>
+          <button type="button" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #f0f2f5; color: #333; flex: 1;" onclick="setManagerMapView('satellite')">🛰️ স্যাটেলাইট ভিউ</button>
+        </div>
+
+        <div id="manager-live-map" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
         </h3>
         <div id="manager-live-map" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
       </div>
@@ -4295,36 +4303,41 @@ window.clearImageSearch = function() {
   filterCustomerProducts(); 
 };
 
-  // ==================== MANAGER DASHBOARD LOGIC ====================
+   // ==================== MANAGER DASHBOARD LOGIC ====================
   let managerMap = null;
   let managerMarkers = [];
   let managerUnsubscribe = null;
+  let managerStreetLayer = null;
+  let managerSatelliteLayer = null;
 
   async function loadManagerDashboard(userData) {
     const pins = userData.managerPins || [];
+    const pinList = document.getElementById('manager-pin-list');
     
-    // ১. ম্যাপ তৈরি করা (সবসময় লোড হবে, ডেটা থাকুক বা না থাকুক)
+    // ১. পিনকোড ডিসপ্লে (পিন না থাকলেও ম্যাপ লোড হবে)
+    if (pins.length === 0) {
+      pinList.innerHTML = '<span style="font-size:13px; color:red;">আপনাকে এখনো কোনো পিনকোড অ্যাসাইন করা হয়নি। অ্যাডমিনের সাথে যোগাযোগ করুন।</span>';
+    } else {
+      pinList.innerHTML = pins.map(p => `<span style="background: #e8f0fe; color: var(--mp-primary); padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px;">📍 ${p}</span>`).join('');
+    }
+
+    // ২. লিফলেট ম্যাপ তৈরি করা
     setTimeout(() => {
       if (!managerMap) {
-        managerMap = L.map('manager-live-map').setView([22.5726, 88.3639], 12); // ডিফল্ট কলকাতা
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(managerMap);
+        managerMap = L.map('manager-live-map').setView([22.5726, 88.3639], 11);
+        
+        // 🚀 স্ট্রিট এবং স্যাটেলাইট লেয়ার তৈরি
+        managerStreetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+        managerSatelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
+
+        // ডিফল্টভাবে স্ট্রিট ভিউ দেখানো
+        managerStreetLayer.addTo(managerMap);
       }
       managerMap.invalidateSize();
     }, 300);
 
-    // ২. পিনকোডগুলো UI তে দেখানো
-    const pinList = document.getElementById('manager-pin-list');
-    if (pins.length === 0) {
-      pinList.innerHTML = '<span style="font-size:13px; color:red;">আপনাকে এখনো কোনো পিনকোড অ্যাসাইন করা হয়নি। অ্যাডমিনের সাথে যোগাযোগ করুন।</span>';
-      // ম্যাপের পুরোনো মার্কার থাকলে মুছে ফেলা
-      if(managerMarkers) {
-        managerMarkers.forEach(m => managerMap.removeLayer(m));
-        managerMarkers = [];
-      }
-      return; // পিন না থাকলে ডেটা খোঁজা বন্ধ করবে
-    }
-    
-    pinList.innerHTML = pins.map(p => `<span style="background: #e8f0fe; color: var(--mp-primary); padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px;">📍 ${p}</span>`).join('');
+    // পিন না থাকলে ডেটা লোড করা লাগবে না
+    if (pins.length === 0) return;
 
     // ৩. ম্যানেজারের পিনের আন্ডারে থাকা ইউজারদের ডেটা রিয়েল-টাইমে আনা
     if (managerUnsubscribe) managerUnsubscribe();
@@ -4359,7 +4372,7 @@ window.clearImageSearch = function() {
       managerMarkers.forEach(m => managerMap.removeLayer(m));
       managerMarkers = [];
 
-      // দোকান ও ডেলিভারি বয় প্লট করা
+      // 🏪 দোকানগুলো ম্যাপে প্লট করা
       shopLocations.forEach(shop => {
         const marker = L.marker([parseFloat(shop.lat), parseFloat(shop.lng)], {
           icon: L.divIcon({ html: '<div style="font-size:20px;">🏪</div>', className: 'custom-icon', iconSize: [30, 30] })
@@ -4367,6 +4380,7 @@ window.clearImageSearch = function() {
         managerMarkers.push(marker);
       });
 
+      // 🛵 ডেলিভারি বয়দের ম্যাপে প্লট করা
       deliveryLocations.forEach(boy => {
         const marker = L.marker([parseFloat(boy.lat), parseFloat(boy.lng)], {
           icon: L.divIcon({ html: '<div style="font-size:20px;">🛵</div>', className: 'custom-icon', iconSize: [30, 30] })
@@ -4381,18 +4395,32 @@ window.clearImageSearch = function() {
       }
     });
 
-    // ৪. পেন্ডিং অর্ডার কাউন্ট
+    // ৪. পেন্ডিং অর্ডার কাউন্ট করা
     const ordersQ = query(collection(db, "orders"), where("status", "==", "pending"));
     onSnapshot(ordersQ, (snap) => {
       let pendingCount = 0;
       snap.forEach(docSnap => {
         const o = docSnap.data();
-        if (pins.includes(o.pinCode)) pendingCount++;
+        if (pins.includes(o.pinCode)) { 
+          pendingCount++;
+        }
       });
       document.getElementById('mgr-pending-orders').innerText = pendingCount;
     });
   }
 
+  // 🚀 নতুন ফাংশন: ম্যাপের ভিউ পরিবর্তন করা (স্ট্রিট/স্যাটেলাইট)
+  window.setManagerMapView = function(type) {
+    if (!managerMap) return;
+    
+    if (type === 'satellite') {
+      if (managerMap.hasLayer(managerStreetLayer)) managerMap.removeLayer(managerStreetLayer);
+      managerSatelliteLayer.addTo(managerMap);
+    } else {
+      if (managerMap.hasLayer(managerSatelliteLayer)) managerMap.removeLayer(managerSatelliteLayer);
+      managerStreetLayer.addTo(managerMap);
+    }
+  };
   </script>
 
 <!-- Live Tracking Modal (Customer) -->
