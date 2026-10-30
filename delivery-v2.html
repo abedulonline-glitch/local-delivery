@@ -798,11 +798,12 @@
   </div>
 </div>
 
-<!-- Address Modal -->
+<!-- Address Selection Modal -->
 <div id="dlv-address-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-address-modal').classList.remove('active')">&times;</span>
     <h3 style="margin-bottom: 15px; color: var(--mp-primary);">📍 নতুন অ্যাড্রেস দিন</h3>
+    
     <div class="dlv-form-group">
       <label>অ্যাড্রেসের ধরন</label>
       <select id="new-addr-type" class="dlv-input">
@@ -811,23 +812,31 @@
         <option value="Other">📍 অন্যান্য (Other)</option>
       </select>
     </div>
+
     <div class="dlv-form-group">
-      <label>সম্পূর্ণ ঠিকানা</label>
+      <label>সম্পূর্ণ ঠিকানা (অটো)</label>
       <input type="text" id="new-addr-text" class="dlv-input" placeholder="ম্যাপ থেকে অটো আসবে...">
     </div>
+    
     <div class="dlv-form-group">
       <label>ল্যান্ডমার্ক (ঐচ্ছিক)</label>
       <input type="text" id="new-addr-landmark" class="dlv-input" placeholder="যেমন: মসজিদের পাশে">
     </div>
+
     <div class="dlv-form-group">
       <label>ম্যাপে লোকেশন পিন করুন</label>
-      <div id="map-picker" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
+      
+      <!-- 🚀 ম্যাপ কন্টেইনার: height এবং id ঠিক থাকতে হবে -->
+      <div id="map-picker" style="height: 250px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
+      
       <div style="display: flex; gap: 8px; margin-top: 8px;">
         <button class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #e8f0fe; color: var(--mp-primary); flex: 1;" onclick="getCurrentLocation()">📍 আমার লোকেশন</button>
         <button id="btn-satellite-view" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #f0f2f5; color: #333; flex: 1;" onclick="toggleMapLayer()">🛰️ স্যাটেলাইট</button>
       </div>
+      
       <div style="font-size: 11px; color: var(--mp-text-light); margin-top: 5px;" id="map-coords">কোনো পিন সেট করা হয়নি</div>
     </div>
+
     <button class="mp-btn mp-btn-success" onclick="saveNewAddress()">💾 সেভ করুন</button>
   </div>
 </div>
@@ -2246,33 +2255,29 @@ window.filterCustomerProducts = function() {
   // ============================================================
   // ADDRESS & MAP LOGIC
   // ============================================================
-    window.openAddressModal = function() {
-    // মডাল ওপেন করা
+  window.openAddressModal = function() {
     document.getElementById('dlv-address-modal').classList.add('active');
     
-    // 🚀 ৩০০ মিলিসেকেন্ড অপেক্ষা করা হচ্ছে যাতে মডাল পুরোপুরি ওপেন হয় এবং ম্যাপ তার সাইজ বুঝতে পারে
     setTimeout(() => {
+      // যদি ম্যাপ আগে থেকে তৈরি না থাকে
       if (!pickerMap) {
-        // যদি আগে থেকে ম্যাপ তৈরি না থাকে, তবে নতুন ম্যাপ তৈরি হবে
         pickerMap = L.map('map-picker').setView([22.5726, 88.3639], 15);
         
         currentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap'
         }).addTo(pickerMap);
 
-        // ম্যাপে ক্লিক করলে পিন বসবে
         pickerMap.on('click', function(e) {
           setPickerMarker(e.latlng);
         });
         
-        // ডিফল্ট পিন বসানো
         setPickerMarker(L.latLng(22.5726, 88.3639));
       }
       
-      // 🚀 এটি ম্যাপকে তার সঠিক সাইজ (Height/Width) জানিয়ে দেয়, যাতে ব্ল্যাংক না দেখায়
-      pickerMap.invalidateSize(); 
+      // 🚀 ম্যাপ রেন্ডার ফিক্স
+      pickerMap.invalidateSize();
       
-    }, 300);
+    }, 500); // ৫০০ মিলিসেকেন্ড অপেক্ষা করছে যাতে মডাল পুরোপুরি ওপেন হয়
   };
 
   function setPickerMarker(latLng) {
