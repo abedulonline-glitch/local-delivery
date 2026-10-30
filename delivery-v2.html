@@ -2246,19 +2246,32 @@ window.filterCustomerProducts = function() {
   // ============================================================
   // ADDRESS & MAP LOGIC
   // ============================================================
-  window.openAddressModal = function() {
+    window.openAddressModal = function() {
+    // মডাল ওপেন করা
     document.getElementById('dlv-address-modal').classList.add('active');
+    
+    // 🚀 ৩০০ মিলিসেকেন্ড অপেক্ষা করা হচ্ছে যাতে মডাল পুরোপুরি ওপেন হয় এবং ম্যাপ তার সাইজ বুঝতে পারে
     setTimeout(() => {
       if (!pickerMap) {
-        pickerMap = L.map('map-picker').setView([22.5726, 88.3639], 13);
-        currentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-          attribution: '© OpenStreetMap' 
-        }).addTo(pickerMap);
+        // যদি আগে থেকে ম্যাপ তৈরি না থাকে, তবে নতুন ম্যাপ তৈরি হবে
+        pickerMap = L.map('map-picker').setView([22.5726, 88.3639], 15);
         
-        pickerMap.on('click', function(e) { setPickerMarker(e.latlng); });
+        currentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap'
+        }).addTo(pickerMap);
+
+        // ম্যাপে ক্লিক করলে পিন বসবে
+        pickerMap.on('click', function(e) {
+          setPickerMarker(e.latlng);
+        });
+        
+        // ডিফল্ট পিন বসানো
         setPickerMarker(L.latLng(22.5726, 88.3639));
       }
-      pickerMap.invalidateSize();
+      
+      // 🚀 এটি ম্যাপকে তার সঠিক সাইজ (Height/Width) জানিয়ে দেয়, যাতে ব্ল্যাংক না দেখায়
+      pickerMap.invalidateSize(); 
+      
     }, 300);
   };
 
