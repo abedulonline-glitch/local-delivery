@@ -553,22 +553,7 @@
       </div>
     </div>
 
-         <!-- ==================== MANAGER DASHBOARD ==================== -->
-    <div id="dlv-view-manager" class="mp-hidden">
-      <div class="dlv-dashboard-title">👨‍💼 ম্যানেজার ড্যাশবোর্ড</div>
-      
-      <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
-        <h3>📊 ম্যানেজার প্যানেল</h3>
-        <p style="font-size: 13px; color: #666;">এখানে আপনি আপনার পিনকোডের আন্ডারে থাকা দোকানদার, ডেলিভারি বয় এবং অর্ডারগুলো মনিটর করতে পারবেন।</p>
-        
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; margin-top: 10px;">
-          <div style="font-size: 30px; margin-bottom: 10px;">🚧</div>
-          <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">ম্যানেজার ফিচার ডেভেলপমেন্টের অধীনে আছে</div>
-          <div style="font-size: 11px; color: #888; margin-top: 5px;">শীঘ্রই এখানে আপনার এলাকার সমস্ত লাইভ স্ট্যাটাস দেখা যাবে।</div>
-        </div>
-      </div>
-    </div>  
-    
+        <!-- ==================== ADMIN DASHBOARD ==================== -->
     <!-- ==================== ADMIN DASHBOARD ==================== -->
 <div id="dlv-view-admin" class="mp-hidden">
   <div class="dlv-dashboard-title">👑 অ্যাডমিন কন্ট্রোল প্যানেল</div>
@@ -1286,22 +1271,22 @@
   }
 
   // ==================== SMART REGISTRATION MAP LOGIC ====================
-  
-  // ম্যাপ ইনিশিয়ালাইজ করা
+  let regMap = null;
+  let regMarker = null;
+  let regLat = null;
+  let regLng = null;
+  let regCurrentTileLayer = null;
+  let regIsSatelliteView = false;
+
   window.initRegMap = function() {
     const mapDiv = document.getElementById('reg-map-container');
     mapDiv.style.display = 'block';
     
     setTimeout(() => {
       if (!regMap) {
-        // ডিফল্ট লোকেশন (কলকাতা)
         regMap = L.map('reg-map-container').setView([22.5726, 88.3639], 15);
+        regCurrentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(regMap);
         
-        regCurrentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-          attribution: '© OpenStreetMap' 
-        }).addTo(regMap);
-        
-        // ম্যাপে ক্লিক করলে পিন বসবে
         regMap.on('click', function(e) {
           setRegMarker(e.latlng);
         });
@@ -1310,42 +1295,38 @@
     }, 200);
   };
 
-  // পিন সেট করার হেল্পার ফাংশন (ড্র্যাগেবল)
   function setRegMarker(latLng) {
     if (regMarker) regMap.removeLayer(regMarker);
-    
     regMarker = L.marker(latLng, { draggable: true }).addTo(regMap);
     regLat = latLng.lat;
     regLng = latLng.lng;
     
     const statusEl = document.getElementById('reg-location-status');
-    statusEl.innerHTML = '✅ লোকেশন সেট করা হয়েছে';
-    statusEl.style.color = 'var(--mp-success)';
+    if(statusEl) {
+      statusEl.innerHTML = '✅ লোকেশন সেট করা হয়েছে';
+      statusEl.style.color = 'var(--mp-success)';
+    }
 
-    // পিন টেনে সরালে (Drag) আপডেট হবে
     regMarker.on('dragend', function() {
       const position = regMarker.getLatLng();
       regLat = position.lat;
       regLng = position.lng;
-      statusEl.innerHTML = '✅ লোকেশন আপডেট করা হয়েছে';
+      if(statusEl) statusEl.innerHTML = '✅ লোকেশন আপডেট করা হয়েছে';
     });
   }
 
-  // নিজের বর্তমান লোকেশন নেওয়া
   window.getRegCurrentLocation = function() {
     if (!navigator.geolocation) return alert("ব্রাউজার লোকেশন সাপোর্ট করে না।");
-    
     const statusEl = document.getElementById('reg-location-status');
-    statusEl.innerText = "লোকেশন খোঁজা হচ্ছে...";
-    statusEl.style.color = "#f9a825";
+    if(statusEl) {
+      statusEl.innerText = "লোকেশন খোঁজা হচ্ছে...";
+      statusEl.style.color = "#f9a825";
+    }
     
     const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
-    
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const latLng = L.latLng(position.coords.latitude, position.coords.longitude);
-        
-        // ম্যাপ লোড না হলে লোড করা
         if (!regMap) {
           window.initRegMap();
           setTimeout(() => {
@@ -1359,14 +1340,15 @@
       },
       (error) => {
         alert("লোকেশন পাওয়া যায়নি বা পারমিশন দেওয়া হয়নি।");
-        statusEl.innerText = "লোকেশন পাওয়া যায়নি।";
-        statusEl.style.color = "var(--mp-danger)";
+        if(statusEl) {
+          statusEl.innerText = "লোকেশন পাওয়া যায়নি।";
+          statusEl.style.color = "var(--mp-danger)";
+        }
       },
       options
     );
   };
 
-  // স্যাটেলাইট ভিউ টগল
   window.toggleRegMapLayer = function() {
     const btn = document.getElementById('reg-btn-satellite');
     if (!regMap) return;
@@ -1950,123 +1932,129 @@ window.filterCustomerProducts = function() {
   // ROLE BASED UI SETUP
   // ============================================================
   function setupUIForRole(role, userData) {
-  mainApp.classList.remove('mp-hidden');
-  document.getElementById('dlv-user-role').innerText = role.toUpperCase();
-  
-  // নামের পাশে স্কুটির আইকনটি সরিয়ে ফেলা হলো (যেহেতু আমরা আলাদা প্রোফাইল পিক দেখাবো)
-  document.getElementById('dlv-topbar-title').innerText = userData.name || 'Delivery System';
-
-  // 🚀 টপবারে প্রোফাইল পিক লোড করা
-  const profilePicEl = document.getElementById('topbar-profile-pic');
-  const profileIconEl = document.getElementById('topbar-profile-icon');
-  
-  if (profilePicEl && profileIconEl) {
-    if (userData.profilePic) {
-      profilePicEl.src = userData.profilePic;
-      profilePicEl.style.display = 'block';
-      profileIconEl.style.display = 'none';
-    } else {
-      profilePicEl.style.display = 'none';
-      profileIconEl.style.display = 'block';
-    }
-  }
-
-  // ৫. টপবারে ওয়ালেট আপডেট (সব রোলের জন্য)
-  updateTopbarWallet(userData.walletBalance);
-
-  // Hide all views (এখানে 'manager' যোগ করা হয়েছে)
-  ['customer', 'shopkeeper', 'delivery', 'admin', 'manager'].forEach(r => {
-    const view = document.getElementById(`dlv-view-${r}`);
-    if (view) view.classList.add('mp-hidden');
-  });
-
-  // Show active view
-  const activeView = document.getElementById(`dlv-view-${role}`);
-  if (activeView) activeView.classList.remove('mp-hidden');
-
-  // Load role-specific data
-  if (role === 'customer') {
-    // 🚀 ফায়ারবেস থেকে সেভ করা অ্যাড্রেস লোড করা
-if (userData.addresses && Array.isArray(userData.addresses)) {
-  customerAddresses = userData.addresses;
-  if(customerAddresses.length > 0) {
-    const latest = customerAddresses[customerAddresses.length - 1];
-    const el = document.getElementById('customer-saved-address');
-    if(el) {
-      el.innerHTML = `
-        <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border-left: 3px solid var(--mp-primary);">
-          <b>${latest.type === 'Home' ? '🏠 বাড়ি' : latest.type === 'Office' ? '🏢 অফিস' : '📍 অন্যান্য'}</b><br>
-          ${latest.text} ${latest.landmark ? `(${latest.landmark})` : ''}
-        </div>
-      `;
-    }
-    // লোকেশন আপডেট
-    if (latest.lat && latest.lng) {
-      customerLat = latest.lat;
-      customerLng = latest.lng;
-    }
-  }
-}
-    renderCustomerProducts();
-    // 🚀 কাস্টমারের লোকেশন অটোমেটিক আপডেট করা (যদি আগে থেকে সেভ না থাকে)
-if (!userData.lat || !userData.lng) {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      try {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        
-        // ডেটাবেসে সেভ করা
-        await updateDoc(doc(db, "users", currentUser.uid), { lat: lat, lng: lng });
-        
-        // লোকাল ভেরিয়েবল আপডেট
-        globalUserData.lat = lat;
-        globalUserData.lng = lng;
-        customerLat = lat; // গ্লোবাল ভেরিয়েবল আপডেট যা দূরত্ব মাপতে কাজে লাগে
-        customerLng = lng;
-        
-        console.log("Customer location updated automatically.");
-        filterCustomerProducts(); // প্রোডাক্ট লিস্ট রিফ্রেশ করা
-      } catch(e) { console.log("Location save error:", e); }
-    }, (error) => {
-       console.log("Location permission denied.");
-    }, { enableHighAccuracy: true });
-  }
-} else {
-  // যদি আগে থেকেই লোকেশন সেভ থাকে
-  customerLat = userData.lat;
-  customerLng = userData.lng;
-}
-    loadTopAds(); // 🚀 কাস্টমারের জন্য অ্যাড লোড করা হলো
-    if (userData) {
-      document.getElementById('cst-wallet-balance').innerText = `₹${(userData.walletBalance || 0).toFixed(2)}`;
-      document.getElementById('cst-khata-due').innerText = `₹${(userData.khataDue || 0).toFixed(2)}`;
-    }
-  } else if (role === 'shopkeeper') {
-    renderShopProducts();
-    loadShopTotalDue();
-    loadShopBadgeStatus();
-    loadShopNewOrders();
+    mainApp.classList.remove('mp-hidden');
+    document.getElementById('dlv-user-role').innerText = role.toUpperCase();
     
-    // 🚀 স্টোর লোকেশন স্ট্যাটাস আপডেট
-    if (userData.lat && userData.lng) {
-      const locText = document.getElementById('shop-location-text');
-      if(locText) locText.innerHTML = `<span style="color:var(--mp-success);">✅ লোকেশন সেট করা আছে</span>`;
-    }
+    // নামের পাশে স্কুটির আইকনটি সরিয়ে ফেলা হলো (যেহেতু আমরা আলাদা প্রোফাইল পিক দেখাবো)
+    document.getElementById('dlv-topbar-title').innerText = userData.name || 'Delivery System';
+
+    // 🚀 টপবারে প্রোফাইল পিক লোড করা
+    const profilePicEl = document.getElementById('topbar-profile-pic');
+    const profileIconEl = document.getElementById('topbar-profile-icon');
     
-  } else if (role === 'delivery') {
-    document.getElementById('dlv-offline-msg').style.display = 'block';
-    document.getElementById('dlv-live-orders-container').style.display = 'none';
-  } else if (role === 'admin') {
-    loadAdminDashboardUI();
-      } else if (role === 'manager') {
+    if (profilePicEl && profileIconEl) {
+      if (userData.profilePic) {
+        profilePicEl.src = userData.profilePic;
+        profilePicEl.style.display = 'block';
+        profileIconEl.style.display = 'none';
+      } else {
+        profilePicEl.style.display = 'none';
+        profileIconEl.style.display = 'block';
+      }
+    }
+
+    // ৫. টপবারে ওয়ালেট আপডেট (সব রোলের জন্য)
+    updateTopbarWallet(userData.walletBalance);
+
+    // Hide all views (এখানে 'manager' যোগ করা হয়েছে)
+    ['customer', 'shopkeeper', 'delivery', 'admin', 'manager'].forEach(r => {
+      const view = document.getElementById(`dlv-view-${r}`);
+      if (view) view.classList.add('mp-hidden');
+    });
+
+    // Show active view
+    const activeView = document.getElementById(`dlv-view-${role}`);
+    if (activeView) activeView.classList.remove('mp-hidden');
+
+    // Load role-specific data
+    if (role === 'customer') {
+      // ১. ফায়ারবেস থেকে সেভ করা অ্যাড্রেস লোড করা
+      if (userData.addresses && Array.isArray(userData.addresses)) {
+        customerAddresses = userData.addresses;
+        if(customerAddresses.length > 0) {
+          const latest = customerAddresses[customerAddresses.length - 1];
+          const el = document.getElementById('customer-saved-address');
+          if(el) {
+            el.innerHTML = `
+              <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border-left: 3px solid var(--mp-primary);">
+                <b>${latest.type === 'Home' ? '🏠 বাড়ি' : latest.type === 'Office' ? '🏢 অফিস' : '📍 অন্যান্য'}</b><br>
+                ${latest.text} ${latest.landmark ? `(${latest.landmark})` : ''}
+              </div>
+            `;
+          }
+          // লোকেশন আপডেট
+          if (latest.lat && latest.lng) {
+            customerLat = latest.lat;
+            customerLng = latest.lng;
+          }
+        }
+      }
+
+      // ২. কাস্টমারের লোকেশন অটোমেটিক আপডেট করা (যদি আগে থেকে সেভ না থাকে)
+      if (!userData.lat || !userData.lng) {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(async (position) => {
+            try {
+              const lat = position.coords.latitude;
+              const lng = position.coords.longitude;
+              
+              // ডেটাবেসে সেভ করা
+              await updateDoc(doc(db, "users", currentUser.uid), { lat: lat, lng: lng });
+              
+              // লোকাল ভেরিয়েবল আপডেট
+              globalUserData.lat = lat;
+              globalUserData.lng = lng;
+              customerLat = lat;
+              customerLng = lng;
+              
+              console.log("Customer location updated automatically.");
+              filterCustomerProducts(); // প্রোডাক্ট লিস্ট রিফ্রেশ করা
+            } catch(e) { console.log("Location save error:", e); }
+          }, (error) => {
+             console.log("Location permission denied.");
+          }, { enableHighAccuracy: true });
+        }
+      } else {
+        // যদি আগে থেকেই লোকেশন সেভ থাকে
+        customerLat = userData.lat;
+        customerLng = userData.lng;
+      }
+
+      // ৩. অন্যান্য কাস্টমার ডেটা লোড
+      renderCustomerProducts();
+      loadTopAds(); 
+      if (userData) {
+        document.getElementById('cst-wallet-balance').innerText = `₹${(userData.walletBalance || 0).toFixed(2)}`;
+        document.getElementById('cst-khata-due').innerText = `₹${(userData.khataDue || 0).toFixed(2)}`;
+      }
+      
+    } else if (role === 'shopkeeper') {
+      renderShopProducts();
+      loadShopTotalDue();
+      loadShopBadgeStatus();
+      loadShopNewOrders();
+      
+      // 🚀 স্টোর লোকেশন স্ট্যাটাস আপডেট
+      if (userData.lat && userData.lng) {
+        const locText = document.getElementById('shop-location-text');
+        if(locText) locText.innerHTML = `<span style="color:var(--mp-success);">✅ লোকেশন সেট করা আছে</span>`;
+      }
+      
+    } else if (role === 'delivery') {
+      document.getElementById('dlv-offline-msg').style.display = 'block';
+      document.getElementById('dlv-live-orders-container').style.display = 'none';
+      
+    } else if (role === 'admin') {
+      loadAdminDashboardUI();
+      
+    } else if (role === 'manager') {
+      // 🚀 ম্যানেজার ভিউ চেক (নাল এরর এড়াতে)
       const managerView = document.getElementById('dlv-view-manager');
       if (managerView) {
         managerView.classList.remove('mp-hidden');
-      } else {
-        console.warn("Manager view HTML not found!");
       }
     }
+  }
   // ============================================================
   // CUSTOMER FUNCTIONS
   // ============================================================
