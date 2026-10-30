@@ -553,7 +553,22 @@
       </div>
     </div>
 
-        <!-- ==================== ADMIN DASHBOARD ==================== -->
+         <!-- ==================== MANAGER DASHBOARD ==================== -->
+    <div id="dlv-view-manager" class="mp-hidden">
+      <div class="dlv-dashboard-title">👨‍💼 ম্যানেজার ড্যাশবোর্ড</div>
+      
+      <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
+        <h3>📊 ম্যানেজার প্যানেল</h3>
+        <p style="font-size: 13px; color: #666;">এখানে আপনি আপনার পিনকোডের আন্ডারে থাকা দোকানদার, ডেলিভারি বয় এবং অর্ডারগুলো মনিটর করতে পারবেন।</p>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; margin-top: 10px;">
+          <div style="font-size: 30px; margin-bottom: 10px;">🚧</div>
+          <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">ম্যানেজার ফিচার ডেভেলপমেন্টের অধীনে আছে</div>
+          <div style="font-size: 11px; color: #888; margin-top: 5px;">শীঘ্রই এখানে আপনার এলাকার সমস্ত লাইভ স্ট্যাটাস দেখা যাবে।</div>
+        </div>
+      </div>
+    </div>  
+    
     <!-- ==================== ADMIN DASHBOARD ==================== -->
 <div id="dlv-view-admin" class="mp-hidden">
   <div class="dlv-dashboard-title">👑 অ্যাডমিন কন্ট্রোল প্যানেল</div>
@@ -2044,11 +2059,14 @@ if (!userData.lat || !userData.lng) {
     document.getElementById('dlv-live-orders-container').style.display = 'none';
   } else if (role === 'admin') {
     loadAdminDashboardUI();
-  } else if (role === 'manager') {
-    // ম্যানেজারের জন্য ড্যাশবোর্ড (আপাতত অ্যাডমিনের মতোই দেখাবে, তবে শুধু তার পিনের ডেটা দেখবে)
-    document.getElementById('dlv-view-manager').classList.remove('mp-hidden');
-  }
-}
+      } else if (role === 'manager') {
+      const managerView = document.getElementById('dlv-view-manager');
+      if (managerView) {
+        managerView.classList.remove('mp-hidden');
+      } else {
+        console.warn("Manager view HTML not found!");
+      }
+    }
   // ============================================================
   // CUSTOMER FUNCTIONS
   // ============================================================
