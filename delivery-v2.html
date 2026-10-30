@@ -4038,62 +4038,104 @@ window.searchPinUsers = async function() {
   };
 
   window.saveCroppedImage = async function() {
-    if (!cropperInstance) return;
-    const statusEl = document.getElementById('crop-status');
-    statusEl.innerText = "আপলোড হচ্ছে..."; 
-    statusEl.style.color = "#0f9d58";
+  if (!cropperInstance) return;
+  
+  const statusEl = document.getElementById('crop-status');
+  statusEl.innerText = "আপলোড হচ্ছে..."; 
+  statusEl.style.color = "#0f9d58";
 
-    const canvas = cropperInstance.getCroppedCanvas({ maxWidth: 800, maxHeight: 800 });
-    const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+  try {
+    // 🚀 ১. ইমেজ সাইজ অপ্টিমাইজ করা (সর্বোচ্চ ৮০০ পিক্সেল, জেপিজি ফরম্যাট)
+    const canvas = cropperInstance.getCroppedCanvas({
+      maxWidth: 800,
+      maxHeight: 800,
+      fillColor: '#fff', // ব্যাকগ্রাউন্ড সাদা করা (যদি PNG হয়)
+      imageSmoothingEnabled: true,
+      imageSmoothingQuality: 'high',
+    });
 
-    try {
-      const formData = new FormData();
-      formData.append("image", base64Image);
-      const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
-      const data = await response.json();
-      
-      if (data.success) {
-        
-        // 🚀 ১. রেজিস্ট্রেশন প্রোফাইল ছবির জন্য
-        if (currentUploadContext === 'reg') {
-          regProfilePicUrl = data.data.url; 
-          const img = document.getElementById('reg-profile-img');
-          const icon = document.getElementById('reg-profile-icon');
-          if(img && icon) {
-            img.src = regProfilePicUrl;
-            img.style.display = 'block';
-            icon.style.display = 'none';
-          }
-        } 
-        // 🚀 ২. অন্যান্য সব প্রোডাক্ট ও অ্যাডের জন্য
-        else {
-          uploadedImageUrl = data.data.url;
-          
-          let previewId;
-          if (currentUploadContext === 'mp') previewId = 'mp-image-preview';
-          else if (currentUploadContext === 'edit-mp') previewId = 'ep-image-preview';
-          else if (currentUploadContext === 'ad') previewId = 'ad-image-preview';
-          else if (currentUploadContext === 'cp') previewId = 'cp-image-preview'; // 🚀 নতুন: কাস্টম প্রোডাক্টের প্রিভিউ
-          else previewId = 'add-p-image-preview';
-          
-          const preview = document.getElementById(previewId);
-          if(preview) {
-            preview.src = uploadedImageUrl; 
-            preview.style.display = 'block';
-          }
-        }
-        
-        closeCropModal();
-      } else {
-        throw new Error("Failed");
+    // 🚀 ২. Base64 এর বদলে Blob ব্যবহার করা (মেমরি ও নেটওয়ার্ক সাশ্রয়ী)
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        alert("ছবি প্রসেস করতে সমস্যা হয়েছে!");
+        statusEl.innerText = "ব্যর্থ!";
+        return;
       }
-    } catch (e) {
-      console.error(e);
-      alert("ছবি আপলোডে সমস্যা!"); 
-      statusEl.innerText = "ব্যর্থ!"; 
-      statusEl.style.color = "red";
-    }
-  };
+
+      const formData = new FormData();
+      // ImgBB তে ফাইল আপলোড
+      formData.append("image", blob, "upload.jpg"); 
+
+      try {
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { 
+          method: "POST", 
+          body: formData 
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // 🚀 ৩. কোন জায়গা থেকে আপলোড হচ্ছে তা চেক করা
+          if (currentUploadContext === 'reg') {
+            regProfilePicUrl = data.data.url; 
+            const img = document.getElementById('reg-profile-img');
+            const icon = document.getElementById('reg-profile-icon');
+            if(img && icon) {
+              img.src = regProfilePicUrl;
+              img.style.display = 'block';
+              icon.style.display = 'none';
+            }
+          } else {
+            uploadedImageUrl = data.data.url;
+            
+            let previewId;
+            if (currentUploadContext === 'mp') previewId = 'mp-image-preview';
+            else if (currentUploadContext === 'edit-mp') previewId = 'ep-image-preview';
+            else if (currentUploadContext === 'ad') previewId = 'ad-image-preview';
+            else if (currentUploadContext === 'cp') previewId = 'cp-image-preview'; 
+            else if (currentUploadContext === 'edit-profile') {
+               editProfilePicUrl = data.data.url;
+               const img = document.getElementById('ep-preview-img');
+               const icon = document.getElementById('ep-preview-icon');
+               if(img && icon) {
+                 img.src = editProfilePicUrl;
+                 img.style.display = 'block';
+                 icon.style.display = 'none';
+               }
+               closeCropModal();
+               return; // এডিট প্রোফাইলের জন্য আলাদা হ্যান্ডেল
+            }
+            else previewId = 'add-p-image-preview';
+            
+            const preview = document.getElementById(previewId);
+            if(preview) {
+              preview.src = uploadedImageUrl; 
+              preview.style.display = 'block';
+            }
+          }
+          
+          statusEl.innerText = "সফল!";
+          closeCropModal();
+          
+        } else {
+          // ImgBB থেকে কোনো এরর আসলে তা কনসোলে দেখাবে
+          console.error("ImgBB Error:", data);
+          throw new Error(data.error?.message || "ImgBB Upload Failed");
+        }
+      } catch (uploadError) {
+        console.error(uploadError);
+        alert("ছবি আপলোডে সমস্যা! ইন্টারনেট কানেকশন চেক করুন বা ছোট সাইজের ছবি দিন।"); 
+        statusEl.innerText = "ব্যর্থ!"; 
+        statusEl.style.color = "red";
+      }
+    }, 'image/jpeg', 0.8); // ৮০% কোয়ালিটির জেপিজি তৈরি করবে
+
+  } catch (e) {
+    console.error(e);
+    alert("ক্রপিং প্রসেসে সমস্যা হয়েছে!");
+    statusEl.innerText = "ব্যর্থ!";
+  }
+};
 
   // ============================================================
   // OTHERS (Recharge, Rating)
