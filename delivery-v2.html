@@ -4322,7 +4322,59 @@ window.clearImageSearch = function() {
   filterCustomerProducts(); 
 };
 
-    // ==================== MANAGER DASHBOARD LOGIC ====================
+   // ==================== HIGHLIGHT MANAGER TERRITORY ====================
+  let territoryCircles = []; // ম্যাপের রঙিন বৃত্তগুলো ট্র্যাক করার জন্য
+
+  async function highlightManagerTerritories(pins) {
+    // পুরোনো বৃত্ত থাকলে মুছে ফেলা
+    territoryCircles.forEach(circle => managerMap.removeLayer(circle));
+    territoryCircles = [];
+
+    if (pins.length === 0) return;
+
+    let validBounds = [];
+
+    for (const pin of pins) {
+      try {
+        // 🚀 Nominatim API দিয়ে পিনকোডের সেন্টার পয়েন্ট বের করা
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=json&limit=1`, {
+          headers: { 'User-Agent': 'HyperlocalDeliveryApp/1.0' }
+        });
+        const data = await res.json();
+
+        if (data && data.length > 0) {
+          const lat = parseFloat(data[0].lat);
+          const lon = parseFloat(data[0].lon);
+
+          // 🚀 ম্যাপে সুন্দর স্বচ্ছ রঙিন বৃত্ত আঁকা (৫ কিমি রেডিয়াস)
+          const circle = L.circle([lat, lon], {
+            color: '#1a73e8',      // বর্ডারের রঙ (নীল)
+            weight: 2,             // বর্ডারের মোটা
+            fillColor: '#4285f4',  // ভেতরের রঙ
+            fillOpacity: 0.25,     // স্বচ্ছতা (০.২৫ মানে ২৫% ওপ্যাক)
+            radius: 5000           // ৫ কিলোমিটার রেডিয়াস
+          }).addTo(managerMap);
+
+          circle.bindTooltip(`📍 পিন: ${pin}`, { permanent: false, direction: 'top' });
+          
+          territoryCircles.push(circle);
+          validBounds.push([lat, lon]);
+        }
+        // API রেট লিমিট এড়াতে ১ সেকেন্ড অপেক্ষা করা
+        await new Promise(r => setTimeout(r, 1000));
+      } catch (e) {
+        console.warn("Geocoding error for pin " + pin, e);
+      }
+    }
+
+    // 🚀 ম্যাপকে ম্যানেজারের এরিয়ায় জুম করা
+    if (validBounds.length > 0 && managerMarkers.length === 0) {
+      const bounds = L.latLngBounds(validBounds);
+      managerMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+    }
+  }  
+  
+  // ==================== MANAGER DASHBOARD LOGIC ====================
   let managerMap = null;
   let managerMarkers = [];
   let managerUnsubscribe = null;
@@ -4350,9 +4402,10 @@ window.clearImageSearch = function() {
 
         managerStreetLayer.addTo(managerMap);
       }
-      
-      // 🚀 ম্যাপের সাইজ ফিক্স (দুইবার কল করা হয় যাতে লুকানো থেকে বের হলে সাইজ ঠিক হয়)
       managerMap.invalidateSize();
+      
+      // 🚀 ম্যানেজারের এরিয়াগুলো ম্যাপে হাইলাইট করা
+      highlightManagerTerritories(pins);
       
       setTimeout(() => {
         if(managerMap) managerMap.invalidateSize();
