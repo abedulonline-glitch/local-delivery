@@ -1250,11 +1250,11 @@
     loader.classList.add('mp-hidden'); // লোডার লুকাও
   });
 
-  // ==================== AUTH LOGIC (LOGIN & REGISTER) ====================
+     // ==================== AUTH LOGIC (LOGIN & REGISTER) ====================
   let registerRole = 'customer'; // ডিফল্ট রোল
   let regProfilePicUrl = null;
   
-  // 🚀 স্মার্ট ম্যাপের জন্য নতুন ভেরিয়েবল
+  // 🚀 স্মার্ট ম্যাপের জন্য নতুন ভেরিয়েবল
   let regMap = null;
   let regMarker = null;
   let regLat = null;
@@ -1280,7 +1280,7 @@
 
   // ==================== SMART REGISTRATION MAP LOGIC ====================
   
-  // ম্যাপ ইনিশিয়ালাইজ করা
+  // ম্যাপ ইনিশিয়ালাইজ করা
   window.initRegMap = function() {
     const mapDiv = document.getElementById('reg-map-container');
     mapDiv.style.display = 'block';
@@ -1312,7 +1312,7 @@
     regLng = latLng.lng;
     
     const statusEl = document.getElementById('reg-location-status');
-    statusEl.innerHTML = '✅ লোকেশন সেট করা হয়েছে';
+    statusEl.innerHTML = '✅ লোকেশন সেট করা হয়েছে';
     statusEl.style.color = 'var(--mp-success)';
 
     // পিন টেনে সরালে (Drag) আপডেট হবে
@@ -1320,11 +1320,11 @@
       const position = regMarker.getLatLng();
       regLat = position.lat;
       regLng = position.lng;
-      statusEl.innerHTML = '✅ লোকেশন আপডেট করা হয়েছে';
+      statusEl.innerHTML = '✅ লোকেশন আপডেট করা হয়েছে';
     });
   }
 
-  // নিজের বর্তমান লোকেশন নেওয়া
+  // নিজের বর্তমান লোকেশন নেওয়া
   window.getRegCurrentLocation = function() {
     if (!navigator.geolocation) return alert("ব্রাউজার লোকেশন সাপোর্ট করে না।");
     
@@ -1351,8 +1351,8 @@
         }
       },
       (error) => {
-        alert("লোকেশন পাওয়া যায়নি বা পারমিশন দেওয়া হয়নি।");
-        statusEl.innerText = "লোকেশন পাওয়া যায়নি।";
+        alert("লোকেশন পাওয়া যায়নি বা পারমিশন দেওয়া হয়নি।");
+        statusEl.innerText = "লোকেশন পাওয়া যায়নি।";
         statusEl.style.color = "var(--mp-danger)";
       },
       options
