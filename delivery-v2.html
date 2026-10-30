@@ -272,12 +272,16 @@
   <input type="file" id="reg-profile-pic-file" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'reg')">
 </div>
 
-      <div id="reg-location-section" class="mp-hidden">
-        <div class="dlv-form-group">
-          <label style="text-align: left; display: block; font-size: 12px; color: #555;">লোকেশন ম্যাপে পিন করুন *</label>
-          <button class="mp-btn" style="margin-bottom: 5px; background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 6px;" onclick="initRegMap()">📍 ম্যাপ ওপেন করুন</button>
-          <div id="reg-map-container"></div>
-          <div id="reg-location-status" style="font-size: 11px; color: var(--mp-danger); margin-top: 5px;">❌ লোকেশন সেট করা হয়নি</div>
+           <div id="reg-location-section" class="mp-hidden" style="margin-bottom: 15px; border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fafafa;">
+        <div class="dlv-form-group" style="margin-bottom: 0;">
+          <label style="text-align: left; display: block; font-size: 12px; color: #555; font-weight: bold;">📍 আপনার দোকান/বেসের লোকেশন ম্যাপে পিন করুন *</label>
+          <p style="font-size: 11px; color: #888; margin-bottom: 8px;">রেজিস্ট্রেশন করার আগে অবশ্যই ম্যাপে লোকেশন সেট করতে হবে।</p>
+          
+          <button type="button" class="mp-btn" style="margin-bottom: 8px; background: #e8f0fe; color: var(--mp-primary); font-size: 13px; padding: 8px;" onclick="initRegMap()">📍 ম্যাপ ওপেন করুন</button>
+          
+          <div id="reg-map-container" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid #ccc; display: none; z-index: 1;"></div>
+          
+          <div id="reg-location-status" style="font-size: 12px; color: var(--mp-danger); margin-top: 5px; font-weight: bold;">❌ লোকেশন সেট করা হয়নি</div>
         </div>
       </div>
 
@@ -1481,17 +1485,27 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
   };
 
   // URL থেকে রোল চেক করা (লিংকে ক্লিক করলে)
+  // URL থেকে রোল চেক করা (লিংকে ক্লিক করলে)
   const urlParams = new URLSearchParams(window.location.search);
   const urlRole = urlParams.get('role');
   
   if (urlRole) {
     registerRole = urlRole;
-    // UI তে দেখানো যে সে কী হিসেবে রেজিস্টার করছে
+    
+    // ১. রোল ডিসপ্লে আপডেট (UI তে দেখানো যে সে কী হিসেবে রেজিস্টার করছে)
     const roleDisplay = document.getElementById('reg-role-display');
     if (roleDisplay) {
       if(urlRole === 'manager') roleDisplay.innerText = "👨‍💼 আপনি ম্যানেজার হিসেবে রেজিস্টার করছেন";
       else if(urlRole === 'shopkeeper') roleDisplay.innerText = "🏪 আপনি দোকানদার হিসেবে রেজিস্টার করছেন";
       else if(urlRole === 'delivery') roleDisplay.innerText = "🛵 আপনি ডেলিভারি বয় হিসেবে রেজিস্টার করছেন";
+    }
+    
+    // ২. যদি দোকানদার বা ডেলিভারি বয় হয়, তবে ম্যাপ সেকশনটি দেখা যাবে
+    if (urlRole === 'shopkeeper' || urlRole === 'delivery') {
+      const locSection = document.getElementById('reg-location-section');
+      if (locSection) {
+        locSection.classList.remove('mp-hidden'); // হাইড ক্লাস সরিয়ে ফেলা
+      }
     }
   }
   
