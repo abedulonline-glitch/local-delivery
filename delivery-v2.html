@@ -183,6 +183,22 @@
     border-color: var(--mp-primary);
     background: #f8f9fa;
   }
+
+  /* Leaflet ম্যাপের বাড়তি স্পেস বন্ধ করার জন্য */
+  #manager-live-map {
+    height: 300px !important; 
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    z-index: 1;
+    overflow: hidden; /* 🚀 এই লাইনটি ম্যাপের ভেতরের বাড়তি গ্যাপ বন্ধ করবে */
+  }
+  
+  /* ম্যাপের ভেতরের প্যানেলগুলো যেন ঠিকমতো ফিট হয় */
+  .leaflet-container {
+    height: 100% !important;
+    width: 100% !important;
+  }
 </style>
 </head>
 <body>
@@ -4325,15 +4341,20 @@ window.clearImageSearch = function() {
       if (!managerMap) {
         managerMap = L.map('manager-live-map').setView([22.5726, 88.3639], 11);
         
-        // 🚀 স্ট্রিট এবং স্যাটেলাইট লেয়ার তৈরি
         managerStreetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
         managerSatelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
 
-        // ডিফল্টভাবে স্ট্রিট ভিউ দেখানো
         managerStreetLayer.addTo(managerMap);
       }
+      
+      // 🚀 ম্যাপের সাইজ ফিক্স (দুইবার কল করা হয় যাতে লুকানো থেকে বের হলে সাইজ ঠিক হয়)
       managerMap.invalidateSize();
-    }, 300);
+      
+      setTimeout(() => {
+        if(managerMap) managerMap.invalidateSize();
+      }, 500);
+      
+    }, 400);
 
     // পিন না থাকলে ডেটা লোড করা লাগবে না
     if (pins.length === 0) return;
