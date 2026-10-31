@@ -4454,180 +4454,262 @@ window.clearImageSearch = function() {
       managerMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
     }
   }  
-  // ==================== MANAGER DASHBOARD LOGIC (SMART) ====================
-let managerMap = null;
-let managerMarkers = [];
-let managerStreetLayer = null;
-let managerSatelliteLayer = null;
-let previousOrderCount = 0; // নোটিফিকেশন ট্র্যাকিংয়ের জন্য
+ 
+  // ==================== HIGHLIGHT MANAGER TERRITORY (POLYGON) ====================
+  async function highlightManagerTerritories(pins) {
+    // পুরোনো পলিগন থাকলে মুছে ফেলা
+    territoryPolygons.forEach(poly => managerMap.removeLayer(poly));
+    territoryPolygons = [];
 
-async function loadManagerDashboard(userData) {
-  const pins = userData.managerPins || [];
-  const pinList = document.getElementById('manager-pin-list');
+    if (pins.length === 0) return;
+
+    let validBounds = [];
+
+    for (const pin of pins) {
+      try {
+        // 🚀 Nominatim API থেকে পিনকোডের ভৌগোলিক সীমানা (GeoJSON) আনা
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=geojson&polygon_geojson=1`, {
+          headers: { 'User-Agent': 'HyperlocalDeliveryApp/1.0' }
+        });
+        const data = await res.json();
+
+        if (data.features && data.features.length > 0) {
+          const feature = data.features[0];
+          
+          // 🚀 L.geoJSON দিয়ে আসল সীমানা ম্যাপে আঁকা
+          const polygon = L.geoJSON(feature, {
+            color: '#1a73e8',      // বর্ডারের রঙ
+            weight: 2,             // বর্ডারের মোটা
+            fillColor: '#4285f4',  // ভেতরের রঙ
+            fillOpacity: 0.15,     // স্বচ্ছতা
+          }).addTo(managerMap);
+
+          polygon.bindTooltip(`📍 পিন: ${pin}`, { permanent: false, direction: 'top' });
+          
+          territoryPolygons.push(polygon);
+          validBounds.push(polygon.getBounds());
+        } else {
+          console.warn("No polygon found for pin:", pin);
+          // ব্যাকআপ: যদি পলিগন না পাওয়া যায়, তবে আগের মতো ৫ কিমি সার্কেল আঁকবে
+          const fallbackRes = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=json&limit=1`);
+          const fallbackData = await fallbackRes.json();
+          if(fallbackData.length > 0) {
+             const lat = parseFloat(fallbackData[0].lat);
+             const lon = parseFloat(fallbackData[0].lon);
+             const circle = L.circle([lat, lon], {
+                color: '#1a73e8', weight: 2, fillColor: '#4285f4', fillOpacity: 0.15, radius: 5000
+             }).addTo(managerMap);
+             territoryPolygons.push(circle);
+             validBounds.push(circle.getBounds());
+          }
+        }
+        
+        // API রেট লিমিট এড়াতে ১ সেকেন্ড অপেক্ষা করা
+        await new Promise(r => setTimeout(r, 1000));
+      } catch (e) {
+        console.warn("Geocoding error for pin " + pin, e);
+      }
+    }
+
+    // 🚀 ম্যাপকে ম্যানেজারের এরিয়ায় জুম করা
+    if (validBounds.length > 0 && managerMarkers.length === 0) {
+      let combinedBounds = validBounds[0];
+      for (let i = 1; i < validBounds.length; i++) {
+        combinedBounds.extend(validBounds[i]);
+      }
+      managerMap.fitBounds(combinedBounds, { padding: [50, 50], maxZoom: 12 });
+    }
+  }
   
-  // ১. পিনকোড ডিসপ্লে
-  if (pins.length === 0) {
-    pinList.innerHTML = '<span style="font-size:13px; color:red;">আপনাকে এখনো কোনো পিনকোড অ্যাসাইন করা হয়নি।</span>';
-    return;
-  } else {
-    pinList.innerHTML = pins.map(p => `<span style="background: #e8f0fe; color: var(--mp-primary); padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px;">📍 ${p}</span>`).join('');
+  // ==================== MANAGER DASHBOARD LOGIC (SMART & BUG FIXED) ====================
+  let managerMap = null;
+  let managerMarkers = [];
+  let managerStreetLayer = null;
+  let managerSatelliteLayer = null;
+  let territoryPolygons = []; // পিনকোডের ভৌগোলিক সীমানা রাখার জন্য
+  let alertedOrderIds = new Set(); // কোন অর্ডারের নোটিফিকেশন দেওয়া হয়েছে তা ট্র্যাক করতে
+  let isFirstOrderLoad = true; // প্রথমবার পেজ লোড হলে সাউন্ড বাজবে না
+
+  async function loadManagerDashboard(userData) {
+    const pins = userData.managerPins || [];
+    const pinList = document.getElementById('manager-pin-list');
+    
+    if (pins.length === 0) {
+      pinList.innerHTML = '<span style="font-size:13px; color:red;">আপনাকে এখনো কোনো পিনকোড অ্যাসাইন করা হয়নি।</span>';
+      return;
+    } else {
+      pinList.innerHTML = pins.map(p => `<span style="background: #e8f0fe; color: var(--mp-primary); padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px;">📍 ${p}</span>`).join('');
+    }
+
+    // ১. ম্যাপ তৈরি
+    setTimeout(() => {
+      if (!managerMap) {
+        managerMap = L.map('manager-live-map').setView([22.5726, 88.3639], 11);
+        managerStreetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+        managerSatelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
+        managerStreetLayer.addTo(managerMap);
+      }
+      managerMap.invalidateSize();
+      setTimeout(() => { if(managerMap) managerMap.invalidateSize(); }, 500);
+    }, 400);
+
+    // ২. পিনকোডের আসল ভৌগোলিক সীমানা (Polygon) লোড করা
+    highlightManagerTerritories(pins);
+
+    let myShopIds = [];
+    let deliveryBoysData = [];
+
+    // ৩. এলাকার ইউজার লোড (দোকান ও ডেলিভারি বয়)
+    const usersQ = query(collection(db, "users"), where("pinCode", "in", pins.slice(0, 10))); 
+    
+    onSnapshot(usersQ, (snap) => {
+      let shops = 0, delivery = 0, customers = 0;
+      myShopIds = [];
+      deliveryBoysData = [];
+      let shopLocations = [];
+      let deliveryLocations = [];
+
+      snap.forEach(docSnap => {
+        const u = docSnap.data();
+        if (u.role === 'shopkeeper') {
+          shops++;
+          myShopIds.push(docSnap.id); // দোকানের আইডি সেভ হচ্ছে
+          if(u.lat && u.lng) shopLocations.push(u);
+        }
+        if (u.role === 'delivery') {
+          delivery++;
+          deliveryBoysData.push({id: docSnap.id, ...u});
+          if(u.lat && u.lng) deliveryLocations.push(u);
+        }
+        if (u.role === 'customer') customers++;
+      });
+
+      // UI কাউন্টার আপডেট
+      document.getElementById('mgr-total-shops').innerText = shops;
+      document.getElementById('mgr-total-delivery').innerText = delivery;
+      document.getElementById('mgr-total-customers').innerText = customers;
+
+      // ডেলিভারি বয় লিস্ট আপডেট
+      const fleetList = document.getElementById('manager-fleet-list');
+      if (deliveryBoysData.length === 0) {
+        fleetList.innerHTML = '<div style="text-align:center; color:#999; font-size:13px;">এই এলাকায় কোনো ডেলিভারি বয় নেই।</div>';
+      } else {
+        let fleetHtml = '';
+        deliveryBoysData.forEach(boy => {
+          let statusColor = boy.isOnline ? 'var(--mp-success)' : '#999';
+          let statusText = boy.isOnline ? '🟢 অনলাইন' : '🔴 অফলাইন';
+          fleetHtml += `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 0; border-bottom: 1px solid #eee;">
+              <div>
+                <div style="font-size:13px; font-weight:600;">${boy.name}</div>
+                <div style="font-size:11px; color:${statusColor}; font-weight:bold;">${statusText}</div>
+              </div>
+              <button class="mp-btn" style="width:auto; padding:4px 8px; font-size:10px; background:#e8f0fe; color:var(--mp-primary); margin:0;" onclick="alert('ফোন নাম্বার: ${boy.phone || 'নেই'}')">📞 কল</button>
+            </div>
+          `;
+        });
+        fleetList.innerHTML = fleetHtml;
+      }
+
+      // ম্যাপে মার্কার বসানো
+      managerMarkers.forEach(m => managerMap.removeLayer(m));
+      managerMarkers = [];
+
+      shopLocations.forEach(shop => {
+        const marker = L.marker([parseFloat(shop.lat), parseFloat(shop.lng)], {
+          icon: L.divIcon({ html: '<div style="font-size:20px;">🏪</div>', className: 'custom-icon', iconSize: [30, 30] })
+        }).addTo(managerMap).bindPopup(`<b>দোকান:</b> ${shop.name}`);
+        managerMarkers.push(marker);
+      });
+
+      deliveryLocations.forEach(boy => {
+        const marker = L.marker([parseFloat(boy.lat), parseFloat(boy.lng)], {
+          icon: L.divIcon({ html: '<div style="font-size:20px;">🛵</div>', className: 'custom-icon', iconSize: [30, 30] })
+        }).addTo(managerMap).bindPopup(`<b>ডেলিভারি বয়:</b> ${boy.name}`);
+        managerMarkers.push(marker);
+      });
+
+      if (managerMarkers.length > 0) {
+        const bounds = L.latLngBounds(managerMarkers.map(m => m.getLatLng()));
+        managerMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+      }
+    });
+
+    // ৪. লাইভ অর্ডার ফিড ও নোটিফিকেশন
+    const ordersQ = query(collection(db, "orders"), where("status", "in", ["pending", "bidding", "assigned"]));
+    
+    onSnapshot(ordersQ, (snap) => {
+      const liveOrderList = document.getElementById('manager-live-orders');
+      let ordersArray = [];
+      let hasNewOrder = false;
+      
+      snap.forEach(docSnap => {
+        const o = docSnap.data();
+        // 🚀 শুধু ম্যানেজারের দোকানগুলোর অর্ডার ফিল্টার করা (এখানেই আসল ফিক্স)
+        if (myShopIds.includes(o.shopId)) {
+          ordersArray.push({ id: docSnap.id, ...o });
+          
+          // নতুন অর্ডার চেক
+          if (!alertedOrderIds.has(docSnap.id)) {
+            alertedOrderIds.add(docSnap.id);
+            if (!isFirstOrderLoad) hasNewOrder = true;
+          }
+        }
+      });
+      
+      isFirstOrderLoad = false;
+
+      // নতুন অর্ডার এলে সাউন্ড ও অ্যালার্ট
+      if (hasNewOrder) {
+        const audio = document.getElementById('mgr-notify-sound');
+        if (audio) {
+          audio.play().catch(e => {
+            console.log("Audio blocked by browser. User interaction needed.");
+            // ব্রাউজার অডিও ব্লক করলে ভিজ্যুয়াল অ্যালার্ট দেখাবে
+            alert("🔔 নতুন অর্ডার এসেছে!"); 
+          });
+        }
+        
+        const badge = document.getElementById('mgr-alert-badge');
+        badge.classList.remove('mp-hidden');
+        setTimeout(() => badge.classList.add('mp-hidden'), 5000);
+      }
+
+      // UI তে লাইভ অর্ডার দেখানো
+      if (ordersArray.length === 0) {
+        liveOrderList.innerHTML = '<div style="text-align:center; color:#999; font-size:13px;">এই মুহূর্তে কোনো নতুন অর্ডার নেই।</div>';
+      } else {
+        let orderHtml = '';
+        ordersArray.forEach(o => {
+          let statusColor = o.status === 'bidding' ? 'var(--mp-warning)' : 'var(--mp-primary)';
+          orderHtml += `
+            <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
+              <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px;">
+                <span>${o.productName}</span><span>₹${o.price}</span>
+              </div>
+              <div style="font-size:11px; color:#666; margin-top:4px;">🏪 ${o.shopName} | কাস্টমার: ${o.customerName}</div>
+              <div style="font-size:11px; color:${statusColor}; font-weight:bold; margin-top:4px;">স্ট্যাটাস: ${o.status.toUpperCase()}</div>
+            </div>
+          `;
+        });
+        liveOrderList.innerHTML = orderHtml;
+      }
+      
+      document.getElementById('mgr-pending-orders').innerText = ordersArray.length;
+    });
   }
 
-  // ২. ম্যাপ তৈরি
-  setTimeout(() => {
-    if (!managerMap) {
-      managerMap = L.map('manager-live-map').setView([22.5726, 88.3639], 11);
-      
-      managerStreetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
-      managerSatelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
-
+  // 🚀 ম্যাপ ভিউ চেঞ্জ ফাংশন
+  window.setManagerMapView = function(type) {
+    if (!managerMap) return;
+    if (type === 'satellite') {
+      if (managerMap.hasLayer(managerStreetLayer)) managerMap.removeLayer(managerStreetLayer);
+      managerSatelliteLayer.addTo(managerMap);
+    } else {
+      if (managerMap.hasLayer(managerSatelliteLayer)) managerMap.removeLayer(managerSatelliteLayer);
       managerStreetLayer.addTo(managerMap);
     }
-    managerMap.invalidateSize();
-    setTimeout(() => { if(managerMap) managerMap.invalidateSize(); }, 500);
-  }, 400);
-
-  let myShopIds = [];
-  let deliveryBoysData = [];
-
-  // ৩. এলাকার ইউজার লোড (দোকান ও ডেলিভারি বয়)
-  const usersQ = query(collection(db, "users"), where("pinCode", "in", pins.slice(0, 10))); 
-  
-  onSnapshot(usersQ, (snap) => {
-    let shops = 0, delivery = 0, customers = 0;
-    myShopIds = [];
-    deliveryBoysData = [];
-    let shopLocations = [];
-    let deliveryLocations = [];
-
-    snap.forEach(docSnap => {
-      const u = docSnap.data();
-      
-      if (u.role === 'shopkeeper') {
-        shops++;
-        myShopIds.push(docSnap.id);
-        if(u.lat && u.lng) shopLocations.push(u);
-      }
-      if (u.role === 'delivery') {
-        delivery++;
-        deliveryBoysData.push({id: docSnap.id, ...u});
-        if(u.lat && u.lng) deliveryLocations.push(u);
-      }
-      if (u.role === 'customer') customers++;
-    });
-
-    // UI কাউন্টার আপডেট
-    document.getElementById('mgr-total-shops').innerText = shops;
-    document.getElementById('mgr-total-delivery').innerText = delivery;
-    document.getElementById('mgr-total-customers').innerText = customers;
-
-    // 🚀 ডেলিভারি বয় লিস্ট আপডেট (Fleet Management)
-    const fleetList = document.getElementById('manager-fleet-list');
-    if (deliveryBoysData.length === 0) {
-      fleetList.innerHTML = '<div style="text-align:center; color:#999; font-size:13px;">এই এলাকায় কোনো ডেলিভারি বয় নেই।</div>';
-    } else {
-      let fleetHtml = '';
-      deliveryBoysData.forEach(boy => {
-        let statusColor = boy.isOnline ? 'var(--mp-success)' : '#999';
-        let statusText = boy.isOnline ? '🟢 অনলাইন' : '🔴 অফলাইন';
-        fleetHtml += `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 0; border-bottom: 1px solid #eee;">
-            <div>
-              <div style="font-size:13px; font-weight:600;">${boy.name}</div>
-              <div style="font-size:11px; color:${statusColor}; font-weight:bold;">${statusText}</div>
-            </div>
-            <button class="mp-btn" style="width:auto; padding:4px 8px; font-size:10px; background:#e8f0fe; color:var(--mp-primary); margin:0;" onclick="alert('ফোন নাম্বার: ${boy.phone || 'নেই'}')">📞 কল</button>
-          </div>
-        `;
-      });
-      fleetList.innerHTML = fleetHtml;
-    }
-
-    // 🚀 ম্যাপে দোকান ও ডেলিভারি বয় প্লট করা
-    managerMarkers.forEach(m => managerMap.removeLayer(m));
-    managerMarkers = [];
-
-    shopLocations.forEach(shop => {
-      const marker = L.marker([parseFloat(shop.lat), parseFloat(shop.lng)], {
-        icon: L.divIcon({ html: '<div style="font-size:20px;">🏪</div>', className: 'custom-icon', iconSize: [30, 30] })
-      }).addTo(managerMap).bindPopup(`<b>দোকান:</b> ${shop.name}`);
-      managerMarkers.push(marker);
-    });
-
-    deliveryLocations.forEach(boy => {
-      const marker = L.marker([parseFloat(boy.lat), parseFloat(boy.lng)], {
-        icon: L.divIcon({ html: '<div style="font-size:20px;">🛵</div>', className: 'custom-icon', iconSize: [30, 30] })
-      }).addTo(managerMap).bindPopup(`<b>ডেলিভারি বয়:</b> ${boy.name}`);
-      managerMarkers.push(marker);
-    });
-
-    if (managerMarkers.length > 0) {
-      const bounds = L.latLngBounds(managerMarkers.map(m => m.getLatLng()));
-      managerMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
-    }
-  });
-
-  // ৪. লাইভ অর্ডার ফিড ও নোটিফিকেশন
-  const ordersQ = query(collection(db, "orders"), where("status", "in", ["pending", "bidding", "assigned"]));
-  
-  onSnapshot(ordersQ, (snap) => {
-    const liveOrderList = document.getElementById('manager-live-orders');
-    let ordersArray = [];
-    
-    // শুধু ম্যানেজারের দোকানগুলোর অর্ডার ফিল্টার করা
-    snap.forEach(docSnap => {
-      const o = docSnap.data();
-      if (myShopIds.includes(o.shopId)) {
-        ordersArray.push({ id: docSnap.id, ...o });
-      }
-    });
-
-    // নতুন অর্ডার এলে সাউন্ড ও অ্যালার্ট
-    if (ordersArray.length > previousOrderCount && previousOrderCount !== 0) {
-      const audio = document.getElementById('mgr-notify-sound');
-      if (audio) audio.play().catch(e => console.log("Audio play blocked"));
-      
-      const badge = document.getElementById('mgr-alert-badge');
-      badge.classList.remove('mp-hidden');
-      setTimeout(() => badge.classList.add('mp-hidden'), 5000);
-    }
-    previousOrderCount = ordersArray.length;
-
-    // UI তে লাইভ অর্ডার দেখানো
-    if (ordersArray.length === 0) {
-      liveOrderList.innerHTML = '<div style="text-align:center; color:#999; font-size:13px;">এই মুহূর্তে কোনো নতুন অর্ডার নেই।</div>';
-    } else {
-      let orderHtml = '';
-      ordersArray.forEach(o => {
-        let statusColor = o.status === 'bidding' ? 'var(--mp-warning)' : 'var(--mp-primary)';
-        orderHtml += `
-          <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px;">
-              <span>${o.productName}</span><span>₹${o.price}</span>
-            </div>
-            <div style="font-size:11px; color:#666; margin-top:4px;">🏪 ${o.shopName} | কাস্টমার: ${o.customerName}</div>
-            <div style="font-size:11px; color:${statusColor}; font-weight:bold; margin-top:4px;">স্ট্যাটাস: ${o.status.toUpperCase()}</div>
-          </div>
-        `;
-      });
-      liveOrderList.innerHTML = orderHtml;
-    }
-    
-    document.getElementById('mgr-pending-orders').innerText = ordersArray.length;
-  });
-}
-
-// 🚀 ম্যাপ ভিউ চেঞ্জ ফাংশন
-window.setManagerMapView = function(type) {
-  if (!managerMap) return;
-  if (type === 'satellite') {
-    if (managerMap.hasLayer(managerStreetLayer)) managerMap.removeLayer(managerStreetLayer);
-    managerSatelliteLayer.addTo(managerMap);
-  } else {
-    if (managerMap.hasLayer(managerSatelliteLayer)) managerMap.removeLayer(managerSatelliteLayer);
-    managerStreetLayer.addTo(managerMap);
-  }
-};
+  };
 
   </script>
 
