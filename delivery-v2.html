@@ -3922,39 +3922,38 @@ window.closeMasterProductModal = function() {
     btn.innerText = "⏳ সেভ হচ্ছে..."; 
     btn.disabled = true;
 
-    // 🚀 ১. AI ভেক্টর জেনারেশন লজিক শুরু
     let generatedVector = null;
 
+    // 🚀 ১. AI ভেক্টর জেনারেশন
     if (uploadedImageUrl && window.transformersPipeline) {
       try {
-        btn.innerText = "🧠 AI ভেক্টর তৈরি হচ্ছে..."; // ইউজারকে জানানো
+        btn.innerText = "🧠 AI ভেক্টর তৈরি হচ্ছে..."; 
+        console.log("1. Starting vector generation for:", uploadedImageUrl);
         
-        // মডেল লোড করা (যদি আগে থেকে লোড না থাকে)
         if (!clipModel) {
-          console.log("Loading AI Model for vector generation...");
+          console.log("2. Loading CLIP model... (Wait 10-20s)");
           clipModel = await window.transformersPipeline('feature-extraction', 'Xenova/clip-vit-base-patch32');
+          console.log("3. Model loaded successfully!");
         }
         
-        // ছবির ভেক্টর বের করা (এটি একটি সংখ্যার অ্যারে হবে)
+        // 🚀 ছবিটি ImgBB-তে আছে, তাই সরাসরি URL থেকে লোড করা হচ্ছে
         const imgResult = await clipModel(uploadedImageUrl, { pooling: 'mean', normalize: true });
         generatedVector = Array.from(imgResult.data); 
-        console.log("Master Product Vector generated successfully!");
+        console.log("4. Vector generated successfully!", generatedVector.length);
         
       } catch (error) {
-        console.error("Vector generation failed:", error);
-        // ভেক্টর তৈরি না হলেও প্রোডাক্ট সেভ হবে, শুধু ইমেজ সার্চে পাওয়া যাবে না
+        console.error("❌ Vector generation failed. Reason:", error);
       }
+    } else {
+      console.warn("⚠️ Skipped AI: uploadedImageUrl is null or transformersPipeline is missing.");
     }
 
     try {
-      // 🚀 ২. ডেটাবেসে সেভ করা (ভেক্টরসহ)
+      // 🚀 ২. ডেটাবেসে সেভ
       await addDoc(collection(db, "master_products"), {
-        name: name, 
-        category: category, 
-        unit: unit, 
-        grade: grade, 
+        name: name, category: category, unit: unit, grade: grade,
         image: uploadedImageUrl, 
-        imageVector: generatedVector, // 🚀 এখানে ইউনিক ভেক্টরটি সেভ হচ্ছে
+        imageVector: generatedVector, 
         createdAt: serverTimestamp()
       });
       
@@ -3964,8 +3963,7 @@ window.closeMasterProductModal = function() {
     } catch (e) { 
       console.error(e);
       alert("সেভ করতে সমস্যা হয়েছে!"); 
-    } 
-    finally { 
+    } finally { 
       btn.innerText = "💾 সেভ করুন"; 
       btn.disabled = false; 
     }
