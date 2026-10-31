@@ -3924,13 +3924,13 @@ window.closeMasterProductModal = function() {
 
     let generatedVector = null;
 
-    // 🚀 ১. CORS সমস্যা এড়াতে ছবিটিকে Base64 এ কনভার্ট করে AI-তে পাঠানো
+    // 🚀 ১. AI ভেক্টর জেনারেশন
     if (uploadedImageUrl && window.transformersPipeline) {
       try {
         btn.innerText = "🧠 AI ভেক্টর তৈরি হচ্ছে..."; 
         console.log("1. Starting AI process...");
         
-        // ক) ছবিটিকে ফেচ করে Base64 ডেটা URL এ কনভার্ট করা (CORS বাইপাস)
+        // ক) CORS এড়াতে ছবিটিকে Base64 এ কনভার্ট করা
         const imgResponse = await fetch(uploadedImageUrl);
         const imgBlob = await imgResponse.blob();
         const base64Url = await new Promise((resolve, reject) => {
@@ -3940,23 +3940,22 @@ window.closeMasterProductModal = function() {
           reader.readAsDataURL(imgBlob);
         });
 
-        // খ) মডেল লোড করা
+        // খ) মডেল লোড করা (এখানে টাস্কের নাম 'image-feature-extraction' করা হয়েছে)
         if (!clipModel) {
           console.log("2. Loading CLIP model (Wait a moment)...");
-          clipModel = await window.transformersPipeline('feature-extraction', 'Xenova/clip-vit-base-patch32');
+          clipModel = await window.transformersPipeline('image-feature-extraction', 'Xenova/clip-vit-base-patch32');
         }
         
         // গ) Base64 ছবি থেকে ভেক্টর বের করা
         console.log("3. Extracting features...");
         const imgResult = await clipModel(base64Url, { pooling: 'mean', normalize: true });
         
-        // ঘ) ভেক্টরকে সাধারণ অ্যারেতে রূপান্তর করা (Firestore এরর এড়াতে)
+        // ঘ) ভেক্টরকে সাধারণ অ্যারেতে রূপান্তর করা
         generatedVector = Array.from(imgResult.data);
         console.log("4. Vector generated successfully! Length:", generatedVector.length);
         
       } catch (error) {
         console.error("❌ Vector generation failed. Reason:", error);
-        // যদি AI ফেইল করে, তবুও প্রোডাক্ট সেভ হবে, শুধু imageVector ফিল্ডটি null থাকবে
       }
     } else {
       console.warn("⚠️ Image URL missing or Transformers script not loaded.");
