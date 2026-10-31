@@ -1793,13 +1793,13 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
   };
 
   // ৪. স্টক আউট ফিল্টার (কাস্টমারের জন্য)
-   // ==================== CUSTOMER MARKETPLACE LOGIC ====================
-  // ==================== SMART OPEN MARKET LOGIC ====================
-  let allRawProducts = []; // সব দোকানের সব প্রোডাক্ট
-  let groupedProducts = []; // গ্রুপ করা প্রোডাক্ট (যেমন শুধু একটি Tomato)
-  let maxDistance = 5; // ডিফল্ট ৫ কিমি
-  let customerLat = 22.5726; // ডিফল্ট লোকেশন (কাস্টমারের লোকেশন থাকলে আপডেট হবে)
-  let customerLng = 88.3639;
+   // ==================== SMART OPEN MARKET LOGIC ====================
+let allRawProducts = []; 
+let groupedProducts = []; 
+let maxDistance = 5; 
+let customerLat = 22.5726; 
+let customerLng = 88.3639;
+let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ করুন (যদি আগে না থাকে)
 
   function renderCustomerProducts() {
   const grid = document.getElementById('cst-product-grid');
