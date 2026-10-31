@@ -2880,7 +2880,7 @@ window.openAddProductModal = function() {
       // মডেল লোড করা (যদি আগে থেকে লোড না থাকে)
       if (!clipModel) {
         console.log("Loading AI Model for vector generation...");
-        clipModel = await window.transformersPipeline('feature-extraction', 'Xenova/clip-vit-base-patch32');
+        clipModel = await window.transformersPipeline('image-feature-extraction', 'Xenova/clip-vit-base-patch32');
       }
       
       // ছবির ভেক্টর বের করা
