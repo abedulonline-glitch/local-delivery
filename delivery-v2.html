@@ -572,8 +572,7 @@
        <!-- ==================== MANAGER DASHBOARD ==================== -->
 <div id="dlv-view-manager" class="mp-hidden">
   <!-- 🚀 নতুন অর্ডারের জন্য সাউন্ড ফাইল -->
-  <audio id="mgr-notify-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
-
+  <audio id="mgr-notify-sound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2447ec3bdf.mp3?filename=notification-alert-98342.mp3" preload="auto"></audio>
   <div class="dlv-dashboard-title" style="display: flex; justify-content: space-between; align-items: center;">
     <span>👨‍💼 ম্যানেজার ড্যাশবোর্ড</span>
     <!-- 🚀 নতুন অর্ডার অ্যালার্ট ব্যাজ -->
@@ -4377,6 +4376,7 @@ window.handleTextSearch = function(query) {
     const file = event.target.files[0];
     if (!file) return;
 
+    // ইমেজ প্রিভিউ
     const reader = new FileReader();
     reader.onload = (e) => {
       document.getElementById('search-image-preview').src = e.target.result;
@@ -4384,6 +4384,7 @@ window.handleTextSearch = function(query) {
     };
     reader.readAsDataURL(file);
 
+    // AI মডেল লোড
     if (!window.clipVisionModel) {
       if (isAiModelLoading) return alert("AI মডেল লোড হচ্ছে, অপেক্ষা করুন...");
       isAiModelLoading = true;
@@ -4403,18 +4404,19 @@ window.handleTextSearch = function(query) {
     }
 
     try {
-      // 🚀 সার্চ করা ছবির ভেক্টর তৈরি
+      // 🚀 ১. সার্চ ছবির ভেক্টর তৈরি
       const image = await window.RawImage.fromURL(URL.createObjectURL(file));
       const image_inputs = await window.clipProcessor(image);
       const { image_embeds } = await window.clipVisionModel(image_inputs);
-      
-      // 🚀 সার্চের সময়ও ভেক্টর সাইজ ২৫৬ করা হলো (যাতে মিলে যায়)
       const queryVector = Array.from(image_embeds.data).slice(0, 256); 
 
       let scoredProducts = [];
-      
+      let vectorCount = 0; // কতগুলো প্রোডাক্টে ভেক্টর আছে তা কাউন্ট করা
+
+      // 🚀 ২. ডেটাবেসের প্রোডাক্টের সাথে মিলানো
       for (const prod of allRawProducts) {
         if (prod.imageVector && prod.imageVector.length > 0) {
+          vectorCount++;
           const prodVector = prod.imageVector;
 
           // Cosine Similarity হিসাব
@@ -4426,18 +4428,27 @@ window.handleTextSearch = function(query) {
         }
       }
 
+      console.log(`Total products in DB: ${allRawProducts.length}, Products with Vectors: ${vectorCount}`);
+
       scoredProducts.sort((a, b) => b.score - a.score);
       
-      // 🚀 থ্রেশহোল্ড ০.৯ (৯০%) করা হলো
-      const bestMatches = scoredProducts.filter(sp => sp.score > 0.9).map(sp => sp.product);
+      // 🚀 ৩. টপ ৫টি স্কোর কনসোলে দেখানো (ডিবাগিং এর জন্য)
+      console.log("Top 5 Match Scores:", scoredProducts.slice(0, 5).map(s => `${s.product.name}: ${s.score.toFixed(3)}`));
+      
+      // 🚀 ৪. থ্রেশহোল্ড ০.৭৫ (৭৫%) করা হলো (৯০% অনেক কঠিন ছিল)
+      const bestMatches = scoredProducts.filter(sp => sp.score > 0.75).map(sp => sp.product);
       
       if (bestMatches.length === 0) {
-        document.getElementById('cst-product-grid').innerHTML = '<div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">এই ছবির সাথে ৯০% মিল এমন কোনো প্রোডাক্ট পাওয়া যায়নি।</div>';
+        document.getElementById('cst-product-grid').innerHTML = `
+          <div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">
+            এই ছবির সাথে ৭৫% মিল এমন কোনো প্রোডাক্ট পাওয়া যায়নি।<br>
+            <small>ডাটাবেসে ${vectorCount} টি প্রোডাক্টে ভেক্টর আছে।</small>
+          </div>`;
       } else {
         renderFilteredProductsToGrid(bestMatches);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Image Search Error:", error);
       alert("ছবি সার্চে সমস্যা হয়েছে!");
     }
   };
