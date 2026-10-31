@@ -3915,19 +3915,60 @@ window.closeMasterProductModal = function() {
     const category = document.getElementById('mp-category').value;
     const unit = document.getElementById('mp-unit').value;
     const grade = document.getElementById('mp-grade').value;
+    
     if (!name) return alert("নাম দিন!");
 
     const btn = document.getElementById('btn-save-mp');
-    btn.innerText = "⏳ সেভ হচ্ছে..."; btn.disabled = true;
+    btn.innerText = "⏳ সেভ হচ্ছে..."; 
+    btn.disabled = true;
+
+    // 🚀 ১. AI ভেক্টর জেনারেশন লজিক শুরু
+    let generatedVector = null;
+
+    if (uploadedImageUrl && window.transformersPipeline) {
+      try {
+        btn.innerText = "🧠 AI ভেক্টর তৈরি হচ্ছে..."; // ইউজারকে জানানো
+        
+        // মডেল লোড করা (যদি আগে থেকে লোড না থাকে)
+        if (!clipModel) {
+          console.log("Loading AI Model for vector generation...");
+          clipModel = await window.transformersPipeline('feature-extraction', 'Xenova/clip-vit-base-patch32');
+        }
+        
+        // ছবির ভেক্টর বের করা (এটি একটি সংখ্যার অ্যারে হবে)
+        const imgResult = await clipModel(uploadedImageUrl, { pooling: 'mean', normalize: true });
+        generatedVector = Array.from(imgResult.data); 
+        console.log("Master Product Vector generated successfully!");
+        
+      } catch (error) {
+        console.error("Vector generation failed:", error);
+        // ভেক্টর তৈরি না হলেও প্রোডাক্ট সেভ হবে, শুধু ইমেজ সার্চে পাওয়া যাবে না
+      }
+    }
 
     try {
+      // 🚀 ২. ডেটাবেসে সেভ করা (ভেক্টরসহ)
       await addDoc(collection(db, "master_products"), {
-        name, category, unit, grade, image: uploadedImageUrl, createdAt: serverTimestamp()
+        name: name, 
+        category: category, 
+        unit: unit, 
+        grade: grade, 
+        image: uploadedImageUrl, 
+        imageVector: generatedVector, // 🚀 এখানে ইউনিক ভেক্টরটি সেভ হচ্ছে
+        createdAt: serverTimestamp()
       });
+      
       alert("সফলভাবে সেভ হয়েছে!");
       closeMasterProductModal();
-    } catch (e) { alert("সেভ করতে সমস্যা হয়েছে!"); } 
-    finally { btn.innerText = "💾 সেভ করুন"; btn.disabled = false; }
+      
+    } catch (e) { 
+      console.error(e);
+      alert("সেভ করতে সমস্যা হয়েছে!"); 
+    } 
+    finally { 
+      btn.innerText = "💾 সেভ করুন"; 
+      btn.disabled = false; 
+    }
   };
 
   window.deleteMasterProduct = async function(id) {
