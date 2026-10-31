@@ -4403,80 +4403,15 @@ window.clearImageSearch = function() {
   filterCustomerProducts(); 
 };
  
-  // ==================== HIGHLIGHT MANAGER TERRITORY (POLYGON) ====================
-  async function highlightManagerTerritories(pins) {
-    // পুরোনো পলিগন থাকলে মুছে ফেলা
-    territoryPolygons.forEach(poly => managerMap.removeLayer(poly));
-    territoryPolygons = [];
-
-    if (pins.length === 0) return;
-
-    let validBounds = [];
-
-    for (const pin of pins) {
-      try {
-        // 🚀 Nominatim API থেকে পিনকোডের ভৌগোলিক সীমানা (GeoJSON) আনা
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=geojson&polygon_geojson=1`, {
-          headers: { 'User-Agent': 'HyperlocalDeliveryApp/1.0' }
-        });
-        const data = await res.json();
-
-        if (data.features && data.features.length > 0) {
-          const feature = data.features[0];
-          
-          // 🚀 L.geoJSON দিয়ে আসল সীমানা ম্যাপে আঁকা
-          const polygon = L.geoJSON(feature, {
-            color: '#1a73e8',      // বর্ডারের রঙ
-            weight: 2,             // বর্ডারের মোটা
-            fillColor: '#4285f4',  // ভেতরের রঙ
-            fillOpacity: 0.15,     // স্বচ্ছতা
-          }).addTo(managerMap);
-
-          polygon.bindTooltip(`📍 পিন: ${pin}`, { permanent: false, direction: 'top' });
-          
-          territoryPolygons.push(polygon);
-          validBounds.push(polygon.getBounds());
-        } else {
-          console.warn("No polygon found for pin:", pin);
-          // ব্যাকআপ: যদি পলিগন না পাওয়া যায়, তবে আগের মতো ৫ কিমি সার্কেল আঁকবে
-          const fallbackRes = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=json&limit=1`);
-          const fallbackData = await fallbackRes.json();
-          if(fallbackData.length > 0) {
-             const lat = parseFloat(fallbackData[0].lat);
-             const lon = parseFloat(fallbackData[0].lon);
-             const circle = L.circle([lat, lon], {
-                color: '#1a73e8', weight: 2, fillColor: '#4285f4', fillOpacity: 0.15, radius: 5000
-             }).addTo(managerMap);
-             territoryPolygons.push(circle);
-             validBounds.push(circle.getBounds());
-          }
-        }
-        
-        // API রেট লিমিট এড়াতে ১ সেকেন্ড অপেক্ষা করা
-        await new Promise(r => setTimeout(r, 1000));
-      } catch (e) {
-        console.warn("Geocoding error for pin " + pin, e);
-      }
-    }
-
-    // 🚀 ম্যাপকে ম্যানেজারের এরিয়ায় জুম করা
-    if (validBounds.length > 0 && managerMarkers.length === 0) {
-      let combinedBounds = validBounds[0];
-      for (let i = 1; i < validBounds.length; i++) {
-        combinedBounds.extend(validBounds[i]);
-      }
-      managerMap.fitBounds(combinedBounds, { padding: [50, 50], maxZoom: 12 });
-    }
-  }
   
-  // ==================== MANAGER DASHBOARD LOGIC (SMART & BUG FIXED) ====================
+   // ==================== MANAGER DASHBOARD LOGIC (SMART & BUG FIXED) ====================
   let managerMap = null;
   let managerMarkers = [];
   let managerStreetLayer = null;
   let managerSatelliteLayer = null;
-  let territoryPolygons = []; // পিনকোডের ভৌগোলিক সীমানা রাখার জন্য
-  let alertedOrderIds = new Set(); // কোন অর্ডারের নোটিফিকেশন দেওয়া হয়েছে তা ট্র্যাক করতে
-  let isFirstOrderLoad = true; // প্রথমবার পেজ লোড হলে সাউন্ড বাজবে না
+  let territoryPolygons = []; 
+  let alertedOrderIds = new Set(); 
+  let isFirstOrderLoad = true; 
 
   async function loadManagerDashboard(userData) {
     const pins = userData.managerPins || [];
@@ -4489,7 +4424,6 @@ window.clearImageSearch = function() {
       pinList.innerHTML = pins.map(p => `<span style="background: #e8f0fe; color: var(--mp-primary); padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px;">📍 ${p}</span>`).join('');
     }
 
-    // ১. ম্যাপ তৈরি
     setTimeout(() => {
       if (!managerMap) {
         managerMap = L.map('manager-live-map').setView([22.5726, 88.3639], 11);
@@ -4501,13 +4435,11 @@ window.clearImageSearch = function() {
       setTimeout(() => { if(managerMap) managerMap.invalidateSize(); }, 500);
     }, 400);
 
-    // ২. পিনকোডের আসল ভৌগোলিক সীমানা (Polygon) লোড করা
     highlightManagerTerritories(pins);
 
     let myShopIds = [];
     let deliveryBoysData = [];
 
-    // ৩. এলাকার ইউজার লোড (দোকান ও ডেলিভারি বয়)
     const usersQ = query(collection(db, "users"), where("pinCode", "in", pins.slice(0, 10))); 
     
     onSnapshot(usersQ, (snap) => {
@@ -4521,7 +4453,7 @@ window.clearImageSearch = function() {
         const u = docSnap.data();
         if (u.role === 'shopkeeper') {
           shops++;
-          myShopIds.push(docSnap.id); // দোকানের আইডি সেভ হচ্ছে
+          myShopIds.push(docSnap.id); 
           if(u.lat && u.lng) shopLocations.push(u);
         }
         if (u.role === 'delivery') {
@@ -4532,12 +4464,10 @@ window.clearImageSearch = function() {
         if (u.role === 'customer') customers++;
       });
 
-      // UI কাউন্টার আপডেট
       document.getElementById('mgr-total-shops').innerText = shops;
       document.getElementById('mgr-total-delivery').innerText = delivery;
       document.getElementById('mgr-total-customers').innerText = customers;
 
-      // ডেলিভারি বয় লিস্ট আপডেট
       const fleetList = document.getElementById('manager-fleet-list');
       if (deliveryBoysData.length === 0) {
         fleetList.innerHTML = '<div style="text-align:center; color:#999; font-size:13px;">এই এলাকায় কোনো ডেলিভারি বয় নেই।</div>';
@@ -4559,7 +4489,6 @@ window.clearImageSearch = function() {
         fleetList.innerHTML = fleetHtml;
       }
 
-      // ম্যাপে মার্কার বসানো
       managerMarkers.forEach(m => managerMap.removeLayer(m));
       managerMarkers = [];
 
@@ -4583,7 +4512,6 @@ window.clearImageSearch = function() {
       }
     });
 
-    // ৪. লাইভ অর্ডার ফিড ও নোটিফিকেশন
     const ordersQ = query(collection(db, "orders"), where("status", "in", ["pending", "bidding", "assigned"]));
     
     onSnapshot(ordersQ, (snap) => {
@@ -4593,11 +4521,8 @@ window.clearImageSearch = function() {
       
       snap.forEach(docSnap => {
         const o = docSnap.data();
-        // 🚀 শুধু ম্যানেজারের দোকানগুলোর অর্ডার ফিল্টার করা (এখানেই আসল ফিক্স)
         if (myShopIds.includes(o.shopId)) {
           ordersArray.push({ id: docSnap.id, ...o });
-          
-          // নতুন অর্ডার চেক
           if (!alertedOrderIds.has(docSnap.id)) {
             alertedOrderIds.add(docSnap.id);
             if (!isFirstOrderLoad) hasNewOrder = true;
@@ -4607,23 +4532,16 @@ window.clearImageSearch = function() {
       
       isFirstOrderLoad = false;
 
-      // নতুন অর্ডার এলে সাউন্ড ও অ্যালার্ট
       if (hasNewOrder) {
         const audio = document.getElementById('mgr-notify-sound');
         if (audio) {
-          audio.play().catch(e => {
-            console.log("Audio blocked by browser. User interaction needed.");
-            // ব্রাউজার অডিও ব্লক করলে ভিজ্যুয়াল অ্যালার্ট দেখাবে
-            alert("🔔 নতুন অর্ডার এসেছে!"); 
-          });
+          audio.play().catch(e => { alert("🔔 নতুন অর্ডার এসেছে!"); });
         }
-        
         const badge = document.getElementById('mgr-alert-badge');
         badge.classList.remove('mp-hidden');
         setTimeout(() => badge.classList.add('mp-hidden'), 5000);
       }
 
-      // UI তে লাইভ অর্ডার দেখানো
       if (ordersArray.length === 0) {
         liveOrderList.innerHTML = '<div style="text-align:center; color:#999; font-size:13px;">এই মুহূর্তে কোনো নতুন অর্ডার নেই।</div>';
       } else {
@@ -4647,7 +4565,6 @@ window.clearImageSearch = function() {
     });
   }
 
-  // 🚀 ম্যাপ ভিউ চেঞ্জ ফাংশন
   window.setManagerMapView = function(type) {
     if (!managerMap) return;
     if (type === 'satellite') {
@@ -4658,6 +4575,59 @@ window.clearImageSearch = function() {
       managerStreetLayer.addTo(managerMap);
     }
   };
+
+  async function highlightManagerTerritories(pins) {
+    territoryPolygons.forEach(poly => managerMap.removeLayer(poly));
+    territoryPolygons = [];
+
+    if (pins.length === 0) return;
+
+    let validBounds = [];
+
+    for (const pin of pins) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=geojson&polygon_geojson=1`, {
+          headers: { 'User-Agent': 'HyperlocalDeliveryApp/1.0' }
+        });
+        const data = await res.json();
+
+        if (data.features && data.features.length > 0) {
+          const feature = data.features[0];
+          const polygon = L.geoJSON(feature, {
+            color: '#1a73e8', weight: 2, fillColor: '#4285f4', fillOpacity: 0.15,
+          }).addTo(managerMap);
+
+          polygon.bindTooltip(`📍 পিন: ${pin}`, { permanent: false, direction: 'top' });
+          
+          territoryPolygons.push(polygon);
+          validBounds.push(polygon.getBounds());
+        } else {
+          const fallbackRes = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=json&limit=1`);
+          const fallbackData = await fallbackRes.json();
+          if(fallbackData.length > 0) {
+             const lat = parseFloat(fallbackData[0].lat);
+             const lon = parseFloat(fallbackData[0].lon);
+             const circle = L.circle([lat, lon], {
+                color: '#1a73e8', weight: 2, fillColor: '#4285f4', fillOpacity: 0.15, radius: 5000
+             }).addTo(managerMap);
+             territoryPolygons.push(circle);
+             validBounds.push(circle.getBounds());
+          }
+        }
+        await new Promise(r => setTimeout(r, 1000));
+      } catch (e) {
+        console.warn("Geocoding error for pin " + pin, e);
+      }
+    }
+
+    if (validBounds.length > 0 && managerMarkers.length === 0) {
+      let combinedBounds = validBounds[0];
+      for (let i = 1; i < validBounds.length; i++) {
+        combinedBounds.extend(validBounds[i]);
+      }
+      managerMap.fitBounds(combinedBounds, { padding: [50, 50], maxZoom: 12 });
+    }
+  }
 
   </script>
 
