@@ -1719,9 +1719,7 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
   };
   
    // ==================== SMART FEATURES UPDATE ====================
-  let previousOrderCount = 0; // সাউন্ড ট্র্যাকিংয়ের জন্য
-
-  // ১. ওয়ালেট আপডেট ও টপবার লোড
+ // ১. ওয়ালেট আপডেট ও টপবার লোড
   function updateTopbarWallet(balance) {
     const el = document.getElementById('topbar-wallet-bal');
     if(el) el.innerText = `₹${(balance || 0).toFixed(2)}`;
