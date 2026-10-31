@@ -4586,40 +4586,69 @@ window.clearImageSearch = function() {
 
     for (const pin of pins) {
       try {
+        // 🚀 ১. প্রথমে আসল ভৌগোলিক সীমানা (Polygon) খোঁজা
         const res = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=geojson&polygon_geojson=1`, {
           headers: { 'User-Agent': 'HyperlocalDeliveryApp/1.0' }
         });
         const data = await res.json();
 
+        let isPolygonDrawn = false;
+
         if (data.features && data.features.length > 0) {
           const feature = data.features[0];
-          const polygon = L.geoJSON(feature, {
-            color: '#1a73e8', weight: 2, fillColor: '#4285f4', fillOpacity: 0.15,
-          }).addTo(managerMap);
+          const geomType = feature.geometry.type;
 
-          polygon.bindTooltip(`📍 পিন: ${pin}`, { permanent: false, direction: 'top' });
-          
-          territoryPolygons.push(polygon);
-          validBounds.push(polygon.getBounds());
-        } else {
-          const fallbackRes = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=json&limit=1`);
+          // 🚀 যদি Polygon বা MultiPolygon পাওয়া যায়, তবে সেটাই আঁকব
+          if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
+            const polygon = L.geoJSON(feature, {
+              color: '#1a73e8',      // বর্ডারের রঙ (নীল)
+              weight: 3,             // বর্ডারের মোটা
+              fillColor: '#4285f4',  // ভেতরের রঙ
+              fillOpacity: 0.25,     // স্বচ্ছতা (২৫%)
+              dashArray: '5, 5'      // ড্যাশ লাইন (সুন্দর দেখানোর জন্য)
+            }).addTo(managerMap);
+
+            polygon.bindTooltip(`📍 পিন: ${pin}`, { permanent: false, direction: 'top' });
+            territoryPolygons.push(polygon);
+            validBounds.push(polygon.getBounds());
+            isPolygonDrawn = true;
+          }
+        }
+
+        // 🚀 ২. যদি Polygon না পাওয়া যায়, তবে ৫ কিমি ব্যাসার্ধের একটি সুন্দর বৃত্ত আঁকব
+        if (!isPolygonDrawn) {
+          const fallbackRes = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=json&limit=1`, {
+            headers: { 'User-Agent': 'HyperlocalDeliveryApp/1.0' }
+          });
           const fallbackData = await fallbackRes.json();
-          if(fallbackData.length > 0) {
+          
+          if (fallbackData.length > 0) {
              const lat = parseFloat(fallbackData[0].lat);
              const lon = parseFloat(fallbackData[0].lon);
+             
+             // 🚀 বৃত্ত আঁকা (যা দেখতে এরিয়ার মতো লাগবে)
              const circle = L.circle([lat, lon], {
-                color: '#1a73e8', weight: 2, fillColor: '#4285f4', fillOpacity: 0.15, radius: 5000
-             }).addTo(managerMap);
+                color: '#1a73e8', 
+                weight: 3, 
+                fillColor: '#4285f4', 
+                fillOpacity: 0.2, 
+                radius: 5000, // ৫ কিলোমিটার
+                dashArray: '5, 5'
+             }).addTo(managerMap).bindPopup(`<b>এরিয়া:</b> পিন ${pin}`);
+             
              territoryPolygons.push(circle);
              validBounds.push(circle.getBounds());
           }
         }
+        
+        // API রেট লিমিট এড়াতে ১ সেকেন্ড অপেক্ষা করা
         await new Promise(r => setTimeout(r, 1000));
       } catch (e) {
         console.warn("Geocoding error for pin " + pin, e);
       }
     }
 
+    // 🚀 ৩. ম্যাপকে এই এরিয়াগুলোর মধ্যে ফিট করা (যদি অন্য কোনো মার্কার আগে থেকে না থাকে)
     if (validBounds.length > 0 && managerMarkers.length === 0) {
       let combinedBounds = validBounds[0];
       for (let i = 1; i < validBounds.length; i++) {
