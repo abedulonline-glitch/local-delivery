@@ -15,9 +15,10 @@
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
 <!-- Transformers.js (AI মডেলের জন্য) -->
 <script type="module">
-  import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
-  window.transformersPipeline = pipeline; // গ্লোবালি এক্সেস করার জন্য
-  env.allowLocalModels = false; // লোকাল মডেল বন্ধ
+  import { pipeline, env, RawImage } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+  window.transformersPipeline = pipeline;
+  window.RawImage = RawImage; // 🚀 গ্লোবালি এক্সেস করার জন্য
+  env.allowLocalModels = false;
 </script>
 <style>
   /* ============================================================
@@ -3924,54 +3925,37 @@ window.closeMasterProductModal = function() {
 
     let generatedVector = null;
 
-    // 🚀 ১. CORS সমস্যা এড়াতে ছবিটিকে Base64 এ কনভার্ট করে AI-তে পাঠানো
     if (uploadedImageUrl && window.transformersPipeline) {
       try {
         btn.innerText = "🧠 AI ভেক্টর তৈরি হচ্ছে..."; 
         console.log("1. Starting AI process...");
         
-        // ক) ছবিটিকে ফেচ করে Base64 ডেটা URL এ কনভার্ট করা (CORS বাইপাস)
-        const imgResponse = await fetch(uploadedImageUrl);
-        const imgBlob = await imgResponse.blob();
-        const base64Url = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(imgBlob);
-        });
-
-        // খ) মডেল লোড করা
         if (!clipModel) {
-          console.log("2. Loading CLIP model (Wait a moment)...");
+          console.log("2. Loading CLIP model...");
           clipModel = await window.transformersPipeline('feature-extraction', 'Xenova/clip-vit-base-patch32');
         }
         
-        // গ) Base64 ছবি থেকে ভেক্টর বের করা
+        // 🚀 ৩. RawImage দিয়ে ছবি লোড করা (এটি pixel_values এরর দূর করে)
         console.log("3. Extracting features...");
-        const imgResult = await clipModel(base64Url, { pooling: 'mean', normalize: true });
+        const image = await window.RawImage.fromURL(uploadedImageUrl);
         
-        // ঘ) ভেক্টরকে সাধারণ অ্যারেতে রূপান্তর করা (Firestore এরর এড়াতে)
-        generatedVector = Array.from(imgResult.data);
+        const imgResult = await clipModel(image, { pooling: 'mean', normalize: true });
+        
+        // 🚀 ৪. ভেক্টরের সাইজ কমানো (৫১২ থেকে ২৫৬ ডাইমেনশন)
+        const fullVector = Array.from(imgResult.data);
+        generatedVector = fullVector.slice(0, 256); 
+        
         console.log("4. Vector generated successfully! Length:", generatedVector.length);
         
       } catch (error) {
         console.error("❌ Vector generation failed. Reason:", error);
-        // যদি AI ফেইল করে, তবুও প্রোডাক্ট সেভ হবে, শুধু imageVector ফিল্ডটি null থাকবে
       }
-    } else {
-      console.warn("⚠️ Image URL missing or Transformers script not loaded.");
     }
 
     try {
-      // 🚀 ২. ডেটাবেসে সেভ করা
-      console.log("5. Saving product to Firestore...");
       await addDoc(collection(db, "master_products"), {
-        name: name, 
-        category: category, 
-        unit: unit, 
-        grade: grade, 
-        image: uploadedImageUrl, 
-        imageVector: generatedVector, // এখানে ভেক্টর সেভ হবে
+        name: name, category: category, unit: unit, grade: grade, image: uploadedImageUrl, 
+        imageVector: generatedVector, // নতুন ছোট ভেক্টর সেভ হবে
         createdAt: serverTimestamp()
       });
       
@@ -3979,7 +3963,7 @@ window.closeMasterProductModal = function() {
       closeMasterProductModal();
       
     } catch (e) { 
-      console.error("Firestore Save Error:", e);
+      console.error(e);
       alert("সেভ করতে সমস্যা হয়েছে!"); 
     } finally { 
       btn.innerText = "💾 সেভ করুন"; 
@@ -4373,74 +4357,73 @@ window.handleTextSearch = function(query) {
 };
 
 // ৩. ছবি সার্চ হ্যান্ডলার (AI CLIP)
-window.handleImageSearch = async function(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+  window.handleImageSearch = async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-  // ছবির প্রিভিউ দেখানো
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    document.getElementById('search-image-preview').src = e.target.result;
-    document.getElementById('search-image-preview-container').style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      document.getElementById('search-image-preview').src = e.target.result;
+      document.getElementById('search-image-preview-container').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
 
-  // AI মডেল লোড করা
-  if (!clipModel) {
-    if (isAiModelLoading) return alert("AI মডেল লোড হচ্ছে, অপেক্ষা করুন...");
-    isAiModelLoading = true;
-    document.getElementById('ai-loading-status').style.display = 'block';
-    
-    try {
-      clipModel = await window.transformersPipeline('feature-extraction', 'Xenova/clip-vit-base-patch32', {
-        progress_callback: (data) => {
-          if (data.status === 'progress') {
-            document.getElementById('ai-loading-status').innerText = `🧠 AI মডেল ডাউনলোড হচ্ছে: ${Math.round(data.progress)}%`;
-          }
-        }
-      });
-      document.getElementById('ai-loading-status').innerText = "✅ AI মডেল প্রস্তুত!";
-      setTimeout(() => document.getElementById('ai-loading-status').style.display = 'none', 2000);
-    } catch (error) {
-      console.error("AI Model Error:", error);
-      alert("AI মডেল লোড করতে সমস্যা হয়েছে।");
-      isAiModelLoading = false;
-      return;
-    }
-    isAiModelLoading = false;
-  }
-
-  // 🚀 সার্চ করা ছবির ভেক্টর তৈরি
-  const imageUrl = URL.createObjectURL(file);
-  const imageVectors = await clipModel(imageUrl, { pooling: 'mean', normalize: true });
-  const queryVector = Array.from(imageVectors.data);
-
-  // 🚀 ডেটাবেসের প্রোডাক্টগুলোর সেভ করা ভেক্টরের সাথে তুলনা করা
-  let scoredProducts = [];
-  
-  for (const prod of allRawProducts) {
-    // যদি প্রোডাক্টে ভেক্টর সেভ করা থাকে
-    if (prod.imageVector && prod.imageVector.length > 0) {
-      const prodVector = prod.imageVector;
-
-      // Cosine Similarity হিসাব
-      let dotProduct = 0;
-      for (let i = 0; i < queryVector.length; i++) {
-        dotProduct += queryVector[i] * prodVector[i];
+    if (!clipModel) {
+      if (isAiModelLoading) return alert("AI মডেল লোড হচ্ছে, অপেক্ষা করুন...");
+      isAiModelLoading = true;
+      document.getElementById('ai-loading-status').style.display = 'block';
+      
+      try {
+        clipModel = await window.transformersPipeline('feature-extraction', 'Xenova/clip-vit-base-patch32');
+        document.getElementById('ai-loading-status').innerText = "✅ AI মডেল প্রস্তুত!";
+        setTimeout(() => document.getElementById('ai-loading-status').style.display = 'none', 2000);
+      } catch (error) {
+        alert("AI মডেল লোড করতে সমস্যা হয়েছে।");
+        isAiModelLoading = false;
+        return;
       }
-      scoredProducts.push({ product: prod, score: dotProduct });
+      isAiModelLoading = false;
     }
-  }
 
-  scoredProducts.sort((a, b) => b.score - a.score);
-  const bestMatches = scoredProducts.filter(sp => sp.score > 0.6).map(sp => sp.product);
-  
-  if (bestMatches.length === 0) {
-    document.getElementById('cst-product-grid').innerHTML = '<div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">এই ছবির সাথে মিল এমন কোনো প্রোডাক্ট পাওয়া যায়নি।</div>';
-  } else {
-    renderFilteredProductsToGrid(bestMatches);
-  }
-};
+    try {
+      // 🚀 সার্চ করা ছবির ভেক্টর তৈরি (RawImage দিয়ে)
+      const image = await window.RawImage.fromURL(URL.createObjectURL(file));
+      const imageVectors = await clipModel(image, { pooling: 'mean', normalize: true });
+      const fullQueryVector = Array.from(imageVectors.data);
+      
+      // 🚀 সার্চের সময়ও ভেক্টর সাইজ ২৫৬ করা হলো (যাতে মিলে যায়)
+      const queryVector = fullQueryVector.slice(0, 256); 
+
+      let scoredProducts = [];
+      
+      for (const prod of allRawProducts) {
+        if (prod.imageVector && prod.imageVector.length > 0) {
+          const prodVector = prod.imageVector;
+
+          // Cosine Similarity হিসাব
+          let dotProduct = 0;
+          for (let i = 0; i < queryVector.length; i++) {
+            dotProduct += queryVector[i] * prodVector[i];
+          }
+          scoredProducts.push({ product: prod, score: dotProduct });
+        }
+      }
+
+      scoredProducts.sort((a, b) => b.score - a.score);
+      
+      // 🚀 থ্রেশহোল্ড ০.৯ (৯০%) করা হলো
+      const bestMatches = scoredProducts.filter(sp => sp.score > 0.9).map(sp => sp.product);
+      
+      if (bestMatches.length === 0) {
+        document.getElementById('cst-product-grid').innerHTML = '<div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">এই ছবির সাথে ৯০% মিল এমন কোনো প্রোডাক্ট পাওয়া যায়নি।</div>';
+      } else {
+        renderFilteredProductsToGrid(bestMatches);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("ছবি সার্চে সমস্যা হয়েছে!");
+    }
+  };
 
 // ৪. প্রোডাক্ট গ্রিড রেন্ডার করার হেল্পার ফাংশন
 function renderFilteredProductsToGrid(products) {
