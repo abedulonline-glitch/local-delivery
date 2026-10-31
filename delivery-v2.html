@@ -526,6 +526,16 @@
         <div id="shop-product-list"></div>
       </div>
 
+           <!-- 🚀 দোকানদারের ক্যাটাগরি সাজেশন সেকশন -->
+      <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
+        <h3>💡 নতুন ক্যাটাগরি সাজেশন</h3>
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">আপনার কাঙ্ক্ষিত ক্যাটাগরি না থাকলে অ্যাডমিনকে সাজেস্ট করুন।</p>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="shop-cat-suggestion" class="dlv-input" placeholder="ক্যাটাগরির নাম..." style="flex: 1;">
+          <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 0 15px;" onclick="sendCategorySuggestion()">📩 পাঠান</button>
+        </div>
+      </div>
+      
       <!-- দোকানের খাতা -->
       <div class="mp-card">
         <h3 style="justify-content: space-between;">
@@ -2152,6 +2162,7 @@ window.filterCustomerProducts = function() {
       loadShopTotalDue();
       loadShopBadgeStatus();
       loadShopNewOrders();
+      loadCategoriesForDropdowns();
       
       // 🚀 স্টোর লোকেশন স্ট্যাটাস আপডেট
       if (userData.lat && userData.lng) {
@@ -3407,7 +3418,10 @@ window.toggleDeliveryStatus = function(checkbox) {
   loadSystemSettings();  
   loadAdminAds(); 
   loadAdminBadgeList();
-    
+  loadAdminCategories();
+  loadCategoriesForDropdowns();
+  loadAdminCategoryRequests();
+        
   const ordersQ = query(collection(db, "orders"), where("status", "==", "delivered"));
   onSnapshot(ordersQ, (snap) => {
     let revenue = 0;
@@ -4849,6 +4863,112 @@ window.clearImageSearch = function() {
     }
   }
 
+   // ==================== CATEGORY DYNAMIC & SUGGESTION LOGIC (PART 2) ====================
+
+  // ১. সব জায়গায় ক্যাটাগরি ড্রপডাউন লোড করা
+  function loadCategoriesForDropdowns() {
+    onSnapshot(collection(db, "categories"), (snap) => {
+      let options = '<option value="" disabled selected>ক্যাটাগরি সিলেক্ট করুন</option>';
+      snap.forEach(doc => {
+        const cat = doc.data();
+        options += `<option value="${cat.name}">${cat.name}</option>`;
+      });
+
+      // অ্যাডমিনের মাস্টার প্রোডাক্ট ড্রপডাউন
+      const mpSelect = document.getElementById('mp-category');
+      if(mpSelect) mpSelect.innerHTML = options;
+
+      // দোকানদারের কাস্টম প্রোডাক্ট ড্রপডাউন
+      const cpSelect = document.getElementById('cp-category');
+      if(cpSelect) cpSelect.innerHTML = options;
+    });
+  }
+
+  // ২. দোকানদার কর্তৃক সাজেশন পাঠানো
+  window.sendCategorySuggestion = async function() {
+    const input = document.getElementById('shop-cat-suggestion');
+    const catName = input.value.trim();
+    if (!catName) return alert("ক্যাটাগরির নাম দিন!");
+
+    try {
+      // চেক করা: এই নামে আগে থেকেই কোনো ক্যাটাগরি আছে কি না
+      const q = query(collection(db, "categories"), where("name", "==", catName));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        alert("এই ক্যাটাগরিটি আগে থেকেই আছে!");
+        input.value = '';
+        return;
+      }
+
+      // সাজেশন ফায়ারবেসে পাঠানো
+      await addDoc(collection(db, "category_requests"), {
+        categoryName: catName,
+        shopId: currentUser.uid,
+        shopName: globalUserData.name,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+      
+      input.value = '';
+      alert("আপনার সাজেশন অ্যাডমিনের কাছে পাঠানো হয়েছে!");
+    } catch(e) { console.error(e); alert("সাজেশন পাঠাতে সমস্যা হয়েছে!"); }
+  };
+
+  // ৩. অ্যাডমিনের স্ক্রিনে রিকোয়েস্ট লোড করা
+  function loadAdminCategoryRequests() {
+    const list = document.getElementById('admin-category-requests');
+    if (!list) return;
+
+    onSnapshot(query(collection(db, "category_requests"), orderBy("createdAt", "desc")), (snap) => {
+      if (snap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>';
+        return;
+      }
+
+      let html = '';
+      snap.forEach(docSnap => {
+        const req = docSnap.data();
+        html += `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--mp-primary);">${req.categoryName}</div>
+              <div style="font-size: 11px; color: #666;">দোকান: ${req.shopName}</div>
+            </div>
+            <div style="display: flex; gap: 5px;">
+              <button onclick="approveCategory('${docSnap.id}', '${req.categoryName}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
+              <button onclick="rejectCategory('${docSnap.id}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
+            </div>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  }
+
+  // ৪. অ্যাডমিন কর্তৃক রিকোয়েস্ট অ্যাপ্রুভ করা
+  window.approveCategory = async function(reqId, catName) {
+    if (!confirm(`"${catName}" ক্যাটাগরিটি অ্যাপ্রুভ করবেন?`)) return;
+    try {
+      // মেইন ক্যাটাগরি লিস্টে যোগ করা
+      await addDoc(collection(db, "categories"), {
+        name: catName,
+        createdAt: serverTimestamp()
+      });
+      // রিকোয়েস্ট লিস্ট থেকে মুছে ফেলা
+      await deleteDoc(doc(db, "category_requests", reqId));
+      alert("ক্যাটাগরি অ্যাপ্রুভ হয়েছে!");
+    } catch(e) { console.error(e); alert("সমস্যা হয়েছে!"); }
+  };
+
+  // ৫. অ্যাডমিন কর্তৃক রিকোয়েস্ট বাতিল করা
+  window.rejectCategory = async function(reqId) {
+    if (!confirm("আপনি কি এই রিকোয়েস্টটি বাতিল করতে চান?")) return;
+    try {
+      await deleteDoc(doc(db, "category_requests", reqId));
+      alert("রিকোয়েস্ট বাতিল হয়েছে!");
+    } catch(e) { alert("সমস্যা হয়েছে!"); }
+  };
+                          
   </script>
 
 <!-- Live Tracking Modal (Customer) -->
