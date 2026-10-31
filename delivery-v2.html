@@ -722,13 +722,35 @@
     </div>
   </div>
 
-  <!-- মাস্টার প্রোডাক্ট সেকশন -->
+ 
   <!-- মাস্টার প্রোডাক্ট সেকশন -->
 <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
   <h3 style="justify-content: space-between;">
     🏷️ মাস্টার প্রোডাক্ট
     <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
   </h3>
+
+        <!-- 🚀 Category Management Section -->
+      <div class="mp-card" style="border-left: 4px solid #0f9d58;">
+        <h3>🗂️ ক্যাটাগরি ম্যানেজমেন্ট</h3>
+        
+        <!-- নতুন ক্যাটাগরি অ্যাড -->
+        <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+          <input type="text" id="new-category-name" class="dlv-input" placeholder="নতুন ক্যাটাগরির নাম" style="flex: 1;">
+          <button class="mp-btn mp-btn-success" style="width: auto; margin: 0; padding: 0 15px;" onclick="addNewCategoryAdmin()">➕ যোগ</button>
+        </div>
+
+        <!-- ক্যাটাগরি লিস্ট -->
+        <div id="admin-category-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
+          <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
+        </div>
+
+        <!-- নতুন ক্যাটাগরি রিকোয়েস্ট -->
+        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
+        <div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
+          <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
+        </div>
+      </div>
   
   <!-- 🚀 সার্চ বার -->
   <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
@@ -2663,8 +2685,92 @@ window.filterCustomerProducts = function() {
     } catch(e) { alert("সমস্যা হয়েছে!"); }
   };
 
-// ==================== SHOP LOCATION LOGIC ====================
-// ==================== ADVANCED SHOP LOCATION LOGIC ====================
+
+  // ==================== CATEGORY MANAGEMENT LOGIC ====================
+  
+  // ১. ক্যাটাগরি লোড করা
+  function loadAdminCategories() {
+    const list = document.getElementById('admin-category-list');
+    if(!list) return;
+
+    onSnapshot(collection(db, "categories"), (snap) => {
+      if (snap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো ক্যাটাগরি নেই।</div>';
+        return;
+      }
+      let html = '';
+      snap.forEach(docSnap => {
+        const cat = docSnap.data();
+        html += `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;">
+            <div style="font-size: 13px; font-weight: 600;">${cat.name}</div>
+            <div style="display: flex; gap: 5px;">
+              <button onclick="editCategoryAdmin('${docSnap.id}', '${cat.name}')" style="background:#e8f0fe; border:none; color:var(--mp-primary); border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer;">✏️</button>
+              <button onclick="deleteCategoryAdmin('${docSnap.id}', '${cat.name}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer;">🗑️</button>
+            </div>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  }
+
+  // ২. নতুন ক্যাটাগরি অ্যাড করা (অ্যাডমিন)
+  window.addNewCategoryAdmin = async function() {
+    const input = document.getElementById('new-category-name');
+    const name = input.value.trim();
+    if (!name) return alert("ক্যাটাগরির নাম দিন!");
+
+    try {
+      // নামটি আগে থেকে আছে কি না চেক করা
+      const q = query(collection(db, "categories"), where("name", "==", name));
+      const snap = await getDocs(q);
+      if (!snap.empty) return alert("এই ক্যাটাগরিটি আগেই আছে!");
+
+      await addDoc(collection(db, "categories"), {
+        name: name,
+        createdAt: serverTimestamp()
+      });
+      input.value = '';
+      alert("ক্যাটাগরি সফলভাবে যুক্ত হয়েছে!");
+    } catch(e) { console.error(e); alert("সমস্যা হয়েছে!"); }
+  };
+
+  // ৩. ক্যাটাগরি ডিলিট করা (শর্তসাপেক্ষে)
+  window.deleteCategoryAdmin = async function(id, name) {
+    if (!confirm(`আপনি কি "${name}" ক্যাটাগরিটি ডিলিট করতে চান?`)) return;
+
+    try {
+      // 🚀 চেক করা: এই ক্যাটাগরিতে কোনো মাস্টার প্রোডাক্ট আছে কি না
+      const masterQ = query(collection(db, "master_products"), where("category", "==", name));
+      const masterSnap = await getDocs(masterQ);
+      
+      // 🚀 চেক করা: এই ক্যাটাগরিতে দোকানদারের কোনো প্রোডাক্ট আছে কি না
+      const shopQ = query(collection(db, "products"), where("category", "==", name));
+      const shopSnap = await getDocs(shopQ);
+
+      if (!masterSnap.empty || !shopSnap.empty) {
+        return alert(`❌ ডিলিট করা সম্ভব নয়!\n\nএই ক্যাটাগরিতে ${masterSnap.size + shopSnap.size} টি প্রোডাক্ট আছে। আগে প্রোডাক্টগুলো ডিলিট বা এডিট করুন।`);
+      }
+
+      // ডিলিট করা
+      await deleteDoc(doc(db, "categories", id));
+      alert("ক্যাটাগরি ডিলিট হয়েছে!");
+    } catch(e) { console.error(e); alert("ডিলিট করতে সমস্যা হয়েছে!"); }
+  };
+
+  // ৪. ক্যাটাগরি এডিট করা
+  window.editCategoryAdmin = async function(id, oldName) {
+    const newName = prompt("ক্যাটাগরির নতুন নাম দিন:", oldName);
+    if (!newName || newName.trim() === "" || newName === oldName) return;
+
+    try {
+      await updateDoc(doc(db, "categories", id), { name: newName.trim() });
+      alert("ক্যাটাগরি আপডেট হয়েছে!");
+    } catch(e) { alert("আপডেটে সমস্যা হয়েছে!"); }
+  };
+  
+  // ==================== ADVANCED SHOP LOCATION LOGIC ====================
 let shopMap = null;
 let shopMarker = null;
 let shopLatLng = null;
