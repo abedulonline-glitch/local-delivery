@@ -1112,7 +1112,7 @@
   </div>
 </div>
 
-<!-- Edit Master Product Modal (Admin - EDIT) -->
+<!-- Edit Master Product Modal (Admin) -->
 <div id="dlv-edit-mp-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-edit-mp-modal').classList.remove('active')">&times;</span>
@@ -1137,7 +1137,7 @@
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       <div class="dlv-form-group">
         <label>ইউনিট *</label>
-       <select id="mp-unit" class="dlv-input" onchange="updateUnitLabels('mp')">
+        <select id="ep-unit" class="dlv-input" onchange="updateUnitLabels('ep')">
           <option value="kg">কেজি (kg)</option>
           <option value="ltr">লিটার (ltr)</option>
           <option value="pcs">পিস (pcs)</option>
@@ -1155,6 +1155,34 @@
           <option value="C">Grade C</option>
         </select>
       </div>
+    </div>
+
+    <!-- 🚀 স্মার্ট অ্যাট্রিবিউট ফিল্ডসমূহ -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>বেস দাম (₹) *</label>
+        <input type="number" id="ep-price" class="dlv-input">
+      </div>
+      <div class="dlv-form-group">
+        <label id="ep-lbl-weight">বেস পরিমাণ (gm) *</label>
+        <input type="number" id="ep-base-weight" class="dlv-input">
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>প্যাকিং চার্জ (₹) *</label>
+        <input type="number" id="ep-packaging-charge" class="dlv-input">
+      </div>
+      <div class="dlv-form-group">
+        <label id="ep-lbl-minorder">মিনিমাম অর্ডার (gm)</label>
+        <input type="number" id="ep-min-order" class="dlv-input">
+      </div>
+    </div>
+
+    <div class="dlv-form-group">
+      <label id="ep-lbl-stock">মোট স্টক (gm) *</label>
+      <input type="number" id="ep-stock" class="dlv-input">
     </div>
 
     <div class="dlv-form-group">
@@ -4027,15 +4055,18 @@ window.closeMasterProductModal = function() {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const p = docSnap.data();
-        document.getElementById('ep-id').value = id;
-        document.getElementById('ep-name').value = p.name;
         
+        document.getElementById('ep-id').value = id;
+        document.getElementById('ep-name').value = p.name || '';
+        
+        // ক্যাটাগরি হ্যান্ডেল
         const catSelect = document.getElementById('ep-category');
         if(!Array.from(catSelect.options).some(o => o.value === p.category)) {
           catSelect.add(new Option(p.category, p.category));
         }
         catSelect.value = p.category;
         
+        // ইউনিট হ্যান্ডেল
         const unitSelect = document.getElementById('ep-unit');
         if(!Array.from(unitSelect.options).some(o => o.value === p.unit)) {
           unitSelect.add(new Option(p.unit, p.unit));
@@ -4043,12 +4074,17 @@ window.closeMasterProductModal = function() {
         unitSelect.value = p.unit;
         
         document.getElementById('ep-grade').value = p.grade || 'A';
-        document.getElementById('ep-price').value = p.basePrice || 0;
+        
+        // 🚀 নতুন ফিল্ডগুলো সেভ করা (যদি পুরোনো প্রোডাক্টে না থাকে তবে ০ দেখাবে)
+        document.getElementById('ep-price').value = p.basePrice !== undefined ? p.basePrice : (p.price || 0);
         document.getElementById('ep-base-weight').value = p.baseWeight || 0;
         document.getElementById('ep-packaging-charge').value = p.packagingCharge || 0;
         document.getElementById('ep-min-order').value = p.minOrderWeight || 0;
         document.getElementById('ep-stock').value = p.stock || 0;
         
+        // লেবেল আপডেট কল করা
+        updateUnitLabels('ep');
+
         uploadedImageUrl = p.image;
         const preview = document.getElementById('ep-image-preview');
         if (p.image) {
@@ -4059,8 +4095,13 @@ window.closeMasterProductModal = function() {
         }
         
         document.getElementById('dlv-edit-mp-modal').classList.add('active');
+      } else {
+        alert("প্রোডাক্টটি পাওয়া যায়নি!");
       }
-    } catch (e) { alert("ডেটা আনতে সমস্যা হয়েছে!"); }
+    } catch (e) { 
+      console.error("Edit Fetch Error:", e); 
+      alert("ডেটা আনতে সমস্যা হয়েছে! এরর: " + e.message); 
+    }
   };
 
   // এডিট মডাল থেকে আপডেট করা
