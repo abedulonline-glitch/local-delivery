@@ -1047,7 +1047,7 @@
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       <div class="dlv-form-group">
         <label>ইউনিট *</label>
-       <select id="mp-unit" class="dlv-input" onchange="updateUnitLabels('mp')">
+      <select id="mp-unit" class="dlv-input" onchange="updateUnitLabels('mp')">
           <option value="kg">কেজি (kg)</option>
           <option value="ltr">লিটার (ltr)</option>
           <option value="pcs">পিস (pcs)</option>
@@ -1074,7 +1074,8 @@
         <input type="number" id="mp-price" class="dlv-input" placeholder="যেমন: 100">
       </div>
       <div class="dlv-form-group">
-        <label>বেস ওজন (গ্রাম) *</label>
+        <!-- 🚀 এখানে id="mp-lbl-weight" আছে -->
+        <label id="mp-lbl-weight">বেস পরিমাণ (gm) *</label>
         <input type="number" id="mp-base-weight" class="dlv-input" placeholder="যেমন: 1000">
       </div>
     </div>
@@ -1085,13 +1086,15 @@
         <input type="number" id="mp-packaging-charge" class="dlv-input" placeholder="যেমন: 5">
       </div>
       <div class="dlv-form-group">
-        <label>মিনিমাম অর্ডার ওজন (গ্রাম)</label>
+        <!-- 🚀 এখানে id="mp-lbl-minorder" আছে -->
+        <label id="mp-lbl-minorder">মিনিমাম অর্ডার (gm)</label>
         <input type="number" id="mp-min-order" class="dlv-input" placeholder="যেমন: 100">
       </div>
     </div>
 
     <div class="dlv-form-group">
-      <label>মোট স্টক (গ্রাম) *</label>
+      <!-- 🚀 এখানে id="mp-lbl-stock" আছে -->
+      <label id="mp-lbl-stock">মোট স্টক (gm) *</label>
       <input type="number" id="mp-stock" class="dlv-input" placeholder="যেমন: 10000">
     </div>
 
@@ -1134,7 +1137,7 @@
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       <div class="dlv-form-group">
         <label>ইউনিট *</label>
-        <select id="ep-unit" class="dlv-input" onchange="checkCustomOption(this)">
+       <select id="mp-unit" class="dlv-input" onchange="updateUnitLabels('mp')">
           <option value="kg">কেজি (kg)</option>
           <option value="ltr">লিটার (ltr)</option>
           <option value="pcs">পিস (pcs)</option>
