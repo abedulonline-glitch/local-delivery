@@ -5181,34 +5181,20 @@ window.clearImageSearch = function() {
     const unit = unitSelect.value;
     let weightUnit = "gm"; 
     let minUnit = "gm";    
-    let placeholderVal = "1000";
 
-    if(unit === 'kg') {
-      weightUnit = "kg"; minUnit = "gm"; placeholderVal = "1";
-    } else if (unit === 'ltr') {
-      weightUnit = "ltr"; minUnit = "ml"; placeholderVal = "1";
-    } else if (unit === 'pcs') {
-      weightUnit = "pcs"; minUnit = "pcs"; placeholderVal = "1";
-    } else if (unit === 'box') {
-      weightUnit = "box"; minUnit = "box"; placeholderVal = "1";
-    } else if (unit === 'drsjon') {
-      weightUnit = "drsjon"; minUnit = "drsjon"; placeholderVal = "1";
-    }
+    if(unit === 'kg') { weightUnit = "kg"; minUnit = "gm"; }
+    else if (unit === 'ltr') { weightUnit = "ltr"; minUnit = "ml"; }
+    else if (unit === 'pcs') { weightUnit = "pcs"; minUnit = "pcs"; }
+    else if (unit === 'box') { weightUnit = "box"; minUnit = "box"; }
+    else if (unit === 'drsjon') { weightUnit = "drsjon"; minUnit = "drsjon"; }
 
     const lblWeight = document.getElementById(context + '-lbl-weight');
     const lblMinOrder = document.getElementById(context + '-lbl-minorder');
     const lblStock = document.getElementById(context + '-lbl-stock');
-    const inputWeight = document.getElementById(context + '-base-weight');
 
     if(lblWeight) lblWeight.innerText = `বেস পরিমাণ (${weightUnit}) *`;
     if(lblMinOrder) lblMinOrder.innerText = `মিনিমাম অর্ডার (${minUnit})`;
     if(lblStock) lblStock.innerText = `মোট স্টক (${weightUnit}) *`;
-    
-    // 🚀 প্লেসহোল্ডার পরিবর্তন
-    if(inputWeight) {
-      inputWeight.placeholder = `যেমন: ${placeholderVal}`;
-      if(unit !== 'gm') inputWeight.value = ''; // পুরোনো ভ্যালু মুছে ফেলা
-    }
   };
 
   // ==================== SMART WEIGHT & BUDGET CALCULATOR (PART 2) ====================
@@ -5397,7 +5383,14 @@ window.clearImageSearch = function() {
     const prod = allProductsForBarcode.find(p => p.id === prodId);
     if(!prod) return alert("প্রোডাক্ট পাওয়া যায়নি!");
 
-    const barcodeData = `${prod.id}|${prod.baseWeight}|${prod.basePrice}`;
+    // 🚀 ১. ডেটা ফ্যালব্যাক (undefined প্রতিরোধ করার জন্য)
+    const pName = prod.name || 'Unknown Product';
+    const pPrice = prod.basePrice || prod.price || 0;
+    const pWeight = prod.baseWeight || 1000; // পুরোনো প্রোডাক্টে বেস ওজন না থাকলে ডিফল্ট ১০০০ ধরা হবে
+    const pUnit = prod.unit || 'gm';
+
+    // 🚀 ২. বারকোডের ভেতরে ডেটা এনকোড করা (ID | Weight | Price)
+    const barcodeData = `${prod.id}|${pWeight}|${pPrice}`;
 
     const grid = document.getElementById('barcode-grid');
     grid.innerHTML = '';
@@ -5408,12 +5401,13 @@ window.clearImageSearch = function() {
       sticker.style.padding = '5px';
       sticker.style.textAlign = 'center';
       sticker.style.borderRadius = '4px';
-      sticker.style.pageBreakInside = 'avoid';
+      sticker.style.pageBreakInside = 'avoid'; // A4 পেজে যেন স্টিকার কেটে না যায়
 
+      // 🚀 ৩. UI তে ফ্যালব্যাক ভ্যালুগুলো ব্যবহার করা
       sticker.innerHTML = `
-        <div style="font-size: 10px; font-weight: bold; margin-bottom: 2px;">${prod.name.substring(0, 15)}</div>
+        <div style="font-size: 10px; font-weight: bold; margin-bottom: 2px;">${pName.substring(0, 15)}</div>
         <svg class="barcode-svg"></svg>
-        <div style="font-size: 9px; font-weight: bold; margin-top: 2px;">₹${prod.basePrice} / ${prod.baseWeight}${prod.unit}</div>
+        <div style="font-size: 9px; font-weight: bold; margin-top: 2px;">₹${pPrice} / ${pWeight}${pUnit}</div>
       `;
       grid.appendChild(sticker);
 
@@ -5423,11 +5417,12 @@ window.clearImageSearch = function() {
           format: "CODE128",
           width: 1.2,
           height: 30,
-          displayValue: false
+          displayValue: false // নিচে আমরা নিজেরাই টেক্সট দিচ্ছি, তাই বারকোডের ডিফল্ট টেক্সট অফ
         });
       } catch(e) { console.error("Barcode error:", e); }
     }
 
+    // 🚀 ৪. প্রিন্ট এরিয়া দেখানো এবং প্রিন্ট ডায়ালগ কল করা
     const printArea = document.getElementById('barcode-print-area');
     printArea.style.display = 'block';
     
