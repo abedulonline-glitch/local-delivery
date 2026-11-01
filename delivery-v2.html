@@ -633,6 +633,18 @@
     </div>
   </div>
 
+  <!-- 🚀 Auto Dispatch Toggle -->
+<div class="mp-card" style="display: flex; justify-content: space-between; align-items: center; background: #e8f0fe; border-left: 4px solid var(--mp-primary);">
+  <div>
+    <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">⚡ অটো-ডিসপ্যাচ (Auto-Assign)</div>
+    <div style="font-size: 11px; color: #555;">অন থাকলে অর্ডার রেডি হওয়া মাত্রই কাছের ডেলিভারি বয়কে অটো অ্যাসাইন হবে।</div>
+  </div>
+  <label class="dlv-switch">
+    <input type="checkbox" id="auto-dispatch-toggle" onchange="toggleAutoDispatch(this.checked)">
+    <span class="dlv-slider"></span>
+  </label>
+</div>
+  
   <!-- 🚀 ডেলিভারি বয় ফ্লিট লিস্ট -->
   <div class="mp-card" style="border-left: 4px solid var(--mp-success);">
     <h3>🛵 ডেলিভারি বয় ম্যানেজমেন্ট</h3>
@@ -3294,75 +3306,90 @@ window.openAddProductModal = function() {
   // ============================================================
   // DELIVERY BOY FUNCTIONS
   // ============================================================
+// 🚀 গ্লোবাল ভেরিয়েবল (যাতে একই অর্ডারের জন্য বারবার অ্যালার্ট না আসে)
+
 window.toggleDeliveryStatus = function(checkbox) {
-    isOnline = checkbox.checked;
-    const statusText = document.getElementById('dlv-online-status');
-    const ordersContainer = document.getElementById('dlv-live-orders-container');
-    const offlineMsg = document.getElementById('dlv-offline-msg');
-    const activeOrderContainer = document.getElementById('dlv-active-order-container');
+  isOnline = checkbox.checked;
+  const statusText = document.getElementById('dlv-online-status');
+  const ordersContainer = document.getElementById('dlv-live-orders-container');
+  const offlineMsg = document.getElementById('dlv-offline-msg');
+  const activeOrderContainer = document.getElementById('dlv-active-order-container');
 
-    if (isOnline) {
-      statusText.innerHTML = '🟢 অনলাইন'; statusText.style.color = 'var(--mp-success)';
-      ordersContainer.style.display = 'block'; offlineMsg.style.display = 'none';
+  if (isOnline) {
+    statusText.innerHTML = '🟢 অনলাইন'; statusText.style.color = 'var(--mp-success)';
+    ordersContainer.style.display = 'block'; offlineMsg.style.display = 'none';
+    
+    const q = query(collection(db, "orders"), where("status", "in", ["ready", "bidding", "assigned"]));
+    unsubscribeOrders = onSnapshot(q, (snapshot) => {
       
-      const q = query(collection(db, "orders"), where("status", "in", ["ready", "bidding", "assigned"]));
-      unsubscribeOrders = onSnapshot(q, (snapshot) => {
-        
-        // 🚀 নতুন অর্ডার এলে সাউন্ড বাজবে
-        if(snapshot.size > previousOrderCount && previousOrderCount !== 0) {
-          const audio = document.getElementById('dlv-notify-sound');
-          if(audio) audio.play().catch(e => console.log("Audio blocked by browser"));
-        }
-        previousOrderCount = snapshot.size;
+      // নতুন অর্ডার এলে সাউন্ড বাজবে (লিস্ট সাইজ বাড়লে)
+      if(snapshot.size > previousOrderCount && previousOrderCount !== 0) {
+        const audio = document.getElementById('dlv-notify-sound');
+        if(audio) audio.play().catch(e => console.log("Audio blocked by browser"));
+      }
+      previousOrderCount = snapshot.size;
 
-        const ordersList = document.getElementById('dlv-live-orders');
-        const activeDetails = document.getElementById('dlv-active-order-details');
-        let liveOrdersHtml = '', activeOrderHtml = '', hasActiveOrder = false;
-        
-        snapshot.forEach(docSnap => {
-          const order = docSnap.data();
-          const orderId = docSnap.id;
+      const ordersList = document.getElementById('dlv-live-orders');
+      const activeDetails = document.getElementById('dlv-active-order-details');
+      let liveOrdersHtml = '', activeOrderHtml = '', hasActiveOrder = false;
+      
+      snapshot.forEach(docSnap => {
+        const order = docSnap.data();
+        const orderId = docSnap.id;
 
-          if (order.status === 'ready') {
-            liveOrdersHtml += `
-              <div class="dlv-live-card" id="live-card-${orderId}">
-                <h4>📦 ${order.productName}</h4>
-                <div class="dlv-live-info"><span>🏪 পিকআপ: ${order.shopName}</span></div>
-                <div class="dlv-bidding-area">
-                  <div style="font-size:12px; font-weight:bold; margin-bottom:5px;">দাম: ₹${order.price}</div>
-                  <div class="dlv-bid-input-group">
-                    <input type="number" id="bid-input-${orderId}" placeholder="চার্জ ₹" min="10">
-                    <button onclick="placeBid('${orderId}')">বিড করুন</button>
-                  </div>
+        if (order.status === 'ready') {
+          liveOrdersHtml += `
+            <div class="dlv-live-card" id="live-card-${orderId}">
+              <h4>📦 ${order.productName}</h4>
+              <div class="dlv-live-info"><span>🏪 পিকআপ: ${order.shopName}</span></div>
+              <div class="dlv-bidding-area">
+                <div style="font-size:12px; font-weight:bold; margin-bottom:5px;">দাম: ₹${order.price}</div>
+                <div class="dlv-bid-input-group">
+                  <input type="number" id="bid-input-${orderId}" placeholder="চার্জ ₹" min="10">
+                  <button onclick="placeBid('${orderId}')">বিড করুন</button>
                 </div>
-              </div>`;
-          } else if ((order.status === 'bidding' || order.status === 'assigned') && order.deliveryBoyId === currentUser.uid) {
-            hasActiveOrder = true;
-            activeOrderHtml += `
-              <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--mp-success);">
-                <h4>📦 ${order.productName} (${order.shopName})</h4>
-                <p style="font-size: 12px; margin: 5px 0;">কাস্টমার: ${order.customerName}</p>
-                <p style="font-size: 12px; font-weight: bold; color: var(--mp-primary);">📞 ফোন: ${order.customerPhone || 'নেই'}</p>
-                <p style="font-size: 12px;">📍 ঠিকানা: ${order.deliveryAddress || 'নেই'} ${order.landmark ? `(${order.landmark})` : ''}</p>
-                <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">চার্জ: ₹${order.deliveryCharge}</p>
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                  <button class="mp-btn mp-btn-primary" style="flex:1; margin:0;" onclick="openGoogleMap(${order.lat}, ${order.lng})">📍 ম্যাপ</button>
-                  <button class="mp-btn mp-btn-success" style="flex:1; margin:0;" onclick="promptOTP('${orderId}')">✅ Delivered</button>
-                </div>
-              </div>`;
+              </div>
+            </div>`;
+        } else if ((order.status === 'bidding' || order.status === 'assigned') && order.deliveryBoyId === currentUser.uid) {
+          
+          // 🚀 নতুন যোগ করা হলো: ম্যানেজার ফোর্স অ্যাসাইন করলে অ্যালার্ট
+          if (order.status === 'assigned' && !alertedOrderIds.has(orderId)) {
+            alertedOrderIds.add(orderId);
+            
+            const audio = document.getElementById('dlv-notify-sound');
+            if (audio) audio.play().catch(e => {});
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            
+            alert(`🚨 ম্যানেজার আপনাকে একটি অর্ডার অ্যাসাইন করেছেন!\n\nপণ্য: ${order.productName}\nদোকান: ${order.shopName}\nডেলিভারি চার্জ: ₹${order.deliveryCharge}\n\nঅনুগ্রহ করে 'চলমান ডেলিভারি' সেকশন চেক করুন।`);
           }
-        });
-        ordersList.innerHTML = liveOrdersHtml || '<div style="text-align: center; padding: 20px; color: #999;">কোনো অর্ডার নেই।</div>';
-        activeOrderContainer.style.display = hasActiveOrder ? 'block' : 'none';
-        activeDetails.innerHTML = activeOrderHtml;
+
+          hasActiveOrder = true;
+          activeOrderHtml += `
+            <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--mp-success);">
+              <h4>📦 ${order.productName} (${order.shopName})</h4>
+              <p style="font-size: 12px; margin: 5px 0;">কাস্টমার: ${order.customerName}</p>
+              <p style="font-size: 12px; font-weight: bold; color: var(--mp-primary);">📞 ফোন: ${order.customerPhone || 'নেই'}</p>
+              <p style="font-size: 12px;">📍 ঠিকানা: ${order.deliveryAddress || 'নেই'} ${order.landmark ? `(${order.landmark})` : ''}</p>
+              <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">চার্জ: ₹${order.deliveryCharge}</p>
+              <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="mp-btn mp-btn-primary" style="flex:1; margin:0;" onclick="openGoogleMap(${order.lat}, ${order.lng})">📍 ম্যাপ</button>
+                <button class="mp-btn mp-btn-success" style="flex:1; margin:0;" onclick="promptOTP('${orderId}')">✅ Delivered</button>
+              </div>
+            </div>`;
+        }
       });
-    } else {
-      statusText.innerHTML = '🔴 অফলাইন'; statusText.style.color = 'var(--mp-danger)';
-      ordersContainer.style.display = 'none'; offlineMsg.style.display = 'block';
-      activeOrderContainer.style.display = 'none';
-      if (unsubscribeOrders) unsubscribeOrders();
-    }
-  };
+      
+      ordersList.innerHTML = liveOrdersHtml || '<div style="text-align: center; padding: 20px; color: #999;">কোনো অর্ডার নেই।</div>';
+      activeOrderContainer.style.display = hasActiveOrder ? 'block' : 'none';
+      activeDetails.innerHTML = activeOrderHtml;
+    });
+  } else {
+    statusText.innerHTML = '🔴 অফলাইন'; statusText.style.color = 'var(--mp-danger)';
+    ordersContainer.style.display = 'none'; offlineMsg.style.display = 'block';
+    activeOrderContainer.style.display = 'none';
+    if (unsubscribeOrders) unsubscribeOrders();
+  }
+};
 
   window.placeBid = async function(orderId) {
     const bidAmount = parseFloat(document.getElementById(`bid-input-${orderId}`).value);
@@ -5676,6 +5703,119 @@ window.clearImageSearch = function() {
       alert("বিল সেভ করতে সমস্যা হয়েছে!");
     }
   };
+
+// ==================== AUTO DISPATCH LOGIC (SMART ASSIGN) ====================
+let isAutoDispatchOn = false;
+let autoDispatchUnsubscribe = null;
+
+// ১. অটো-ডিসপ্যাচ টগল অন/অফ করা (ডেটাবেসে সেভ হবে)
+window.toggleAutoDispatch = async function(isChecked) {
+  isAutoDispatchOn = isChecked;
+  try {
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      autoDispatch: isChecked
+    });
+    console.log("Auto Dispatch:", isChecked ? "ON" : "OFF");
+    
+    if (isChecked) {
+      startAutoDispatchListener();
+    } else {
+      if (autoDispatchUnsubscribe) autoDispatchUnsubscribe();
+    }
+  } catch(e) { console.error("Toggle error:", e); }
+};
+
+// ২. ম্যানেজার লগইন করলে অটো-ডিসপ্যাচ স্ট্যাটাস লোড করা
+// (setupUIForRole ফাংশনে manager ব্লকে এটি কল করবেন)
+function initAutoDispatch() {
+  const toggle = document.getElementById('auto-dispatch-toggle');
+  if (!toggle) return;
+  
+  // ইউজার ডেটা থেকে আগের স্টেটাস চেক
+  if (globalUserData.autoDispatch) {
+    toggle.checked = true;
+    isAutoDispatchOn = true;
+    startAutoDispatchListener();
+  } else {
+    toggle.checked = false;
+    isAutoDispatchOn = false;
+  }
+}
+
+// ৩. রেডি হওয়া অর্ডার লিসেন করা (যদি অটো-ডিসপ্যাচ অন থাকে)
+function startAutoDispatchListener() {
+  if (autoDispatchUnsubscribe) autoDispatchUnsubscribe();
+  
+  // যে অর্ডারগুলো 'ready' আছে কিন্তু কেউ নেয়নি
+  const q = query(collection(db, "orders"), where("status", "==", "ready"));
+  
+  autoDispatchUnsubscribe = onSnapshot(q, (snap) => {
+    if (!isAutoDispatchOn) return; // টগল অফ থাকলে কিছু করবে না
+    
+    snap.forEach(async (docSnap) => {
+      const order = docSnap.data();
+      const orderId = docSnap.id;
+      
+      // 🚀 অটোমেটিক ডেলিভারি বয় খোঁজা শুরু
+      await assignClosestDeliveryBoy(orderId, order);
+    });
+  });
+}
+
+// ৪. সবচেয়ে কাছের ডেলিভারি বয় খুঁজে বের করা এবং অ্যাসাইন করা
+async function assignClosestDeliveryBoy(orderId, order) {
+  try {
+    if (!order.shopLat || !order.shopLng) return; // দোকানের লোকেশন না থাকলে অ্যাসাইন হবে না
+
+    const pins = globalUserData.managerPins || [];
+    if (pins.length === 0) return;
+
+    // ম্যানেজারের এলাকার অনলাইন ডেলিভারি বয়দের খোঁজা
+    const q = query(collection(db, "users"), 
+      where("role", "==", "delivery"), 
+      where("pinCode", "in", pins.slice(0, 10))
+    );
+    
+    const snap = await getDocs(q);
+    let availableBoys = [];
+
+    snap.forEach(docSnap => {
+      const boy = docSnap.data();
+      if (boy.isOnline && boy.lat && boy.lng) {
+        // দোকান থেকে ডেলিভারি বয়ের দূরত্ব বের করা (কিমি)
+        const shopLoc = L.latLng(order.shopLat, order.shopLng);
+        const boyLoc = L.latLng(boy.lat, boy.lng);
+        const distance = shopLoc.distanceTo(boyLoc) / 1000;
+        
+        availableBoys.push({ id: docSnap.id, ...boy, distance: distance });
+      }
+    });
+
+    if (availableBoys.length === 0) return; // কোনো অনলাইন বয় নেই
+
+    // 🚀 সবচেয়ে কম দূরত্বের ডেলিভারি বয় সিলেক্ট করা
+    availableBoys.sort((a, b) => a.distance - b.distance);
+    const closestBoy = availableBoys[0];
+
+    // ডেলিভারি চার্জ হিসাব (বেস ১৫ + প্রতি কিমি ৫ টাকা)
+    const calculatedCharge = 15 + (closestBoy.distance * 5);
+
+    // অর্ডারটি অটো-অ্যাসাইন করা
+    await updateDoc(doc(db, "orders", orderId), {
+      status: "assigned",
+      deliveryBoyId: closestBoy.id,
+      deliveryBoyName: closestBoy.name,
+      deliveryCharge: calculatedCharge,
+      assignedAt: serverTimestamp()
+    });
+
+    console.log(`✅ Order ${orderId} auto-assigned to ${closestBoy.name} (Distance: ${closestBoy.distance.toFixed(1)}km)`);
+
+  } catch(e) {
+    console.error("Auto dispatch error:", e);
+  }
+}
+
 </script>
 
 <!-- Live Tracking Modal (Customer) -->
