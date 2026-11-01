@@ -5177,110 +5177,110 @@ window.clearImageSearch = function() {
  
   // ১. ক্যালকুলেটর মডাল ওপেন করা
   window.openCustomCalc = function(prodId, name, unit, basePrice, baseWeight, packCharge, minOrder, shopId, shopName) {
-    // 🚀 সেফটি চেক: যদি পুরোনো প্রোডাক্টের minOrder 0 থাকে, তবে ডিফল্ট 1 ধরা হবে
-    let actualMinOrder = minOrder;
-    let actualPackCharge = packCharge || 0;
-    
-    if (unit === 'kg' || unit === 'ltr') {
-       // কেজি বা লিটারে মিনিমাম 0.1 হতে পারে, তবে আমরা ডেটাবেসের ভ্যালুই ব্যবহার করব
-    } else {
-       // pcs, box, drsjon এর জন্য মিনিমাম কমপক্ষে 1 হবে
-       if (!actualMinOrder || actualMinOrder <= 0) actualMinOrder = 1; 
-    }
+  // 🚀 সেফটি চেক: যদি kg বা ltr এর সাথে ভুল করে 1000 সেভ হয়ে থাকে, তবে সেটাকে 1 করে দেওয়া হলো
+  let actualBaseWeight = baseWeight;
+  if ((unit === 'kg' || unit === 'ltr') && baseWeight >= 100) {
+    actualBaseWeight = 1;
+  } 
+  // pcs, box, drsjon এর জন্যও 1 ধরা হবে
+  else if ((unit === 'drsjon' || unit === 'pcs' || unit === 'box') && baseWeight >= 100) {
+    actualBaseWeight = 1;
+  }
 
-    // যদি baseWeight ভুল থাকে (যেমন 1000), তবে pcs/drsjon এর জন্য 1 করে দেওয়া
-    let actualBaseWeight = baseWeight;
-    if ((unit === 'drsjon' || unit === 'pcs' || unit === 'box') && baseWeight >= 100) {
-      actualBaseWeight = 1;
-    }
+  // মিনিমাম অর্ডার চেক
+  let actualMinOrder = minOrder || 1;
+  let actualPackCharge = packCharge || 0;
 
-    calcProduct = { 
-      prodId, name, unit, basePrice, 
-      baseWeight: actualBaseWeight, 
-      packCharge: actualPackCharge, 
-      minOrder: actualMinOrder, 
-      shopId, shopName 
-    };
-    
-    document.getElementById('calc-prod-name').innerText = name;
-    document.getElementById('calc-base-info').innerText = `₹${basePrice} / ${actualBaseWeight} ${unit}`;
-    document.getElementById('calc-pack-info').innerText = `₹${actualPackCharge}`;
-    
-    switchCalcMode('weight');
-    document.getElementById('calc-input-val').value = '';
-    document.getElementById('calc-error').style.display = 'none';
-    document.getElementById('calc-result-box').style.display = 'none';
-    document.getElementById('btn-calc-confirm').disabled = true;
-
-    document.getElementById('dlv-custom-calc-modal').classList.add('active');
+  calcProduct = { 
+    prodId, name, unit, basePrice, 
+    baseWeight: actualBaseWeight, 
+    packCharge: actualPackCharge, 
+    minOrder: actualMinOrder, 
+    shopId, shopName 
   };
+  
+  document.getElementById('calc-prod-name').innerText = name;
+  // 🚀 এখন সুন্দরভাবে ₹200 / 1 kg দেখাবে
+  document.getElementById('calc-base-info').innerText = `₹${basePrice} / ${actualBaseWeight} ${unit}`;
+  document.getElementById('calc-pack-info').innerText = `₹${actualPackCharge}`;
+  
+  switchCalcMode('weight');
+  document.getElementById('calc-input-val').value = '';
+  document.getElementById('calc-error').style.display = 'none';
+  document.getElementById('calc-result-box').style.display = 'none';
+  document.getElementById('btn-calc-confirm').disabled = true;
+
+  document.getElementById('dlv-custom-calc-modal').classList.add('active');
+};
 
   // ২. লাইভ ক্যালকুলেশন (ম্যাথ ঠিক করা হলো)
   window.calculateCustomValue = function() {
-    const inputVal = parseFloat(document.getElementById('calc-input-val').value);
-    const errEl = document.getElementById('calc-error');
-    const resBox = document.getElementById('calc-result-box');
-    const confirmBtn = document.getElementById('btn-calc-confirm');
+  const inputVal = parseFloat(document.getElementById('calc-input-val').value);
+  const errEl = document.getElementById('calc-error');
+  const resBox = document.getElementById('calc-result-box');
+  const confirmBtn = document.getElementById('btn-calc-confirm');
 
-    if (isNaN(inputVal) || inputVal <= 0) {
-      errEl.style.display = 'none';
-      resBox.style.display = 'none';
-      confirmBtn.disabled = true;
-      return;
-    }
+  if (isNaN(inputVal) || inputVal <= 0) {
+    errEl.style.display = 'none';
+    resBox.style.display = 'none';
+    confirmBtn.disabled = true;
+    return;
+  }
 
-    let finalWeight = 0;
-    let totalPrice = 0;
-    let productPrice = 0;
+  let finalWeight = 0;
+  let totalPrice = 0;
+  let productPrice = 0;
 
-    if (calcMode === 'weight') {
-      finalWeight = inputVal;
-      productPrice = (finalWeight / calcProduct.baseWeight) * calcProduct.basePrice;
-      totalPrice = productPrice + calcProduct.packCharge;
-    } else {
-      // বাজেট মোড
-      if (inputVal <= calcProduct.packCharge) {
-        errEl.innerText = `দুঃখিত! বাজেট প্যাকিং চার্জ (₹${calcProduct.packCharge}) এর চেয়ে বেশি হতে হবে।`;
-        errEl.style.display = 'block';
-        resBox.style.display = 'none';
-        confirmBtn.disabled = true;
-        return;
-      }
-      const productBudget = inputVal - calcProduct.packCharge;
-      finalWeight = (productBudget / calcProduct.basePrice) * calcProduct.baseWeight;
-      productPrice = productBudget;
-      totalPrice = inputVal; 
-    }
-
-    // 🚀 মিনিমাম অর্ডার লিমিট চেক (শুধু এরর দেখাবে, অন্য কিছু লুকাবে না)
-    if (calcProduct.minOrder > 0 && finalWeight < calcProduct.minOrder) {
-      errEl.innerText = `❌ মিনিমাম ${calcProduct.minOrder} ${calcProduct.unit} অর্ডার করতে হবে।`;
+  if (calcMode === 'weight') {
+    finalWeight = inputVal;
+    // 🚀 এখানে baseWeight এখন 1 (কারণ openCustomCalc এ ফিক্স করা হয়েছে)
+    productPrice = (finalWeight / calcProduct.baseWeight) * calcProduct.basePrice;
+    totalPrice = productPrice + calcProduct.packCharge;
+  } else {
+    // বাজেট মোড
+    if (inputVal <= calcProduct.packCharge) {
+      errEl.innerText = `দুঃখিত! বাজেট প্যাকিং চার্জ (₹${calcProduct.packCharge}) এর চেয়ে বেশি হতে হবে।`;
       errEl.style.display = 'block';
       resBox.style.display = 'none';
       confirmBtn.disabled = true;
       return;
     }
+    const productBudget = inputVal - calcProduct.packCharge;
+    finalWeight = (productBudget / calcProduct.basePrice) * calcProduct.baseWeight;
+    productPrice = productBudget;
+    totalPrice = inputVal; 
+  }
 
-    errEl.style.display = 'none';
-    resBox.style.display = 'block';
-    confirmBtn.disabled = false;
+  // 🚀 মিনিমাম অর্ডার লিমিট চেক
+  if (calcProduct.minOrder > 0 && finalWeight < calcProduct.minOrder) {
+    errEl.innerText = `❌ মিনিমাম ${calcProduct.minOrder} ${calcProduct.unit} অর্ডার করতে হবে।`;
+    errEl.style.display = 'block';
+    resBox.style.display = 'none';
+    confirmBtn.disabled = true;
+    return;
+  }
 
-    document.getElementById('calc-res-prod-price').innerText = `₹${productPrice.toFixed(2)}`;
-    document.getElementById('calc-res-pack-price').innerText = `₹${calcProduct.packCharge}`;
-    document.getElementById('calc-res-total').innerText = `₹${totalPrice.toFixed(2)}`;
-    
-    // 🚀 ওজন বা কোয়ান্টিটি সুন্দরভাবে দেখানো (যেমন: 6 drsjon, 0.5 kg)
-    let displayQty = finalWeight;
-    if (calcProduct.unit === 'kg' || calcProduct.unit === 'ltr') {
-      displayQty = finalWeight; // baseWeight যদি 1 হয়, তবে এটাই ঠিক আছে
-    } else {
-      // pcs, box, drsjon এর জন্য দশমিক না দেখিয়ে পূর্ণ সংখ্যা দেখানো
-      displayQty = Math.floor(finalWeight * 100) / 100; 
-    }
-    
-    document.getElementById('calc-res-weight').innerText = `${displayQty} ${calcProduct.unit}`;
-  };
+  errEl.style.display = 'none';
+  resBox.style.display = 'block';
+  confirmBtn.disabled = false;
 
+  document.getElementById('calc-res-prod-price').innerText = `₹${productPrice.toFixed(2)}`;
+  document.getElementById('calc-res-pack-price').innerText = `₹${calcProduct.packCharge}`;
+  document.getElementById('calc-res-total').innerText = `₹${totalPrice.toFixed(2)}`;
+  
+  // 🚀 রেজাল্ট সুন্দরভাবে দেখানো (1.00 এর বদলে 1, এবং 0.50 এর বদলে 0.5)
+  let displayQty = finalWeight;
+  
+  if (calcProduct.unit === 'pcs' || calcProduct.unit === 'drsjon' || calcProduct.unit === 'box') {
+    // পিস বা ডজন এর ক্ষেত্রে দশমিক থাকলে কমিয়ে দেখাবে
+    displayQty = Math.floor(finalWeight * 100) / 100; 
+  } else {
+    // কেজি বা লিটার এর ক্ষেত্রে দশমিকের পর ২ ঘর পর্যন্ত দেখাবে (যেমন: 0.50 kg)
+    displayQty = parseFloat(finalWeight.toFixed(2)); 
+  }
+  
+  document.getElementById('calc-res-weight').innerText = `${displayQty} ${calcProduct.unit}`;
+};
   // ২. মোড পরিবর্তন (ওজন বা বাজেট)
   window.switchCalcMode = function(mode) {
     calcMode = mode;
