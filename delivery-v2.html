@@ -5438,47 +5438,33 @@ window.clearImageSearch = function() {
     }, 500);
   };
   
-    // ==================== MODERN POS SYSTEM (PART 4) ====================
+  // ==================== MODERN POS SYSTEM (UPDATED) ====================
   let posCart = [];
   let html5QrCode = null;
   let posBeep = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
-  let allPosProducts = []; // ম্যানুয়াল সার্চের জন্য
+  let allPosProducts = [];
+  let posCategories = new Set();
 
-  // ১. POS ওপেন করা
   window.openPOS = function() {
     document.getElementById('dlv-pos-modal').style.display = 'flex';
     posCart = [];
     updatePOSUI();
-    loadPOSManualProducts(); // ম্যানুয়াল প্রোডাক্ট লোড
+    loadPOSManualProducts();
     
-    // 🚀 স্ক্যানার অপ্টিমাইজ করা (১ডি বারকোডের জন্য qrbox বড় ও লম্বা করা হলো)
     html5QrCode = new Html5Qrcode("pos-reader");
-    const config = { 
-      fps: 15, 
-      qrbox: { width: 300, height: 120 }, // ১ডি বারকোডের জন্য বড় বক্স
-      aspectRatio: 1.777
-    };
+    const config = { fps: 15, qrbox: { width: 300, height: 120 }, aspectRatio: 1.777 };
     
     html5QrCode.start(
-      { facingMode: "environment" }, 
-      config,
-      onBarcodeScanned,
-      (errorMessage) => { /* এরর ইগনোর করুন */ }
-    ).catch((err) => {
-      console.log("Camera error:", err);
-      // ক্যামেরা না পেলে কিছুই হবে না, ম্যানুয়াল সার্চ তো থাকছেই
-    });
+      { facingMode: "environment" }, config,
+      onBarcodeScanned, (err) => {}
+    ).catch((err) => { console.log("Camera error:", err); });
   };
 
-  // ২. POS বন্ধ করা
   window.closePOS = function() {
     document.getElementById('dlv-pos-modal').style.display = 'none';
-    if(html5QrCode) {
-      html5QrCode.stop().then(() => { html5QrCode.clear(); }).catch(err => console.log(err));
-    }
+    if(html5QrCode) html5QrCode.stop().then(() => html5QrCode.clear()).catch(err => console.log(err));
   };
 
-  // ৩. ম্যানুয়াল প্রোডাক্ট লোড (দোকানদারের নিজের প্রোডাক্ট)
   function loadPOSManualProducts() {
     const grid = document.getElementById('pos-manual-grid');
     grid.innerHTML = '<div style="font-size:12px; color:#999; grid-column:1/-1;">প্রোডাক্ট লোড হচ্ছে...</div>';
@@ -5486,17 +5472,47 @@ window.clearImageSearch = function() {
     const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
     onSnapshot(q, (snap) => {
       allPosProducts = [];
-      snap.forEach(doc => allPosProducts.push({ id: doc.id, ...doc.data() }));
-      filterPOSProducts(''); // সব দেখাও
+      posCategories.clear();
+      
+      snap.forEach(doc => {
+        const p = doc.data();
+        p.id = doc.id;
+        allPosProducts.push(p);
+        if(p.category) posCategories.add(p.category);
+      });
+      
+      renderPOSCategories();
+      filterPOSProducts(''); 
     });
   }
 
-  // ৪. ম্যানুয়াল সার্চ ফিল্টার
+  // 🚀 ক্যাটাগরি রেন্ডার
+  function renderPOSCategories() {
+    const container = document.getElementById('pos-category-filters');
+    let html = `<div class="dlv-cat-chip active" onclick="filterPOSByCategory('all', this)" style="padding: 4px 10px; font-size: 11px;">সব</div>`;
+    posCategories.forEach(cat => {
+      html += `<div class="dlv-cat-chip" onclick="filterPOSByCategory('${cat}', this)" style="padding: 4px 10px; font-size: 11px;">${cat}</div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  let currentPOSCategory = 'all';
+  window.filterPOSByCategory = function(cat, el) {
+    document.querySelectorAll('#pos-category-filters .dlv-cat-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    currentPOSCategory = cat;
+    filterPOSProducts(document.getElementById('pos-search-input').value);
+  };
+
   window.filterPOSProducts = function(queryText) {
     const grid = document.getElementById('pos-manual-grid');
     const q = queryText.toLowerCase().trim();
     
-    let filtered = allPosProducts.filter(p => p.name.toLowerCase().includes(q) && p.stock > 0);
+    let filtered = allPosProducts.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(q);
+      const matchesCat = currentPOSCategory === 'all' || p.category === currentPOSCategory;
+      return matchesSearch && matchesCat && p.stock > 0;
+    });
     
     if(filtered.length === 0) {
       grid.innerHTML = '<div style="font-size:12px; color:#999; grid-column:1/-1; text-align:center;">প্রোডাক্ট পাওয়া যায়নি।</div>';
@@ -5504,31 +5520,31 @@ window.clearImageSearch = function() {
     }
 
     let html = '';
-    filtered.slice(0, 10).forEach(prod => { // সর্বোচ্চ ১০টি দেখাবে
+    filtered.slice(0, 15).forEach(prod => {
+      // 🚀 undefinedkg ফিক্স করা হলো (যদি baseWeight না থাকে তবে 1 ধরবে)
+      const weightDisplay = prod.baseWeight ? `${prod.baseWeight}${prod.unit || 'gm'}` : '1pcs';
+      
       html += `
-        <div style="background:#f8f9fa; padding:8px; border-radius:6px; border:1px solid #eee; cursor:pointer;" onclick="addToPOSCart('${prod.id}', '${prod.name}', ${prod.price}, ${prod.baseWeight || 1000})">
+        <div style="background:#f8f9fa; padding:8px; border-radius:6px; border:1px solid #eee; cursor:pointer;" onclick="addToPOSCart('${prod.id}', '${prod.name}', ${prod.price}, '${weightDisplay}')">
           <div style="font-size:12px; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${prod.name}</div>
-          <div style="font-size:10px; color:var(--mp-primary); font-weight:bold;">₹${prod.price} / ${prod.baseWeight}${prod.unit || 'gm'}</div>
+          <div style="font-size:10px; color:var(--mp-primary); font-weight:bold;">₹${prod.price} / ${weightDisplay}</div>
         </div>
       `;
     });
     grid.innerHTML = html;
   };
 
-  // ৫. বারকোড স্ক্যান বা ম্যানুয়াল ক্লিক থেকে কার্টে অ্যাড
-  function onBarcodeScanned(decodedText, decodedResult) {
+  function onBarcodeScanned(decodedText) {
     try {
       const parts = decodedText.split('|');
       if(parts.length === 3) {
         const prodId = parts[0];
-        const weight = parseFloat(parts[1]);
         const price = parseFloat(parts[2]);
-        
-        // ডেটাবেস থেকে নাম বের করা (ঐচ্ছিক, তবে সুন্দর দেখানোর জন্য)
         const prodData = allPosProducts.find(p => p.id === prodId);
         const prodName = prodData ? prodData.name : "Scanned Product";
+        const weightDisplay = prodData && prodData.baseWeight ? `${prodData.baseWeight}${prodData.unit}` : '1pcs';
 
-        addToPOSCart(prodId, prodName, price, weight);
+        addToPOSCart(prodId, prodName, price, weightDisplay);
       }
     } catch(e) {}
   }
@@ -5540,15 +5556,11 @@ window.clearImageSearch = function() {
     } else {
       posCart.push({ id, name, price, weight, qty: 1 });
     }
-    
-    // সাউন্ড ও ভাইব্রেশন
     posBeep.play().catch(e => {});
     if(navigator.vibrate) navigator.vibrate(100);
-    
     updatePOSUI();
   };
 
-  // ৬. POS UI আপডেট
   function updatePOSUI() {
     const list = document.getElementById('pos-cart-list');
     let total = 0;
@@ -5563,15 +5575,18 @@ window.clearImageSearch = function() {
         total += itemTotal;
         totalItems += item.qty;
         
+        // 🚀 কোয়ান্টিটি + এবং - বাটন যুক্ত করা হলো
         html += `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee;">
             <div>
               <div style="font-size:13px; font-weight:bold;">${item.name}</div>
-              <div style="font-size:11px; color:#666;">₹${item.price} x ${item.qty}</div>
+              <div style="font-size:11px; color:#666;">₹${item.price} x ${item.qty} (${item.weight})</div>
             </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-              <b style="color:var(--mp-primary);">₹${itemTotal}</b>
-              <button onclick="removeFromPOSCart(${index})" style="background:red; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">x</button>
+            <div style="display:flex; align-items:center; gap:5px;">
+              <button onclick="changePOSQty(${index}, -1)" style="background:#f0f2f5; border:none; border-radius:4px; padding:2px 8px; font-weight:bold; cursor:pointer;">-</button>
+              <span style="font-size:13px; font-weight:bold;">${item.qty}</span>
+              <button onclick="changePOSQty(${index}, 1)" style="background:#e8f0fe; border:none; border-radius:4px; padding:2px 8px; font-weight:bold; color:var(--mp-primary); cursor:pointer;">+</button>
+              <button onclick="removeFromPOSCart(${index})" style="background:transparent; color:red; border:none; font-size:16px; cursor:pointer; margin-left:5px;">&times;</button>
             </div>
           </div>
         `;
@@ -5583,6 +5598,15 @@ window.clearImageSearch = function() {
     document.getElementById('pos-total-amount').innerText = `₹${total.toFixed(2)}`;
   }
 
+  // 🚀 কোয়ান্টিটি বাড়ানো/কমানোর ফাংশন
+  window.changePOSQty = function(index, change) {
+    posCart[index].qty += change;
+    if(posCart[index].qty <= 0) {
+      posCart.splice(index, 1);
+    }
+    updatePOSUI();
+  };
+
   window.removeFromPOSCart = function(index) {
     posCart.splice(index, 1);
     updatePOSUI();
@@ -5593,30 +5617,58 @@ window.clearImageSearch = function() {
     updatePOSUI();
   };
 
-  // ৭. পেমেন্ট মডাল ওপেন
   window.openPOSPaymentModal = function() {
     if(posCart.length === 0) return alert("কার্ট খালি!");
     const totalAmount = document.getElementById('pos-total-amount').innerText;
     document.getElementById('pos-pay-amount').innerText = totalAmount;
+    document.getElementById('pos-cust-name').value = '';
+    document.getElementById('pos-cust-phone').value = '';
+    document.getElementById('pos-cust-address').value = '';
     document.getElementById('dlv-pos-payment-modal').classList.add('active');
   };
 
-  // ৮. বিল ফাইনালাইজ করা
+  // 🚀 পেমেন্ট ফাইনালাইজ এবং WhatsApp বিল পাঠানো
   window.finalizePOSBill = async function(paymentMethod) {
     const totalStr = document.getElementById('pos-total-amount').innerText;
     const totalAmount = parseFloat(totalStr.replace('₹', ''));
+    const custName = document.getElementById('pos-cust-name').value.trim();
+    const custPhone = document.getElementById('pos-cust-phone').value.trim();
+    const custAddress = document.getElementById('pos-cust-address').value.trim();
     
     try {
+      // ফায়ারবেসে বিল সেভ করা
       await addDoc(collection(db, "pos_sales"), {
         shopId: currentUser.uid,
         shopName: globalUserData.name,
         items: posCart,
         totalAmount: totalAmount,
         paymentMethod: paymentMethod,
+        customerName: custName || 'Walk-in',
+        customerPhone: custPhone,
+        customerAddress: custAddress,
         saleDate: serverTimestamp()
       });
       
       document.getElementById('dlv-pos-payment-modal').classList.remove('active');
+      
+      // 🚀 WhatsApp বিল পাঠানোর লজিক
+      if (custPhone && custPhone.length >= 10) {
+        let billMsg = `আসসালামু আলাইকুম ${custName || 'কাস্টমার'},\n\n*${globalUserData.name}* থেকে আপনার বিল:\n\n`;
+        
+        posCart.forEach(item => {
+          billMsg += `▪️ ${item.name} (${item.weight}) - ${item.qty} x ₹${item.price} = ₹${item.price * item.qty}\n`;
+        });
+        
+        billMsg += `\n*সর্বমোট: ₹${totalAmount.toFixed(2)}*\nপেমেন্ট: ${paymentMethod}\n\nধন্যবাদ আমাদের সাথে কেনাকাটার জন্য!`;
+        
+        // ফোন নাম্বারে ৯১ যোগ করা (ভারতের জন্য)
+        let formattedPhone = custPhone;
+        if(formattedPhone.length === 10) formattedPhone = '91' + formattedPhone;
+        
+        const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(billMsg)}`;
+        window.open(waUrl, '_blank'); // নতুন ট্যাবে হোয়াটসঅ্যাপ ওপেন হবে
+      }
+      
       alert(`✅ ${paymentMethod} পেমেন্ট সফলভাবে সেভ হয়েছে!`);
       closePOS();
     } catch(e) {
@@ -5675,12 +5727,17 @@ window.clearImageSearch = function() {
     <!-- ক্যামেরা স্ক্যানার এরিয়া -->
     <div style="background:white; border-radius:12px; padding:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
       <div id="pos-reader" style="width:100%; max-width:400px; margin:0 auto; border-radius:8px; overflow:hidden;"></div>
-      <p style="text-align:center; font-size:12px; color:#666; margin-top:5px;">বারকোড ক্যামেরার সামনে ধরলেই অটো যোগ হবে...</p>
     </div>
 
     <!-- ম্যানুয়াল সার্চ ও ক্যাটাগরি -->
     <div style="background:white; border-radius:12px; padding:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
       <input type="text" id="pos-search-input" class="dlv-input" placeholder="🔍 নাম লিখে প্রোডাক্ট খুঁজুন..." oninput="filterPOSProducts(this.value)" style="margin-bottom: 10px;">
+      
+      <!-- 🚀 ক্যাটাগরি চিপস -->
+      <div id="pos-category-filters" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:5px; margin-bottom:10px; scrollbar-width:none;">
+        <!-- Categories will load here -->
+      </div>
+
       <div id="pos-manual-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 200px; overflow-y: auto;">
         <!-- Products will load here -->
       </div>
@@ -5703,22 +5760,40 @@ window.clearImageSearch = function() {
     </div>
     <div style="display:flex; gap:10px;">
       <button class="mp-btn" style="background:#e8f0fe; color:var(--mp-primary); margin:0;" onclick="clearPOSCart()">🗑️ ক্লিয়ার</button>
-      <button class="mp-btn" style="background:#0f9d58; color:white; margin:0; flex:2;" onclick="openPOSPaymentModal()">💵 পেমেন্ট ও বিল শেষ</button>
+      <button class="mp-btn" style="background:#0f9d58; color:white; margin:0; flex:2;" onclick="openPOSPaymentModal()">💵 পেমেন্ট ও বিল</button>
     </div>
   </div>
 </div>
 
-<!-- POS Payment Modal (নতুন) -->
+<!-- POS Payment Modal (আপডেট করা) -->
 <div id="dlv-pos-payment-modal" class="dlv-modal-overlay">
-  <div class="dlv-modal-content" style="text-align: center;">
-    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">পেমেন্ট মেথড সিলেক্ট করুন</h3>
-    <p style="font-size: 24px; font-weight: bold; margin-bottom: 20px;" id="pos-pay-amount">₹0.00</p>
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-pos-payment-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary); text-align: center;">পেমেন্ট ও কাস্টমার তথ্য</h3>
     
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-      <button class="mp-btn" style="background: #e6f4ea; color: #0f9d58; font-weight: bold;" onclick="finalizePOSBill('Cash')">💵 ক্যাশ</button>
-      <button class="mp-btn" style="background: #e8f0fe; color: #1a73e8; font-weight: bold;" onclick="finalizePOSBill('UPI')">📱 UPI / অনলাইন</button>
+    <div style="background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:15px; text-align:center;">
+      <div style="font-size:12px; color:#666;">মোট বিল</div>
+      <div style="font-size:24px; font-weight:bold; color:var(--mp-danger);" id="pos-pay-amount">₹0.00</div>
     </div>
-    <button class="mp-btn" onclick="document.getElementById('dlv-pos-payment-modal').classList.remove('active')" style="background: transparent; color: #999; margin-top: 15px;">বাতিল করুন</button>
+
+    <!-- 🚀 কাস্টমার ডিটেইলস -->
+    <div class="dlv-form-group">
+      <label>কাস্টমারের নাম (ঐচ্ছিক)</label>
+      <input type="text" id="pos-cust-name" class="dlv-input" placeholder="যেমন: রহিম">
+    </div>
+    <div class="dlv-form-group">
+      <label>মোবাইল নাম্বার (WhatsApp বিলের জন্য)</label>
+      <input type="tel" id="pos-cust-phone" class="dlv-input" placeholder="১০ ডিজিটের নাম্বার" maxlength="10">
+    </div>
+    <div class="dlv-form-group">
+      <label>ঠিকানা (ঐচ্ছিক)</label>
+      <input type="text" id="pos-cust-address" class="dlv-input" placeholder="ডেলিভারির ঠিকানা...">
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+      <button class="mp-btn" style="background: #e6f4ea; color: #0f9d58; font-weight: bold; margin:0;" onclick="finalizePOSBill('Cash')">💵 ক্যাশ</button>
+      <button class="mp-btn" style="background: #e8f0fe; color: #1a73e8; font-weight: bold; margin:0;" onclick="finalizePOSBill('UPI')">📱 UPI</button>
+    </div>
   </div>
 </div>
   
