@@ -5438,28 +5438,35 @@ window.clearImageSearch = function() {
     }, 500);
   };
   
-  // ==================== POS BILLING SYSTEM (PART 4) ====================
+    // ==================== MODERN POS SYSTEM (PART 4) ====================
   let posCart = [];
   let html5QrCode = null;
   let posBeep = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+  let allPosProducts = []; // ম্যানুয়াল সার্চের জন্য
 
-  // ১. POS ওপেন করা (দোকানদারের ড্যাশবোর্ড থেকে কল হবে)
+  // ১. POS ওপেন করা
   window.openPOS = function() {
     document.getElementById('dlv-pos-modal').style.display = 'flex';
     posCart = [];
     updatePOSUI();
+    loadPOSManualProducts(); // ম্যানুয়াল প্রোডাক্ট লোড
     
-    // স্ক্যানার চালু করা
+    // 🚀 স্ক্যানার অপ্টিমাইজ করা (১ডি বারকোডের জন্য qrbox বড় ও লম্বা করা হলো)
     html5QrCode = new Html5Qrcode("pos-reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 150 } }; // fps 10 মানে ১ সেকেন্ডে ১০ বার স্ক্যান করবে
+    const config = { 
+      fps: 15, 
+      qrbox: { width: 300, height: 120 }, // ১ডি বারকোডের জন্য বড় বক্স
+      aspectRatio: 1.777
+    };
     
     html5QrCode.start(
       { facingMode: "environment" }, 
       config,
       onBarcodeScanned,
-      (errorMessage) => { /* স্ক্যানিং এরর ইগনোর করুন */ }
+      (errorMessage) => { /* এরর ইগনোর করুন */ }
     ).catch((err) => {
-      alert("ক্যামেরা চালু করা যাচ্ছে না! পারমিশন চেক করুন।");
+      console.log("Camera error:", err);
+      // ক্যামেরা না পেলে কিছুই হবে না, ম্যানুয়াল সার্চ তো থাকছেই
     });
   };
 
@@ -5471,39 +5478,77 @@ window.clearImageSearch = function() {
     }
   };
 
-  // ৩. বারকোড স্ক্যান হলে কী হবে (অটোমেটিক ফায়ার হবে)
+  // ৩. ম্যানুয়াল প্রোডাক্ট লোড (দোকানদারের নিজের প্রোডাক্ট)
+  function loadPOSManualProducts() {
+    const grid = document.getElementById('pos-manual-grid');
+    grid.innerHTML = '<div style="font-size:12px; color:#999; grid-column:1/-1;">প্রোডাক্ট লোড হচ্ছে...</div>';
+
+    const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+    onSnapshot(q, (snap) => {
+      allPosProducts = [];
+      snap.forEach(doc => allPosProducts.push({ id: doc.id, ...doc.data() }));
+      filterPOSProducts(''); // সব দেখাও
+    });
+  }
+
+  // ৪. ম্যানুয়াল সার্চ ফিল্টার
+  window.filterPOSProducts = function(queryText) {
+    const grid = document.getElementById('pos-manual-grid');
+    const q = queryText.toLowerCase().trim();
+    
+    let filtered = allPosProducts.filter(p => p.name.toLowerCase().includes(q) && p.stock > 0);
+    
+    if(filtered.length === 0) {
+      grid.innerHTML = '<div style="font-size:12px; color:#999; grid-column:1/-1; text-align:center;">প্রোডাক্ট পাওয়া যায়নি।</div>';
+      return;
+    }
+
+    let html = '';
+    filtered.slice(0, 10).forEach(prod => { // সর্বোচ্চ ১০টি দেখাবে
+      html += `
+        <div style="background:#f8f9fa; padding:8px; border-radius:6px; border:1px solid #eee; cursor:pointer;" onclick="addToPOSCart('${prod.id}', '${prod.name}', ${prod.price}, ${prod.baseWeight || 1000})">
+          <div style="font-size:12px; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${prod.name}</div>
+          <div style="font-size:10px; color:var(--mp-primary); font-weight:bold;">₹${prod.price} / ${prod.baseWeight}${prod.unit || 'gm'}</div>
+        </div>
+      `;
+    });
+    grid.innerHTML = html;
+  };
+
+  // ৫. বারকোড স্ক্যান বা ম্যানুয়াল ক্লিক থেকে কার্টে অ্যাড
   function onBarcodeScanned(decodedText, decodedResult) {
-    // আমাদের জেনারেট করা বারকোডের ফরম্যাট: "productId|weight|price"
     try {
       const parts = decodedText.split('|');
       if(parts.length === 3) {
         const prodId = parts[0];
         const weight = parseFloat(parts[1]);
         const price = parseFloat(parts[2]);
-
-        // কার্টে আগে থেকে আছে কি না চেক করা
-        const existingItem = posCart.find(item => item.id === prodId);
-        if(existingItem) {
-          existingItem.qty += 1; // যদি থাকে তবে পরিমাণ ১ বাড়বে
-        } else {
-          posCart.push({ id: prodId, name: "Product", weight: weight, price: price, qty: 1 });
-        }
-
-        // সাউন্ড বাজানো
-        posBeep.play().catch(e => console.log("Audio play blocked"));
         
-        // UI আপডেট
-        updatePOSUI();
+        // ডেটাবেস থেকে নাম বের করা (ঐচ্ছিক, তবে সুন্দর দেখানোর জন্য)
+        const prodData = allPosProducts.find(p => p.id === prodId);
+        const prodName = prodData ? prodData.name : "Scanned Product";
 
-        // ফোনের ভাইব্রেশন
-        if(navigator.vibrate) navigator.vibrate(100);
+        addToPOSCart(prodId, prodName, price, weight);
       }
-    } catch(e) {
-      console.error("Invalid barcode format", e);
-    }
+    } catch(e) {}
   }
 
-  // ৪. POS UI আপডেট (কার্ট দেখানো)
+  window.addToPOSCart = function(id, name, price, weight) {
+    const existingItem = posCart.find(item => item.id === id);
+    if(existingItem) {
+      existingItem.qty += 1; 
+    } else {
+      posCart.push({ id, name, price, weight, qty: 1 });
+    }
+    
+    // সাউন্ড ও ভাইব্রেশন
+    posBeep.play().catch(e => {});
+    if(navigator.vibrate) navigator.vibrate(100);
+    
+    updatePOSUI();
+  };
+
+  // ৬. POS UI আপডেট
   function updatePOSUI() {
     const list = document.getElementById('pos-cart-list');
     let total = 0;
@@ -5521,7 +5566,7 @@ window.clearImageSearch = function() {
         html += `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee;">
             <div>
-              <div style="font-size:13px; font-weight:bold;">প্রোডাক্ট (${item.weight}gm)</div>
+              <div style="font-size:13px; font-weight:bold;">${item.name}</div>
               <div style="font-size:11px; color:#666;">₹${item.price} x ${item.qty}</div>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
@@ -5538,45 +5583,47 @@ window.clearImageSearch = function() {
     document.getElementById('pos-total-amount').innerText = `₹${total.toFixed(2)}`;
   }
 
-  // ৫. কার্ট থেকে আইটেম মুছে ফেলা
   window.removeFromPOSCart = function(index) {
     posCart.splice(index, 1);
     updatePOSUI();
   };
 
-  // ৬. কার্ট ক্লিয়ার করা
   window.clearPOSCart = function() {
     posCart = [];
     updatePOSUI();
   };
 
-  // ৭. পেমেন্ট সম্পন্ন করা (বিল তৈরি)
-  window.processPOSPayment = function() {
+  // ৭. পেমেন্ট মডাল ওপেন
+  window.openPOSPaymentModal = function() {
     if(posCart.length === 0) return alert("কার্ট খালি!");
-    
+    const totalAmount = document.getElementById('pos-total-amount').innerText;
+    document.getElementById('pos-pay-amount').innerText = totalAmount;
+    document.getElementById('dlv-pos-payment-modal').classList.add('active');
+  };
+
+  // ৮. বিল ফাইনালাইজ করা
+  window.finalizePOSBill = async function(paymentMethod) {
     const totalStr = document.getElementById('pos-total-amount').innerText;
     const totalAmount = parseFloat(totalStr.replace('₹', ''));
     
-    if(!confirm(`মোট বিল: ${totalStr}\n\nপেমেন্ট সম্পন্ন হয়েছে কি?`)) return;
-
-    // ডেটাবেসে সেভ করার লজিক (নতুন কালেকশন 'pos_sales' এ)
     try {
-      addDoc(collection(db, "pos_sales"), {
+      await addDoc(collection(db, "pos_sales"), {
         shopId: currentUser.uid,
         shopName: globalUserData.name,
         items: posCart,
         totalAmount: totalAmount,
+        paymentMethod: paymentMethod,
         saleDate: serverTimestamp()
-      }).then(() => {
-        alert("✅ বিল সফলভাবে সেভ হয়েছে!");
-        closePOS();
       });
+      
+      document.getElementById('dlv-pos-payment-modal').classList.remove('active');
+      alert(`✅ ${paymentMethod} পেমেন্ট সফলভাবে সেভ হয়েছে!`);
+      closePOS();
     } catch(e) {
       console.error(e);
       alert("বিল সেভ করতে সমস্যা হয়েছে!");
     }
-  };  
-
+  };
 </script>
 
 <!-- Live Tracking Modal (Customer) -->
@@ -5614,7 +5661,7 @@ window.clearImageSearch = function() {
   </div>
 </div>
 
-<!-- 🚀 POS Billing Modal -->
+<!-- 🚀 Modern POS Billing Modal -->
 <div id="dlv-pos-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#f0f2f5; z-index:10005; flex-direction:column;">
   
   <!-- POS Topbar -->
@@ -5625,10 +5672,18 @@ window.clearImageSearch = function() {
 
   <div style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:10px;">
     
-    <!-- ক্যামেরা স্ক্যানার -->
+    <!-- ক্যামেরা স্ক্যানার এরিয়া -->
     <div style="background:white; border-radius:12px; padding:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
       <div id="pos-reader" style="width:100%; max-width:400px; margin:0 auto; border-radius:8px; overflow:hidden;"></div>
       <p style="text-align:center; font-size:12px; color:#666; margin-top:5px;">বারকোড ক্যামেরার সামনে ধরলেই অটো যোগ হবে...</p>
+    </div>
+
+    <!-- ম্যানুয়াল সার্চ ও ক্যাটাগরি -->
+    <div style="background:white; border-radius:12px; padding:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+      <input type="text" id="pos-search-input" class="dlv-input" placeholder="🔍 নাম লিখে প্রোডাক্ট খুঁজুন..." oninput="filterPOSProducts(this.value)" style="margin-bottom: 10px;">
+      <div id="pos-manual-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 200px; overflow-y: auto;">
+        <!-- Products will load here -->
+      </div>
     </div>
 
     <!-- কার্ট লিস্ট -->
@@ -5648,8 +5703,22 @@ window.clearImageSearch = function() {
     </div>
     <div style="display:flex; gap:10px;">
       <button class="mp-btn" style="background:#e8f0fe; color:var(--mp-primary); margin:0;" onclick="clearPOSCart()">🗑️ ক্লিয়ার</button>
-      <button class="mp-btn" style="background:#0f9d58; color:white; margin:0; flex:2;" onclick="processPOSPayment()">💵 পেমেন্ট ও বিল শেষ</button>
+      <button class="mp-btn" style="background:#0f9d58; color:white; margin:0; flex:2;" onclick="openPOSPaymentModal()">💵 পেমেন্ট ও বিল শেষ</button>
     </div>
+  </div>
+</div>
+
+<!-- POS Payment Modal (নতুন) -->
+<div id="dlv-pos-payment-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="text-align: center;">
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">পেমেন্ট মেথড সিলেক্ট করুন</h3>
+    <p style="font-size: 24px; font-weight: bold; margin-bottom: 20px;" id="pos-pay-amount">₹0.00</p>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <button class="mp-btn" style="background: #e6f4ea; color: #0f9d58; font-weight: bold;" onclick="finalizePOSBill('Cash')">💵 ক্যাশ</button>
+      <button class="mp-btn" style="background: #e8f0fe; color: #1a73e8; font-weight: bold;" onclick="finalizePOSBill('UPI')">📱 UPI / অনলাইন</button>
+    </div>
+    <button class="mp-btn" onclick="document.getElementById('dlv-pos-payment-modal').classList.remove('active')" style="background: transparent; color: #999; margin-top: 15px;">বাতিল করুন</button>
   </div>
 </div>
   
