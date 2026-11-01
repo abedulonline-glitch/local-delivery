@@ -11,6 +11,8 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+<!-- Barcode Generator -->
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>  
 <!-- Fuse.js (ফাজি সার্চের জন্য) -->
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
 <!-- Transformers.js (AI মডেলের জন্য) -->
@@ -198,7 +200,14 @@
   50% { transform: scale(1.1); opacity: 0.7; }
   100% { transform: scale(1); opacity: 1; }
 }
- 
+
+  @media print {
+    body * { visibility: hidden; }
+    #barcode-print-area, #barcode-print-area * { visibility: visible; }
+    #barcode-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+    .no-print { display: none !important; }
+  }
+  
 </style>
 </head>
 <body>
@@ -817,6 +826,37 @@
     <div id="admin-pin-user-list"></div>
   </div>
 </div>
+
+        <!-- 🚀 Barcode & Print Section -->
+      <div class="mp-card" style="border-left: 4px solid #f9a825;">
+        <h3>🏷️ বারকোড প্রিন্ট সেন্টার</h3>
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">প্রোডাক্ট সিলেক্ট করে A4 পেজে বারকোড প্রিন্ট করুন।</p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div class="dlv-form-group">
+            <label>প্রোডাক্ট সিলেক্ট করুন</label>
+            <select id="bc-product-select" class="dlv-input" onchange="updateBarcodePreview()"></select>
+          </div>
+          <div class="dlv-form-group">
+            <label>কতটি বারকোড লাগবে?</label>
+            <input type="number" id="bc-quantity" class="dlv-input" value="20" min="1" max="100">
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="mp-btn mp-btn-primary" style="margin: 0; background: #0f9d58;" onclick="generateBarcodesToPrint()">🖨️ বারকোড প্রিন্ট করুন</button>
+        </div>
+      </div>
+
+      <!-- 🚀 Print Area (যা প্রিন্ট হবে) -->
+      <div id="barcode-print-area" style="display: none; background: white; padding: 10px;">
+        <div style="text-align: center; margin-bottom: 10px; font-size: 12px; color: #666;" class="no-print">
+          💡 প্রিন্ট ডায়ালগে গিয়ে 'Save as PDF' বা প্রিন্টার সিলেক্ট করুন।
+        </div>
+        <div id="barcode-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; border: 1px dashed #ccc; padding: 10px;">
+          <!-- বারকোডগুলো এখানে জেনারেট হবে -->
+        </div>
+      </div>  
 <!-- ==================== MODALS ==================== -->
 <!-- Recharge Modal -->
 <div id="dlv-recharge-modal" class="dlv-modal-overlay">
@@ -3558,6 +3598,7 @@ window.toggleDeliveryStatus = function(checkbox) {
   loadAdminCategories();
   loadCategoriesForDropdowns();
   loadAdminCategoryRequests();
+  loadBarcodeProducts();      
         
   const ordersQ = query(collection(db, "orders"), where("status", "==", "delivered"));
   onSnapshot(ordersQ, (snap) => {
@@ -5325,7 +5366,77 @@ window.clearImageSearch = function() {
     placeOrder(calcProduct.prodId, `${calcProduct.name} (${finalWeightStr})`, totalPrice, calcProduct.shopId, calcProduct.shopName);
   };
 
-</script>
+  // ==================== BARCODE GENERATOR LOGIC (PART 3) ====================
+  let allProductsForBarcode = [];
+
+  // ১. বারকোড ড্রপডাউনে প্রোডাক্ট লোড করা
+  function loadBarcodeProducts() {
+    const select = document.getElementById('bc-product-select');
+    if(!select) return;
+
+    onSnapshot(collection(db, "master_products"), (snap) => {
+      allProductsForBarcode = [];
+      select.innerHTML = '<option value="">-- প্রোডাক্ট সিলেক্ট করুন --</option>';
+      
+      snap.forEach(docSnap => {
+        const p = docSnap.data();
+        allProductsForBarcode.push({ id: docSnap.id, ...p });
+        select.innerHTML += `<option value="${docSnap.id}">${p.name} (${p.grade} - ${p.baseWeight}${p.unit})</option>`;
+      });
+    });
+  }
+
+  // ২. বারকোড জেনারেট ও প্রিন্ট
+  window.generateBarcodesToPrint = function() {
+    const prodId = document.getElementById('bc-product-select').value;
+    const qty = parseInt(document.getElementById('bc-quantity').value);
+
+    if (!prodId) return alert("দয়া করে একটি প্রোডাক্ট সিলেক্ট করুন!");
+    if (!qty || qty < 1) return alert("সঠিক পরিমাণ দিন!");
+
+    const prod = allProductsForBarcode.find(p => p.id === prodId);
+    if(!prod) return alert("প্রোডাক্ট পাওয়া যায়নি!");
+
+    const barcodeData = `${prod.id}|${prod.baseWeight}|${prod.basePrice}`;
+
+    const grid = document.getElementById('barcode-grid');
+    grid.innerHTML = '';
+
+    for (let i = 0; i < qty; i++) {
+      const sticker = document.createElement('div');
+      sticker.style.border = '1px solid #ccc';
+      sticker.style.padding = '5px';
+      sticker.style.textAlign = 'center';
+      sticker.style.borderRadius = '4px';
+      sticker.style.pageBreakInside = 'avoid';
+
+      sticker.innerHTML = `
+        <div style="font-size: 10px; font-weight: bold; margin-bottom: 2px;">${prod.name.substring(0, 15)}</div>
+        <svg class="barcode-svg"></svg>
+        <div style="font-size: 9px; font-weight: bold; margin-top: 2px;">₹${prod.basePrice} / ${prod.baseWeight}${prod.unit}</div>
+      `;
+      grid.appendChild(sticker);
+
+      const svg = sticker.querySelector('.barcode-svg');
+      try {
+        JsBarcode(svg, barcodeData, {
+          format: "CODE128",
+          width: 1.2,
+          height: 30,
+          displayValue: false
+        });
+      } catch(e) { console.error("Barcode error:", e); }
+    }
+
+    const printArea = document.getElementById('barcode-print-area');
+    printArea.style.display = 'block';
+    
+    setTimeout(() => {
+      window.print();
+    }, 500);
+  };
+  
+  </script>
 
 <!-- Live Tracking Modal (Customer) -->
 <div id="dlv-track-modal" class="dlv-modal-overlay">
