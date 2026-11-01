@@ -5047,22 +5047,30 @@ window.clearImageSearch = function() {
     if(!unitSelect) return;
     
     const unit = unitSelect.value;
-    let weightUnit = "gm"; // বেস ওজন ও স্টকের জন্য
-    let minUnit = "gm";    // মিনিমাম অর্ডারের জন্য
+    
+    // ডিফল্ট লেবেল
+    let weightUnit = "gm"; 
+    let minUnit = "gm";    
 
     // ইউনিট অনুযায়ী লজিক
     if(unit === 'kg') {
       weightUnit = "kg";
-      minUnit = "gm"; // কেজি হলেও মিনিমাম অর্ডার গ্রামে থাকবে
+      minUnit = "gm"; 
     } else if (unit === 'ltr') {
       weightUnit = "ltr";
       minUnit = "ml";
     } else if (unit === 'pcs') {
       weightUnit = "pcs";
       minUnit = "pcs";
+    } else if (unit === 'box') {
+      weightUnit = "box"; // 🚀 বক্স এর জন্য
+      minUnit = "box";
+    } else if (unit === 'drsjon') {
+      weightUnit = "drsjon"; // 🚀 ডজন এর জন্য
+      minUnit = "drsjon";
     }
 
-    // লেবেল আপডেট
+    // HTML লেবেলগুলো আপডেট করা
     const lblWeight = document.getElementById(context + '-lbl-weight');
     const lblMinOrder = document.getElementById(context + '-lbl-minorder');
     const lblStock = document.getElementById(context + '-lbl-stock');
@@ -5070,7 +5078,7 @@ window.clearImageSearch = function() {
     if(lblWeight) lblWeight.innerText = `বেস পরিমাণ (${weightUnit}) *`;
     if(lblMinOrder) lblMinOrder.innerText = `মিনিমাম অর্ডার (${minUnit})`;
     if(lblStock) lblStock.innerText = `মোট স্টক (${weightUnit}) *`;
-  };  
+  }; 
 
 </script>
 
