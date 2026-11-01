@@ -1047,7 +1047,7 @@
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       <div class="dlv-form-group">
         <label>ইউনিট *</label>
-        <select id="mp-unit" class="dlv-input" onchange="checkCustomOption(this)">
+       <select id="mp-unit" class="dlv-input" onchange="updateUnitLabels('mp')">
           <option value="kg">কেজি (kg)</option>
           <option value="ltr">লিটার (ltr)</option>
           <option value="pcs">পিস (pcs)</option>
@@ -1214,33 +1214,33 @@
     </div>
 
     <!-- 🚀 স্মার্ট অ্যাট্রিবিউট ফিল্ডসমূহ (এখানে মার্জ করা হয়েছে) -->
+        <!-- 🚀 স্মার্ট অ্যাট্রিবিউট ফিল্ডসমূহ -->
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       <div class="dlv-form-group">
         <label>বেস দাম (₹) *</label>
-        <input type="number" id="ep-price" class="dlv-input">
+        <input type="number" id="mp-price" class="dlv-input" placeholder="যেমন: 100">
       </div>
       <div class="dlv-form-group">
-        <label>বেস ওজন (গ্রাম) *</label>
-        <input type="number" id="ep-base-weight" class="dlv-input">
+        <label id="mp-lbl-weight">বেস পরিমাণ (gm) *</label>
+        <input type="number" id="mp-base-weight" class="dlv-input" placeholder="যেমন: 1000">
       </div>
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       <div class="dlv-form-group">
         <label>প্যাকিং চার্জ (₹) *</label>
-        <input type="number" id="ep-packaging-charge" class="dlv-input">
+        <input type="number" id="mp-packaging-charge" class="dlv-input" placeholder="যেমন: 5">
       </div>
       <div class="dlv-form-group">
-        <label>মিনিমাম অর্ডার ওজন (গ্রাম)</label>
-        <input type="number" id="ep-min-order" class="dlv-input">
+        <label id="mp-lbl-minorder">মিনিমাম অর্ডার (gm)</label>
+        <input type="number" id="mp-min-order" class="dlv-input" placeholder="যেমন: 100">
       </div>
     </div>
 
     <div class="dlv-form-group">
-      <label>মোট স্টক (গ্রাম) *</label>
-      <input type="number" id="ep-stock" class="dlv-input">
+      <label id="mp-lbl-stock">মোট স্টক (gm) *</label>
+      <input type="number" id="mp-stock" class="dlv-input" placeholder="যেমন: 10000">
     </div>
-
     <div class="dlv-form-group">
       <label>প্রোডাক্টের ছবি (পরিবর্তন করতে চাইলে)</label>
       <div style="display: flex; gap: 10px; margin-bottom: 10px;">
@@ -1780,7 +1780,7 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
     }
   }
   
- 
+
    // ==================== AUTH LOGIC (PHONE AS EMAIL) ====================
   const DUMMY_PASSWORD = "Delivery@123"; // সব ইউজারের জন্য এই ফিক্সড পাসওয়ার্ডটি ব্যবহার হবে
 
@@ -5027,7 +5027,38 @@ window.clearImageSearch = function() {
     } catch(e) { alert("সমস্যা হয়েছে!"); }
   };
                           
-  </script>
+  // 🚀 ইউনিট অনুযায়ী লেবেল পরিবর্তন করার ফাংশন
+  window.updateUnitLabels = function(context) {
+    const unitSelect = document.getElementById(context + '-unit');
+    if(!unitSelect) return;
+    
+    const unit = unitSelect.value;
+    let weightUnit = "gm"; // বেস ওজন ও স্টকের জন্য
+    let minUnit = "gm";    // মিনিমাম অর্ডারের জন্য
+
+    // ইউনিট অনুযায়ী লজিক
+    if(unit === 'kg') {
+      weightUnit = "kg";
+      minUnit = "gm"; // কেজি হলেও মিনিমাম অর্ডার গ্রামে থাকবে
+    } else if (unit === 'ltr') {
+      weightUnit = "ltr";
+      minUnit = "ml";
+    } else if (unit === 'pcs') {
+      weightUnit = "pcs";
+      minUnit = "pcs";
+    }
+
+    // লেবেল আপডেট
+    const lblWeight = document.getElementById(context + '-lbl-weight');
+    const lblMinOrder = document.getElementById(context + '-lbl-minorder');
+    const lblStock = document.getElementById(context + '-lbl-stock');
+
+    if(lblWeight) lblWeight.innerText = `বেস পরিমাণ (${weightUnit}) *`;
+    if(lblMinOrder) lblMinOrder.innerText = `মিনিমাম অর্ডার (${minUnit})`;
+    if(lblStock) lblStock.innerText = `মোট স্টক (${weightUnit}) *`;
+  };  
+
+</script>
 
 <!-- Live Tracking Modal (Customer) -->
 <div id="dlv-track-modal" class="dlv-modal-overlay">
