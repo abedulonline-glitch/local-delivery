@@ -3221,9 +3221,14 @@ window.openAddProductModal = function() {
         image: selectedMasterProduct.image,
         price: price,
         stock: stock,
+        
+        // 🚀 এই ৩টি লাইন নতুন যোগ করা হলো (অ্যাডমিনের ডেটা দোকানদারের প্রোডাক্টে কপি হবে)
+        baseWeight: selectedMasterProduct.baseWeight,
+        packagingCharge: selectedMasterProduct.packagingCharge,
+        minOrderWeight: selectedMasterProduct.minOrderWeight,
+        
         shopLat: globalUserData.lat || null,
         shopLng: globalUserData.lng || null,
-        // saveShopProduct ফাংশনে addDoc এর ভেতরে যোগ করুন:
         isPremium: globalUserData.isPremium || false,
         isVerified: globalUserData.isVerified || false,
         createdAt: serverTimestamp()
@@ -5171,18 +5176,34 @@ window.clearImageSearch = function() {
  
   // ১. ক্যালকুলেটর মডাল ওপেন করা
   window.openCustomCalc = function(prodId, name, unit, basePrice, baseWeight, packCharge, minOrder, shopId, shopName) {
-    // 🚀 যদি ইউনিট pcs/box/drsjon হয় এবং baseWeight ভুল করে 1000 দেওয়া থাকে, তবে সেটাকে 1 ধরা হবে
+    // 🚀 সেফটি চেক: যদি পুরোনো প্রোডাক্টের minOrder 0 থাকে, তবে ডিফল্ট 1 ধরা হবে
+    let actualMinOrder = minOrder;
+    let actualPackCharge = packCharge || 0;
+    
+    if (unit === 'kg' || unit === 'ltr') {
+       // কেজি বা লিটারে মিনিমাম 0.1 হতে পারে, তবে আমরা ডেটাবেসের ভ্যালুই ব্যবহার করব
+    } else {
+       // pcs, box, drsjon এর জন্য মিনিমাম কমপক্ষে 1 হবে
+       if (!actualMinOrder || actualMinOrder <= 0) actualMinOrder = 1; 
+    }
+
+    // যদি baseWeight ভুল থাকে (যেমন 1000), তবে pcs/drsjon এর জন্য 1 করে দেওয়া
     let actualBaseWeight = baseWeight;
     if ((unit === 'drsjon' || unit === 'pcs' || unit === 'box') && baseWeight >= 100) {
       actualBaseWeight = 1;
     }
 
-    calcProduct = { prodId, name, unit, basePrice, baseWeight: actualBaseWeight, packCharge, minOrder, shopId, shopName };
+    calcProduct = { 
+      prodId, name, unit, basePrice, 
+      baseWeight: actualBaseWeight, 
+      packCharge: actualPackCharge, 
+      minOrder: actualMinOrder, 
+      shopId, shopName 
+    };
     
     document.getElementById('calc-prod-name').innerText = name;
-    // 🚀 সুন্দরভাবে বেস রেট দেখানো (যেমন: ₹15 / 1 drsjon)
     document.getElementById('calc-base-info').innerText = `₹${basePrice} / ${actualBaseWeight} ${unit}`;
-    document.getElementById('calc-pack-info').innerText = `₹${packCharge}`;
+    document.getElementById('calc-pack-info').innerText = `₹${actualPackCharge}`;
     
     switchCalcMode('weight');
     document.getElementById('calc-input-val').value = '';
