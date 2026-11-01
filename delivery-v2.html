@@ -903,21 +903,22 @@
 </div>
 
 <!-- 🚀 Smart Custom Calculator Modal -->
+<!-- 🚀 Smart Custom Calculator Modal -->
 <div id="dlv-custom-calc-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-custom-calc-modal').classList.remove('active')">&times;</span>
     <h3 style="margin-bottom: 5px; color: var(--mp-primary);" id="calc-prod-name">প্রোডাক্টের নাম</h3>
     <p style="font-size: 12px; color: #666; margin-bottom: 15px;">বেস রেট: <b id="calc-base-info">₹0 / 0gm</b> | প্যাকিং: <b id="calc-pack-info">₹0</b></p>
 
-    <!-- টগল বাটন: ওজন নাকি বাজেট -->
+    <!-- টগল বাটন: পরিমাণ নাকি বাজেট -->
     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-      <button class="mp-btn" id="btn-mode-weight" onclick="switchCalcMode('weight')" style="margin: 0; background: var(--mp-primary); color: white;">⚖️ ওজন দিয়ে খুঁজুন</button>
-      <button class="mp-btn" id="btn-mode-budget" onclick="switchCalcMode('budget')" style="margin: 0; background: #f0f2f5; color: #333;">💰 বাজেট দিয়ে খুঁজুন</button>
+      <button class="mp-btn" id="btn-mode-weight" onclick="switchCalcMode('weight')" style="margin: 0; background: var(--mp-primary); color: white;">📦 পরিমাণ (Quantity) দিন</button>
+      <button class="mp-btn" id="btn-mode-budget" onclick="switchCalcMode('budget')" style="margin: 0; background: #f0f2f5; color: #333;">💰 বাজেট (Amount) দিন</button>
     </div>
 
     <!-- ইনপুট সেকশন -->
     <div class="dlv-form-group" id="calc-input-area">
-      <label id="calc-label">ওজন দিন (gm/kg)</label>
+      <label id="calc-label">আপনার প্রয়োজনীয় পরিমাণ দিন</label>
       <input type="number" id="calc-input-val" class="dlv-input" placeholder="যেমন: 250" oninput="calculateCustomValue()">
     </div>
 
@@ -926,15 +927,15 @@
     
     <div id="calc-result-box" style="background: #e8f0fe; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: none;">
       <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
-        <span>প্রোডাক্টের দাম:</span>
+        <span>প্রোডাক্টের মূল্য:</span>
         <b id="calc-res-prod-price">₹0</b>
       </div>
       <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
-        <span>প্যাকিং চার্জ:</span>
+        <span>প্যাকিং খরচ:</span>
         <b id="calc-res-pack-price">₹0</b>
       </div>
       <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; color: var(--mp-primary); border-top: 1px solid #ccc; padding-top: 5px; margin-top: 5px;">
-        <span>সর্বমোট:</span>
+        <span>সর্বমোট বিল:</span>
         <span id="calc-res-total">₹0</span>
       </div>
       <div style="display: flex; justify-content: space-between; font-size: 12px; color: #0f9d58; margin-top: 5px;">
@@ -5292,15 +5293,17 @@ window.clearImageSearch = function() {
       document.getElementById('btn-mode-budget').style.background = '#f0f2f5';
       document.getElementById('btn-mode-budget').style.color = '#333';
       
-      label.innerText = `আপনার কাঙ্ক্ষিত ওজন দিন (${calcProduct.unit})`;
-      inputVal.placeholder = `যেমন: 250`;
+      // 🚀 কাস্টমারের বোঝার সুবিধার্থে টেক্সট পরিবর্তন
+      label.innerText = `আপনার প্রয়োজনীয় পরিমাণ দিন (${calcProduct.unit})`;
+      inputVal.placeholder = `যেমন: 1`;
     } else {
       document.getElementById('btn-mode-budget').style.background = 'var(--mp-primary)';
       document.getElementById('btn-mode-budget').style.color = 'white';
       document.getElementById('btn-mode-weight').style.background = '#f0f2f5';
       document.getElementById('btn-mode-weight').style.color = '#333';
       
-      label.innerText = `আপনার বাজেট দিন (₹)`;
+      // 🚀 কাস্টমারের বোঝার সুবিধার্থে টেক্সট পরিবর্তন
+      label.innerText = `আপনার বাজেট (টাকা) দিন`;
       inputVal.placeholder = `যেমন: 60`;
     }
     
