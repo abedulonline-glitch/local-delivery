@@ -902,7 +902,52 @@
   </div>
 </div>
 
-<!-- Payment Method Modal -->
+<!-- 🚀 Smart Custom Calculator Modal -->
+<div id="dlv-custom-calc-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-custom-calc-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 5px; color: var(--mp-primary);" id="calc-prod-name">প্রোডাক্টের নাম</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">বেস রেট: <b id="calc-base-info">₹0 / 0gm</b> | প্যাকিং: <b id="calc-pack-info">₹0</b></p>
+
+    <!-- টগল বাটন: ওজন নাকি বাজেট -->
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+      <button class="mp-btn" id="btn-mode-weight" onclick="switchCalcMode('weight')" style="margin: 0; background: var(--mp-primary); color: white;">⚖️ ওজন দিয়ে খুঁজুন</button>
+      <button class="mp-btn" id="btn-mode-budget" onclick="switchCalcMode('budget')" style="margin: 0; background: #f0f2f5; color: #333;">💰 বাজেট দিয়ে খুঁজুন</button>
+    </div>
+
+    <!-- ইনপুট সেকশন -->
+    <div class="dlv-form-group" id="calc-input-area">
+      <label id="calc-label">ওজন দিন (gm/kg)</label>
+      <input type="number" id="calc-input-val" class="dlv-input" placeholder="যেমন: 250" oninput="calculateCustomValue()">
+    </div>
+
+    <!-- এরর ও রেজাল্ট সেকশন -->
+    <div id="calc-error" style="color: var(--mp-danger); font-size: 12px; font-weight: bold; margin-bottom: 10px; display: none;"></div>
+    
+    <div id="calc-result-box" style="background: #e8f0fe; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: none;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
+        <span>প্রোডাক্টের দাম:</span>
+        <b id="calc-res-prod-price">₹0</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
+        <span>প্যাকিং চার্জ:</span>
+        <b id="calc-res-pack-price">₹0</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; color: var(--mp-primary); border-top: 1px solid #ccc; padding-top: 5px; margin-top: 5px;">
+        <span>সর্বমোট:</span>
+        <span id="calc-res-total">₹0</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 12px; color: #0f9d58; margin-top: 5px;">
+        <span>আপনি পাচ্ছেন:</span>
+        <b id="calc-res-weight">0 gm</b>
+      </div>
+    </div>
+
+    <button class="mp-btn mp-btn-success" id="btn-calc-confirm" onclick="confirmCustomOrder()" disabled>🛒 অর্ডার কনফার্ম করুন</button>
+  </div>
+</div>
+    
+    <!-- Payment Method Modal -->
 <div id="dlv-payment-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content">
     <h3 style="margin-bottom: 15px; color: var(--mp-primary); text-align: center;">পেমেন্ট মেথড</h3>
@@ -2096,8 +2141,7 @@ window.filterCustomerProducts = function() {
           </div>
           <div style="text-align: right;">
             <div class="dlv-shop-price">₹${shop.price}</div>
-            <button class="mp-btn mp-btn-success" style="margin: 5px 0 0 0; padding: 6px 12px; font-size: 12px; width: auto;" onclick="placeOrder('${shop.id}', '${shop.name}', ${shop.price}, '${shop.shopId}', '${shop.shopName}')">Select</button>
-          </div>
+                        <button class="mp-btn mp-btn-success" style="margin: 5px 0 0 0; padding: 6px 12px; font-size: 12px; width: auto;" onclick="openCustomCalc('${shop.id}', '${shop.name}', '${shop.unit}', ${shop.price}, ${shop.baseWeight || 1000}, ${shop.packagingCharge || 0}, ${shop.minOrderWeight || 0}, '${shop.shopId}', '${shop.shopName}')">⚖️ কিনুন</button></div>
         </div>
       `;
     });
@@ -5120,6 +5164,140 @@ window.clearImageSearch = function() {
     if(lblMinOrder) lblMinOrder.innerText = `মিনিমাম অর্ডার (${minUnit})`;
     if(lblStock) lblStock.innerText = `মোট স্টক (${weightUnit}) *`;
   }; 
+
+  // ==================== SMART WEIGHT & BUDGET CALCULATOR (PART 2) ====================
+  let calcProduct = null;
+  let calcMode = 'weight'; // 'weight' অথবা 'budget'
+
+  // ১. ক্যালকুলেটর মডাল ওপেন করা (Shop Selector থেকে কল হবে)
+  window.openCustomCalc = function(prodId, name, unit, basePrice, baseWeight, packCharge, minOrder, shopId, shopName) {
+    calcProduct = { prodId, name, unit, basePrice, baseWeight, packCharge, minOrder, shopId, shopName };
+    
+    document.getElementById('calc-prod-name').innerText = name;
+    document.getElementById('calc-base-info').innerText = `₹${basePrice} / ${baseWeight}${unit}`;
+    document.getElementById('calc-pack-info').innerText = `₹${packCharge}`;
+    
+    // ডিফল্ট মোড সেট
+    switchCalcMode('weight');
+    document.getElementById('calc-input-val').value = '';
+    document.getElementById('calc-error').style.display = 'none';
+    document.getElementById('calc-result-box').style.display = 'none';
+    document.getElementById('btn-calc-confirm').disabled = true;
+
+    document.getElementById('dlv-custom-calc-modal').classList.add('active');
+  };
+
+  // ২. মোড পরিবর্তন (ওজন বা বাজেট)
+  window.switchCalcMode = function(mode) {
+    calcMode = mode;
+    const inputVal = document.getElementById('calc-input-val');
+    const label = document.getElementById('calc-label');
+    
+    if (mode === 'weight') {
+      document.getElementById('btn-mode-weight').style.background = 'var(--mp-primary)';
+      document.getElementById('btn-mode-weight').style.color = 'white';
+      document.getElementById('btn-mode-budget').style.background = '#f0f2f5';
+      document.getElementById('btn-mode-budget').style.color = '#333';
+      
+      label.innerText = `আপনার কাঙ্ক্ষিত ওজন দিন (${calcProduct.unit})`;
+      inputVal.placeholder = `যেমন: 250`;
+    } else {
+      document.getElementById('btn-mode-budget').style.background = 'var(--mp-primary)';
+      document.getElementById('btn-mode-budget').style.color = 'white';
+      document.getElementById('btn-mode-weight').style.background = '#f0f2f5';
+      document.getElementById('btn-mode-weight').style.color = '#333';
+      
+      label.innerText = `আপনার বাজেট দিন (₹)`;
+      inputVal.placeholder = `যেমন: 60`;
+    }
+    
+    inputVal.value = '';
+    document.getElementById('calc-error').style.display = 'none';
+    document.getElementById('calc-result-box').style.display = 'none';
+    document.getElementById('btn-calc-confirm').disabled = true;
+  };
+
+  // ৩. লাইভ ক্যালকুলেশন
+  window.calculateCustomValue = function() {
+    const inputVal = parseFloat(document.getElementById('calc-input-val').value);
+    const errEl = document.getElementById('calc-error');
+    const resBox = document.getElementById('calc-result-box');
+    const confirmBtn = document.getElementById('btn-calc-confirm');
+
+    if (isNaN(inputVal) || inputVal <= 0) {
+      errEl.style.display = 'none';
+      resBox.style.display = 'none';
+      confirmBtn.disabled = true;
+      return;
+    }
+
+    // 🚀 ইউনিট নরমালাইজ করা (সব হিসাব গ্রাম বা মিলি-লিটারে হবে)
+    let inputWeight = 0;
+    if (calcProduct.unit === 'kg') inputWeight = inputVal * 1000;
+    else if (calcProduct.unit === 'ltr') inputWeight = inputVal * 1000;
+    else inputWeight = inputVal; // gm, pcs, box, drsjon 
+
+    let totalPrice = 0;
+    let finalWeight = 0;
+    let productPrice = 0;
+
+    if (calcMode === 'weight') {
+      // ওজন দেওয়া হয়েছে
+      finalWeight = inputWeight;
+      productPrice = (finalWeight / calcProduct.baseWeight) * calcProduct.basePrice;
+      totalPrice = productPrice + calcProduct.packCharge;
+    } else {
+      // বাজেট দেওয়া হয়েছে
+      if (inputVal <= calcProduct.packCharge) {
+        errEl.innerText = `দুঃখিত! বাজেট প্যাকিং চার্জ (₹${calcProduct.packCharge}) এর চেয়ে বেশি হতে হবে।`;
+        errEl.style.display = 'block';
+        resBox.style.display = 'none';
+        confirmBtn.disabled = true;
+        return;
+      }
+      const productBudget = inputVal - calcProduct.packCharge;
+      finalWeight = (productBudget / calcProduct.basePrice) * calcProduct.baseWeight;
+      productPrice = productBudget;
+      totalPrice = inputVal; // যেহেতু বাজেটই দিল
+    }
+
+    // 🚀 ৪. মিনিমাম অর্ডার লিমিট চেক
+    if (calcProduct.minOrder > 0 && finalWeight < calcProduct.minOrder) {
+      errEl.innerText = `❌ মিনিমাম অর্ডার ${calcProduct.minOrder}${calcProduct.unit} হতে হবে।`;
+      errEl.style.display = 'block';
+      resBox.style.display = 'none';
+      confirmBtn.disabled = true;
+      return;
+    }
+
+    // সব ঠিক থাকলে রেজাল্ট দেখানো
+    errEl.style.display = 'none';
+    resBox.style.display = 'block';
+    confirmBtn.disabled = false;
+
+    document.getElementById('calc-res-prod-price').innerText = `₹${productPrice.toFixed(2)}`;
+    document.getElementById('calc-res-pack-price').innerText = `₹${calcProduct.packCharge}`;
+    document.getElementById('calc-res-total').innerText = `₹${totalPrice.toFixed(2)}`;
+    
+    // ওজন দেখানোর সময় কেজি/লিটার নরমালাইজ করা
+    if (calcProduct.unit === 'kg' || calcProduct.unit === 'ltr') {
+      document.getElementById('calc-res-weight').innerText = `${(finalWeight / 1000).toFixed(2)} ${calcProduct.unit}`;
+    } else {
+      document.getElementById('calc-res-weight').innerText = `${finalWeight.toFixed(0)} ${calcProduct.unit}`;
+    }
+  };
+
+  // ৫. অর্ডার কনফার্ম করা
+  window.confirmCustomOrder = function() {
+    const inputVal = parseFloat(document.getElementById('calc-input-val').value);
+    const totalPrice = parseFloat(document.getElementById('calc-res-total').innerText.replace('₹', ''));
+    const finalWeightStr = document.getElementById('calc-res-weight').innerText;
+    
+    document.getElementById('dlv-custom-calc-modal').classList.remove('active');
+    
+    // placeOrder ফাংশনে কাস্টম ডেটা পাঠানো
+    placeOrder(calcProduct.prodId, `${calcProduct.name} (${finalWeightStr})`, totalPrice, calcProduct.shopId, calcProduct.shopName);
+  };
 
 </script>
 
