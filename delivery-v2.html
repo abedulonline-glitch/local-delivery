@@ -1067,6 +1067,34 @@
       </div>
     </div>
 
+    <!-- 🚀 স্মার্ট অ্যাট্রিবিউট ফিল্ডসমূহ -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>বেস দাম (₹) *</label>
+        <input type="number" id="mp-price" class="dlv-input" placeholder="যেমন: 100">
+      </div>
+      <div class="dlv-form-group">
+        <label>বেস ওজন (গ্রাম) *</label>
+        <input type="number" id="mp-base-weight" class="dlv-input" placeholder="যেমন: 1000">
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>প্যাকিং চার্জ (₹) *</label>
+        <input type="number" id="mp-packaging-charge" class="dlv-input" placeholder="যেমন: 5">
+      </div>
+      <div class="dlv-form-group">
+        <label>মিনিমাম অর্ডার ওজন (গ্রাম)</label>
+        <input type="number" id="mp-min-order" class="dlv-input" placeholder="যেমন: 100">
+      </div>
+    </div>
+
+    <div class="dlv-form-group">
+      <label>মোট স্টক (গ্রাম) *</label>
+      <input type="number" id="mp-stock" class="dlv-input" placeholder="যেমন: 10000">
+    </div>
+
     <div class="dlv-form-group">
       <label>প্রোডাক্টের ছবি</label>
       <div style="display: flex; gap: 10px; margin-bottom: 10px;">
@@ -1183,6 +1211,34 @@
           <option value="C">Grade C</option>
         </select>
       </div>
+    </div>
+
+    <!-- 🚀 স্মার্ট অ্যাট্রিবিউট ফিল্ডসমূহ (এখানে মার্জ করা হয়েছে) -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>বেস দাম (₹) *</label>
+        <input type="number" id="ep-price" class="dlv-input">
+      </div>
+      <div class="dlv-form-group">
+        <label>বেস ওজন (গ্রাম) *</label>
+        <input type="number" id="ep-base-weight" class="dlv-input">
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>প্যাকিং চার্জ (₹) *</label>
+        <input type="number" id="ep-packaging-charge" class="dlv-input">
+      </div>
+      <div class="dlv-form-group">
+        <label>মিনিমাম অর্ডার ওজন (গ্রাম)</label>
+        <input type="number" id="ep-min-order" class="dlv-input">
+      </div>
+    </div>
+
+    <div class="dlv-form-group">
+      <label>মোট স্টক (গ্রাম) *</label>
+      <input type="number" id="ep-stock" class="dlv-input">
     </div>
 
     <div class="dlv-form-group">
@@ -3971,25 +4027,25 @@ window.closeMasterProductModal = function() {
         document.getElementById('ep-id').value = id;
         document.getElementById('ep-name').value = p.name;
         
-        // ক্যাটাগরি ও ইউনিট সিলেক্ট করা (যদি কাস্টম থাকে তবে সেটাও হ্যান্ডেল করবে)
         const catSelect = document.getElementById('ep-category');
-        const unitSelect = document.getElementById('ep-unit');
-        
-        // ক্যাটাগরি চেক
         if(!Array.from(catSelect.options).some(o => o.value === p.category)) {
           catSelect.add(new Option(p.category, p.category));
         }
         catSelect.value = p.category;
         
-        // ইউনিট চেক
+        const unitSelect = document.getElementById('ep-unit');
         if(!Array.from(unitSelect.options).some(o => o.value === p.unit)) {
           unitSelect.add(new Option(p.unit, p.unit));
         }
         unitSelect.value = p.unit;
         
         document.getElementById('ep-grade').value = p.grade || 'A';
+        document.getElementById('ep-price').value = p.basePrice || 0;
+        document.getElementById('ep-base-weight').value = p.baseWeight || 0;
+        document.getElementById('ep-packaging-charge').value = p.packagingCharge || 0;
+        document.getElementById('ep-min-order').value = p.minOrderWeight || 0;
+        document.getElementById('ep-stock').value = p.stock || 0;
         
-        // ইমেজ সেট করা
         uploadedImageUrl = p.image;
         const preview = document.getElementById('ep-image-preview');
         if (p.image) {
@@ -4012,19 +4068,40 @@ window.closeMasterProductModal = function() {
     const unit = document.getElementById('ep-unit').value;
     const grade = document.getElementById('ep-grade').value;
     
-    if (!name) return alert("নাম দিন!");
+    const price = parseFloat(document.getElementById('ep-price').value);
+    const baseWeight = parseFloat(document.getElementById('ep-base-weight').value);
+    const packagingCharge = parseFloat(document.getElementById('ep-packaging-charge').value) || 0;
+    const minOrder = parseFloat(document.getElementById('ep-min-order').value) || 0;
+    const stock = parseFloat(document.getElementById('ep-stock').value);
+
+    if (!name || isNaN(price) || isNaN(baseWeight) || isNaN(stock)) {
+      return alert("দয়া করে সব তথ্য সঠিকভাবে দিন!");
+    }
 
     const btn = document.getElementById('btn-update-mp');
     btn.innerText = "⏳ আপডেট হচ্ছে..."; btn.disabled = true;
 
     try {
       await updateDoc(doc(db, "master_products", id), {
-        name, category, unit, grade, image: uploadedImageUrl
+        name: name, 
+        category: category, 
+        unit: unit, 
+        grade: grade, 
+        image: uploadedImageUrl,
+        basePrice: price,
+        baseWeight: baseWeight,
+        packagingCharge: packagingCharge,
+        minOrderWeight: minOrder,
+        stock: stock
       });
       alert("সফলভাবে আপডেট হয়েছে!");
       document.getElementById('dlv-edit-mp-modal').classList.remove('active');
-    } catch (e) { alert("আপডেট করতে সমস্যা হয়েছে!"); } 
-    finally { btn.innerText = "💾 আপডেট করুন"; btn.disabled = false; }
+    } catch (e) { 
+      console.error(e);
+      alert("আপডেট করতে সমস্যা হয়েছে!"); 
+    } finally { 
+      btn.innerText = "💾 আপডেট করুন"; btn.disabled = false; 
+    }
   };
 
   // এডিট মডাল থেকে ডিলিট করা
@@ -4044,53 +4121,34 @@ window.closeMasterProductModal = function() {
     const unit = document.getElementById('mp-unit').value;
     const grade = document.getElementById('mp-grade').value;
     
-    if (!name) return alert("নাম দিন!");
+    // নতুন ফিল্ড
+    const price = parseFloat(document.getElementById('mp-price').value);
+    const baseWeight = parseFloat(document.getElementById('mp-base-weight').value);
+    const packagingCharge = parseFloat(document.getElementById('mp-packaging-charge').value) || 0;
+    const minOrder = parseFloat(document.getElementById('mp-min-order').value) || 0;
+    const stock = parseFloat(document.getElementById('mp-stock').value);
+
+    if (!name || isNaN(price) || isNaN(baseWeight) || isNaN(stock)) {
+      return alert("দয়া করে নাম, দাম, বেস ওজন এবং স্টক সঠিকভাবে দিন!");
+    }
 
     const btn = document.getElementById('btn-save-mp');
     btn.innerText = "⏳ সেভ হচ্ছে..."; 
     btn.disabled = true;
 
-    let generatedVector = null;
-
-    if (uploadedImageUrl && window.CLIPVisionModelWithProjection) {
-      try {
-        btn.innerText = "🧠 AI ভেক্টর তৈরি হচ্ছে..."; 
-        console.log("1. Starting AI process...");
-        
-        // 🚀 ১. Processor এবং Vision Model লোড করা
-        if (!window.clipProcessor) {
-          console.log("2. Loading CLIP Processor & Vision Model...");
-          window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
-          window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
-          console.log("3. Models loaded successfully!");
-        }
-        
-        // 🚀 ২. ছবি লোড করা (RawImage দিয়ে)
-        console.log("4. Extracting features...");
-        const image = await window.RawImage.fromURL(uploadedImageUrl);
-        
-        // 🚀 ৩. Processor দিয়ে ইমেজ প্রসেস করা
-        const image_inputs = await window.clipProcessor(image);
-        
-        // 🚀 ৪. Vision Model থেকে ইমেজ এমবেডিং বের করা
-        const { image_embeds } = await window.clipVisionModel(image_inputs);
-        
-        // 🚀 ৫. ভেক্টরকে অ্যারেতে রূপান্তর ও সাইজ কমানো (২৫৬ ডাইমেনশন)
-        generatedVector = Array.from(image_embeds.data).slice(0, 256); 
-        
-        console.log("5. Vector generated successfully! Length:", generatedVector.length);
-        
-      } catch (error) {
-        console.error("❌ Vector generation failed. Reason:", error);
-      }
-    } else {
-      console.warn("⚠️ Image URL missing or Transformers script not loaded.");
-    }
-
     try {
       await addDoc(collection(db, "master_products"), {
-        name: name, category: category, unit: unit, grade: grade, image: uploadedImageUrl, 
-        imageVector: generatedVector, 
+        name: name, 
+        category: category, 
+        unit: unit, 
+        grade: grade, 
+        image: uploadedImageUrl, 
+        imageVector: null, 
+        basePrice: price,
+        baseWeight: baseWeight,
+        packagingCharge: packagingCharge,
+        minOrderWeight: minOrder,
+        stock: stock,
         createdAt: serverTimestamp()
       });
       
