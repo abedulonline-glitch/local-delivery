@@ -1763,7 +1763,7 @@
   };
   
   // নতুন ইউজার রেজিস্ট্রেশন
-  window.handleRegister = async function() {
+   window.handleRegister = async function() {
     const name = document.getElementById('reg-name').value.trim();
     const phone = document.getElementById('reg-phone').value.trim();
     const btn = document.getElementById('reg-btn');
@@ -1774,35 +1774,33 @@
       return;
     }
 
-       // 🚀 ভ্যালিডেশন: দোকানদারের জন্য ম্যাপ, ডেলিভারি বয়ের জন্য পিনকোড
+    // 🚀 ১. নতুন ভ্যালিডেশন লজিক ও পিনকোড বের করা
     let finalPinCode = "000000";
 
     if (registerRole === 'shopkeeper') {
       if (!regLat || !regLng) {
         errorEl.innerText = "দয়া করে ম্যাপে আপনার লোকেশন পিন করুন!";
-        btn.innerText = "রেজিস্ট্রেশন করুন";
-        btn.disabled = false;
         return;
       }
-      // ম্যাপ থেকে পিনকোড বের করা (আগের লজিক)
+      // ম্যাপ থেকে পিনকোড বের করা
       try {
+        btn.innerText = "⏳ লোকেশন চেক হচ্ছে...";
+        btn.disabled = true;
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${regLat}&lon=${regLng}&format=json`);
         const data = await res.json();
-        if (data.address && data.address.postcode) finalPinCode = data.address.postcode;
-      } catch(e) {}
-
+        if (data.address && data.address.postcode) {
+          finalPinCode = data.address.postcode;
+        }
+      } catch(e) { 
+        console.log("Pin fetch error:", e); 
+      }
     } else if (registerRole === 'delivery') {
       const pinInput = document.getElementById('reg-delivery-pincode').value.trim();
       if (!pinInput || pinInput.length < 6) {
         errorEl.innerText = "দয়া করে সঠিক ৬ ডিজিটের পিনকোড লিখুন!";
-        btn.innerText = "রেজিস্ট্রেশন করুন";
-        btn.disabled = false;
         return;
       }
       finalPinCode = pinInput;
-    }
-      errorEl.innerText = "দয়া করে ম্যাপে আপনার লোকেশন পিন করুন!";
-      return;
     }
 
     // ফোন নাম্বারকে ইমেইলে কনভার্ট করা হচ্ছে
@@ -1812,16 +1810,9 @@
     btn.disabled = true;
 
     try {
-      // ১. ছবি আপলোড (যদি ছবি দেওয়া থাকে)
-const fileInput = document.getElementById('reg-profile-pic-file'); // 🚀 আইডি ঠিক করা হলো
-if (fileInput && fileInput.files && fileInput.files.length > 0) {
-  const formData = new FormData();
-  formData.append("image", fileInput.files[0]);
-  const imgRes = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
-  const imgData = await imgRes.json();
-  if (imgData.success) regProfilePicUrl = imgData.data.url;
-}
-      if (fileInput.files.length > 0) {
+      // 🚀 ২. ছবি আপলোড (যদি ছবি দেওয়া থাকে)
+      const fileInput = document.getElementById('reg-profile-pic-file');
+      if (fileInput && fileInput.files && fileInput.files.length > 0) {
         const formData = new FormData();
         formData.append("image", fileInput.files[0]);
         const imgRes = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
@@ -1829,52 +1820,40 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
         if (imgData.success) regProfilePicUrl = imgData.data.url;
       }
 
-      // ২. অ্যাকাউন্ট তৈরি (ইমেইল ও ফিক্সড পাসওয়ার্ড দিয়ে)
+      // 🚀 ৩. অ্যাকাউন্ট তৈরি
       const userCredential = await createUserWithEmailAndPassword(auth, fakeEmail, DUMMY_PASSWORD);
       const user = userCredential.user;
-
-           // 🚀 ম্যাপের লোকেশন থেকে পিনকোড বের করা (Nominatim API)
-      let userPinCode = "000000";
-      if (regLat && regLng) {
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${regLat}&lon=${regLng}&format=json`);
-          const data = await res.json();
-          if (data.address && data.address.postcode) {
-            userPinCode = data.address.postcode;
-          }
-        } catch (e) { console.log("Pin fetch error:", e); }
-      }
       
-      // ৩. ফায়ারস্টোরে ডেটা সেভ
+      // 🚀 ৪. ফায়ারস্টোরে ডেটা সেভ
       await setDoc(doc(db, "users", user.uid), {
         name: name,
-        phone: phone, // আসল ফোন নাম্বারটি সেভ করা হলো
-        email: fakeEmail, // সিস্টেমের জন্য
+        phone: phone, 
+        email: fakeEmail, 
         role: registerRole,
         walletBalance: 0,
         isManager: registerRole === 'manager' ? true : false,
         profilePic: regProfilePicUrl || null,
+        pinCode: finalPinCode, // নতুন পিনকোড সেভ হচ্ছে
         lat: regLat || null,
         lng: regLng || null,
         createdAt: serverTimestamp()
       });
 
       alert("সফলভাবে রেজিস্ট্রেশন সম্পন্ন হয়েছে!");
+      
     } catch (error) {
-  console.error(error);
-  if(error.code === 'auth/email-already-in-use') {
-    errorEl.innerText = "এই মোবাইল নাম্বারটি দিয়ে আগেই অ্যাকাউন্ট করা হয়েছে! দয়া করে লগইন করুন।";
-  } else if (error.code === 'auth/weak-password') {
-    errorEl.innerText = "পাসওয়ার্ডটি খুব দুর্বল! (অ্যাডমিনের সাথে যোগাযোগ করুন)";
-  } else {
-    // আসল এররটি স্ক্রিনে দেখাবে
-    errorEl.innerText = "সমস্যা: " + error.message; 
-  }
-  btn.innerText = "রেজিস্ট্রেশন করুন";
-  btn.disabled = false;
-}
+      console.error(error);
+      if(error.code === 'auth/email-already-in-use') {
+        errorEl.innerText = "এই মোবাইল নাম্বারটি দিয়ে আগেই অ্যাকাউন্ট করা হয়েছে! দয়া করে লগইন করুন।";
+      } else if (error.code === 'auth/weak-password') {
+        errorEl.innerText = "পাসওয়ার্ডটি খুব দুর্বল! (অ্যাডমিনের সাথে যোগাযোগ করুন)";
+      } else {
+        errorEl.innerText = "সমস্যা: " + error.message; 
+      }
+      btn.innerText = "রেজিস্ট্রেশন করুন";
+      btn.disabled = false;
+    }
   };
-
   // WhatsApp-এ ইনভাইট লিংক শেয়ার করা
   window.shareInvite = function(role) {
     const baseUrl = window.location.origin + window.location.pathname;
