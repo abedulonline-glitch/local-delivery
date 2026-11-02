@@ -208,6 +208,46 @@
     .no-print { display: none !important; }
   }
   
+  /* 🚀 বারকোড প্রিন্ট এরিয়া ফিক্স */
+  #barcode-print-area {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    background: white;
+    padding: 10px;
+  }
+
+  #barcode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* ৩টি কলাম হবে যাতে স্ক্রিনের বাইরে না যায় */
+    gap: 10px;
+    width: 100%;
+  }
+
+  .barcode-sticker {
+    border: 1px solid #ccc;
+    padding: 5px;
+    text-align: center;
+    border-radius: 4px;
+    page-break-inside: avoid;
+    overflow: hidden;
+    background: white;
+    max-width: 100%;
+  }
+
+  .barcode-sticker svg {
+    max-width: 100%; /* SVG যেন বক্সের বাইরে না যায় */
+    height: auto;
+  }
+
+  /* 🚀 প্রিন্ট CSS (শুধু বারকোড প্রিন্ট হবে) */
+  @media print {
+    body * { visibility: hidden; }
+    #barcode-print-area, #barcode-print-area * { visibility: visible; }
+    #barcode-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+    .no-print { display: none !important; }
+  }
+
 </style>
 </head>
 <body>
@@ -846,8 +886,8 @@
   </div>
 </div>
 
-        <!-- 🚀 Barcode & Print Section -->
-      <div class="mp-card" style="border-left: 4px solid #f9a825;">
+             <!-- 🚀 Barcode & Print Section -->
+      <div id="barcode-section-wrapper" class="mp-card mp-hidden" style="border-left: 4px solid #f9a825;">
         <h3>🏷️ বারকোড প্রিন্ট সেন্টার</h3>
         <p style="font-size: 12px; color: #666; margin-bottom: 10px;">প্রোডাক্ট সিলেক্ট করে A4 পেজে বারকোড প্রিন্ট করুন।</p>
         
@@ -866,16 +906,6 @@
           <button class="mp-btn mp-btn-primary" style="margin: 0; background: #0f9d58;" onclick="generateBarcodesToPrint()">🖨️ বারকোড প্রিন্ট করুন</button>
         </div>
       </div>
-
-      <!-- 🚀 Print Area (যা প্রিন্ট হবে) -->
-      <div id="barcode-print-area" style="display: none; background: white; padding: 10px;">
-        <div style="text-align: center; margin-bottom: 10px; font-size: 12px; color: #666;" class="no-print">
-          💡 প্রিন্ট ডায়ালগে গিয়ে 'Save as PDF' বা প্রিন্টার সিলেক্ট করুন।
-        </div>
-        <div id="barcode-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; border: 1px dashed #ccc; padding: 10px;">
-          <!-- বারকোডগুলো এখানে জেনারেট হবে -->
-        </div>
-      </div>  
 <!-- ==================== MODALS ==================== -->
 <!-- Recharge Modal -->
 <div id="dlv-recharge-modal" class="dlv-modal-overlay">
@@ -2216,7 +2246,7 @@ window.filterCustomerProducts = function() {
   // ============================================================
   // ROLE BASED UI SETUP
   // ============================================================
-  function setupUIForRole(role, userData) {
+   function setupUIForRole(role, userData) {
     mainApp.classList.remove('mp-hidden');
     document.getElementById('dlv-user-role').innerText = role.toUpperCase();
     
@@ -2240,6 +2270,23 @@ window.filterCustomerProducts = function() {
 
     // ৫. টপবারে ওয়ালেট আপডেট (সব রোলের জন্য)
     updateTopbarWallet(userData.walletBalance);
+
+    // 🚀 বারকোড সেকশন কন্ট্রোল (শুধু অ্যাডমিন এবং সাবস্ক্রিপশন থাকা দোকানদার)
+    const barcodeSection = document.getElementById('barcode-section-wrapper');
+    if (barcodeSection) {
+      if (role === 'admin') {
+        barcodeSection.classList.remove('mp-hidden');
+      } else if (role === 'shopkeeper') {
+        // ⚠️ দোকানদারের সাবস্ক্রিপশন স্ট্যাটাস চেক (আপনার ফায়ারবেস ফিল্ড অনুযায়ী পরিবর্তন করুন)
+        if (userData.subscriptionStatus === 'active' || userData.isStandalone === true || userData.isPremium === true) {
+          barcodeSection.classList.remove('mp-hidden');
+        } else {
+          barcodeSection.classList.add('mp-hidden');
+        }
+      } else {
+        barcodeSection.classList.add('mp-hidden');
+      }
+    }
 
     // Hide all views (এখানে 'manager' যোগ করা হয়েছে)
     ['customer', 'shopkeeper', 'delivery', 'admin', 'manager'].forEach(r => {
@@ -2333,7 +2380,7 @@ window.filterCustomerProducts = function() {
     } else if (role === 'admin') {
       loadAdminDashboardUI();
       
-        } else if (role === 'manager') {
+    } else if (role === 'manager') {
       // 🚀 ম্যানেজার ভিউ চেক
       const managerView = document.getElementById('dlv-view-manager');
       if (managerView) {
@@ -5392,6 +5439,7 @@ window.clearImageSearch = function() {
       sticker.style.padding = '5px';
       sticker.style.textAlign = 'center';
       sticker.style.borderRadius = '4px';
+      sticker.className = 'barcode-sticker'; // 🚀 নতুন ক্লাস যোগ করা হলো
       sticker.style.pageBreakInside = 'avoid'; // A4 পেজে যেন স্টিকার কেটে না যায়
 
       // 🚀 ৩. UI তে ফ্যালব্যাক ভ্যালুগুলো ব্যবহার করা
