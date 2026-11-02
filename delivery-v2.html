@@ -3310,46 +3310,66 @@ window.openAddProductModal = function() {
 
   // ৩. দোকানদারের নিজের রেট সেভ করা
   window.saveShopProduct = async function() {
-    const price = parseFloat(document.getElementById('sp-price').value);
-    const stock = parseInt(document.getElementById('sp-stock').value);
-    
-    if (isNaN(price) || isNaN(stock)) {
-      alert("দয়া করে রেট এবং স্টক সঠিকভাবে দিন!");
+    // 🚀 ১. ডেটা রিড ও ফ্যালব্যাক (যদি খালি থাকে তবে ডিফল্ট ভ্যালু নেবে)
+    const price = parseFloat(document.getElementById('sp-price').value) || 0;
+    const baseWeight = parseFloat(document.getElementById('sp-base-weight').value) || 1000; // ডিফল্ট ১০০০
+    const packagingCharge = parseFloat(document.getElementById('sp-packaging-charge').value) || 0;
+    const minOrder = parseFloat(document.getElementById('sp-min-order').value) || 0;
+    const stock = parseFloat(document.getElementById('sp-stock').value) || 0;
+
+    if (price <= 0) {
+      alert("দয়া করে সঠিক দাম দিন!");
       return;
     }
 
     try {
-      // 'products' কালেকশনে দোকানদারের প্রোডাক্টটি সেভ হবে
+      // 🚀 ২. AI ভেক্টর জেনারেশন (যদি ছবি থাকে)
+      let generatedVectorStr = "";
+      if (selectedMasterProduct.image && window.CLIPVisionModelWithProjection) {
+        try {
+          if (!window.clipProcessor) {
+            window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+            window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+          }
+          const image = await window.RawImage.fromURL(selectedMasterProduct.image);
+          const image_inputs = await window.clipProcessor(image);
+          const { image_embeds } = await window.clipVisionModel(image_inputs);
+          
+          const vectorArray = Array.from(image_embeds.data).slice(0, 256);
+          generatedVectorStr = JSON.stringify(vectorArray); 
+        } catch (err) {
+          console.warn("Vector generation skipped:", err);
+        }
+      }
+
+      // 🚀 ৩. ডেটাবেসে সেভ (সব ফিল্ড নিশ্চিতভাবে ডিফাইন করা)
       await addDoc(collection(db, "products"), {
         shopId: currentUser.uid,
-        shopName: globalUserData.name || 'My Shop',
-        masterProductId: selectedMasterProduct.masterId,
-        name: selectedMasterProduct.name,
-        category: selectedMasterProduct.category,
-        grade: selectedMasterProduct.grade,
-        unit: selectedMasterProduct.unit,
-        image: selectedMasterProduct.image,
+        shopName: globalUserData.name || 'Unknown Shop',
+        masterProductId: selectedMasterProduct.masterId || '',
+        name: selectedMasterProduct.name || 'Unknown Product',
+        category: selectedMasterProduct.category || 'General',
+        grade: selectedMasterProduct.grade || 'A',
+        unit: selectedMasterProduct.unit || 'pcs',
+        image: selectedMasterProduct.image || '',
+        
+        // 🚀 সেভ করা ফিল্ডগুলো (কোনো undefined নেই)
         price: price,
+        baseWeight: baseWeight,
+        packagingCharge: packagingCharge,
+        minOrderWeight: minOrder,
         stock: stock,
+        imageVector: generatedVectorStr, // ভেক্টর স্ট্রিং
         
-        // 🚀 এই ৩টি লাইন নতুন যোগ করা হলো (অ্যাডমিনের ডেটা দোকানদারের প্রোডাক্টে কপি হবে)
-        baseWeight: selectedMasterProduct.baseWeight,
-        packagingCharge: selectedMasterProduct.packagingCharge,
-        minOrderWeight: selectedMasterProduct.minOrderWeight,
-        
-        shopLat: globalUserData.lat || null,
-        shopLng: globalUserData.lng || null,
-        isPremium: globalUserData.isPremium || false,
-        isVerified: globalUserData.isVerified || false,
         createdAt: serverTimestamp()
       });
       
-      alert("আপনার রেট সফলভাবে সেভ হয়েছে!");
+      alert("আপনার প্রোডাক্ট সফলভাবে যুক্ত হয়েছে!");
       document.getElementById('dlv-set-price-modal').classList.remove('active');
       
     } catch (e) {
-      console.error(e);
-      alert("সেভ করতে সমস্যা হয়েছে!");
+      console.error("Save product error:", e);
+      alert("সেভ করতে সমস্যা হয়েছে: " + e.message);
     }
   };
 
