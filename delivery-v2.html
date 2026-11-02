@@ -1176,36 +1176,51 @@
   </div>
 </div>
 
-<!-- Set Price Modal (When a master product is clicked) -->
-<!-- Set Price Modal (Shopkeeper) -->
+<!-- Set Price Modal (Shopkeeper - Advanced) -->
 <div id="dlv-set-price-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-set-price-modal').classList.remove('active')">&times;</span>
     <h3 style="margin-bottom: 15px; color: var(--mp-primary);" id="sp-title">রেট ও স্টক দিন</h3>
     
-    <div class="dlv-form-group">
-      <label>আপনার বিক্রয় মূল্য (₹) *</label>
-      <input type="number" id="sp-price" class="dlv-input" placeholder="যেমন: 120">
-    </div>
-    
-    <div class="dlv-form-group">
-      <label>বেস ওজন/পরিমাণ (যেমন 1000gm বা 1pcs) *</label>
-      <input type="number" id="sp-base-weight" class="dlv-input" placeholder="যেমন: 1000">
-    </div>
-
-    <div class="dlv-form-group">
-      <label>প্যাকিং চার্জ (₹)</label>
-      <input type="number" id="sp-packaging-charge" class="dlv-input" placeholder="যেমন: 5">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>বেস দাম (₹) *</label>
+        <input type="number" id="sp-price" class="dlv-input" placeholder="যেমন: 120">
+      </div>
+      <div class="dlv-form-group">
+        <label>বেস ওজন (gm/pcs) *</label>
+        <input type="number" id="sp-base-weight" class="dlv-input" placeholder="যেমন: 1000">
+      </div>
     </div>
 
-    <div class="dlv-form-group">
-      <label>মিনিমাম অর্ডার পরিমাণ</label>
-      <input type="number" id="sp-min-order" class="dlv-input" placeholder="যেমন: 100">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>প্যাকিং চার্জ (₹)</label>
+        <input type="number" id="sp-packaging-charge" class="dlv-input" placeholder="যেমন: 5">
+      </div>
+      <div class="dlv-form-group">
+        <label>স্টক (মোট পরিমাণ) *</label>
+        <input type="number" id="sp-stock" class="dlv-input" placeholder="যেমন: 5000">
+      </div>
     </div>
 
-    <div class="dlv-form-group">
-      <label>আপনার স্টক (মোট পরিমাণ) *</label>
-      <input type="number" id="sp-stock" class="dlv-input" placeholder="যেমন: 5000">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="dlv-form-group">
+        <label>মিনিমাম অর্ডার (gm/pcs)</label>
+        <input type="number" id="sp-min-order" class="dlv-input" placeholder="যেমন: 100">
+      </div>
+      <div class="dlv-form-group">
+        <label>ম্যাক্সিমাম অর্ডার (gm/pcs)</label>
+        <input type="number" id="sp-max-order" class="dlv-input" placeholder="যেমন: 5000">
+      </div>
+    </div>
+
+    <!-- কাস্টম ওয়েট অপশন -->
+    <div style="background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:15px;">
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin:0;">
+        <input type="checkbox" id="sp-allow-custom" checked style="width:18px; height:18px; margin:0; cursor:pointer;">
+        <span>⚖️ কাস্টম ওজন নেওয়ার অনুমতি দিন (স্লাইডার)</span>
+      </label>
     </div>
 
     <button class="mp-btn mp-btn-success" onclick="saveShopProduct()">💾 সেভ করুন</button>
@@ -1252,7 +1267,7 @@
     </div>
 
     <div class="dlv-form-group">
-      <label>প্রোডাক্টের ছবি (AI ভেক্টরের জন্য জরুরি)</label>
+      <label>প্রোডাক্টের ছবি (AI সার্চের জন্য জরুরি)</label>
       <div style="display: flex; gap: 10px; margin-bottom: 10px;">
         <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'mp')">📷 ক্যামেরা</button>
         <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'mp')">🖼️ গ্যালারি</button>
@@ -3336,27 +3351,29 @@ window.openAddProductModal = function() {
 
   // ৩. দোকানদারের নিজের রেট সেভ করা
   window.saveShopProduct = async function() {
-    // 🚀 ১. নিরাপদভাবে ইনপুট ভ্যালু রিড করা (null চেক সহ)
     const priceEl = document.getElementById('sp-price');
     const weightEl = document.getElementById('sp-base-weight');
     const packEl = document.getElementById('sp-packaging-charge');
     const minOrderEl = document.getElementById('sp-min-order');
+    const maxOrderEl = document.getElementById('sp-max-order');
     const stockEl = document.getElementById('sp-stock');
+    const allowCustomEl = document.getElementById('sp-allow-custom');
 
     const price = priceEl ? (parseFloat(priceEl.value) || 0) : 0;
     const baseWeight = weightEl ? (parseFloat(weightEl.value) || 1000) : 1000;
     const packagingCharge = packEl ? (parseFloat(packEl.value) || 0) : 0;
     const minOrder = minOrderEl ? (parseFloat(minOrderEl.value) || 0) : 0;
+    const maxOrder = maxOrderEl ? (parseFloat(maxOrderEl.value) || 0) : 0;
     const stock = stockEl ? (parseFloat(stockEl.value) || 0) : 0;
+    const allowCustom = allowCustomEl ? allowCustomEl.checked : false;
 
-    // যদি দাম না দেওয়া থাকে
     if (price <= 0) {
       alert("দয়া করে সঠিক দাম দিন!");
       return;
     }
 
     try {
-      // 🚀 ২. AI ভেক্টর জেনারেশন (যদি ছবি থাকে)
+      // 🚀 AI ভেক্টর জেনারেশন
       let generatedVectorStr = "";
       if (selectedMasterProduct && selectedMasterProduct.image && window.CLIPVisionModelWithProjection) {
         try {
@@ -3375,7 +3392,7 @@ window.openAddProductModal = function() {
         }
       }
 
-      // 🚀 ৩. ডেটাবেসে সেভ (নিরাপদ ফিল্ড ম্যাপিং)
+      // 🚀 ডেটাবেসে সেভ
       await addDoc(collection(db, "products"), {
         shopId: currentUser.uid,
         shopName: globalUserData.name || 'Unknown Shop',
@@ -3390,8 +3407,10 @@ window.openAddProductModal = function() {
         baseWeight: baseWeight,
         packagingCharge: packagingCharge,
         minOrderWeight: minOrder,
+        maxOrderWeight: maxOrder, // 🚀 ম্যাক্সিমাম ওয়েট যোগ হলো
+        allowCustomWeight: allowCustom, // 🚀 কাস্টম ওয়েট যোগ হলো
         stock: stock,
-        imageVector: generatedVectorStr, // ভেক্টর স্ট্রিং
+        imageVector: generatedVectorStr, 
         
         createdAt: serverTimestamp()
       });
