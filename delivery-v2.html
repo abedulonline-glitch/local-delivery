@@ -567,6 +567,20 @@
         </div>
       </div>
 
+            <!-- 🚀 বারকোড সাবস্ক্রিপশন প্ল্যান -->
+      <div class="mp-card" style="border-left: 4px solid #f9a825;">
+        <h3>🏷️ বারকোড প্রিন্ট সেন্টার (প্ল্যান)</h3>
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">বারকোড জেনারেট ও প্রিন্ট করতে এই প্ল্যানটি চালু করুন।</p>
+        
+        <div id="barcode-plan-status" style="margin-bottom: 10px;">
+          <!-- JS দিয়ে এখানে স্ট্যাটাস দেখাবে -->
+        </div>
+
+        <div id="barcode-plan-buy-btn" style="display: none;">
+          <button class="mp-btn mp-btn-success" onclick="buyBarcodePlan()">🚀 বারকোড প্ল্যান চালু করুন (₹১০০/মাস)</button>
+        </div>
+      </div>
+
       <!-- নতুন অর্ডার (পেন্ডিং) -->
       <div class="mp-card" style="border-left: 4px solid var(--mp-danger);">
         <h3>🔔 নতুন অর্ডার (পেন্ডিং)</h3>
@@ -2286,17 +2300,19 @@ window.filterCustomerProducts = function() {
     updateTopbarWallet(userData.walletBalance);
 
     // 🚀 বারকোড সেকশন কন্ট্রোল (শুধু অ্যাডমিন এবং সাবস্ক্রিপশন থাকা দোকানদার)
+    // 🚀 বারকোড সেকশন কন্ট্রোল
     const barcodeSection = document.getElementById('barcode-section-wrapper');
     if (barcodeSection) {
       if (role === 'admin') {
         barcodeSection.classList.remove('mp-hidden');
       } else if (role === 'shopkeeper') {
-        // ⚠️ দোকানদারের সাবস্ক্রিপশন স্ট্যাটাস চেক (আপনার ফায়ারবেস ফিল্ড অনুযায়ী পরিবর্তন করুন)
-        if (userData.subscriptionStatus === 'active' || userData.isStandalone === true || userData.isPremium === true) {
+        // 🚀 এখানে isBarcodeActive চেক করা হচ্ছে
+        if (userData.isBarcodeActive === true || userData.subscriptionStatus === 'active' || userData.isStandalone === true) {
           barcodeSection.classList.remove('mp-hidden');
         } else {
           barcodeSection.classList.add('mp-hidden');
         }
+        loadBarcodePlanStatus(); // স্ট্যাটাস লোড করা
       } else {
         barcodeSection.classList.add('mp-hidden');
       }
@@ -5872,7 +5888,54 @@ async function assignClosestDeliveryBoy(orderId, order) {
     }
   };
 
-</script>
+  // ==================== BARCODE PLAN PURCHASE LOGIC ====================
+  window.buyBarcodePlan = async function() {
+    const planFee = 100; // এখানে আপনার প্ল্যানের দাম সেট করুন
+    const balance = globalUserData.walletBalance || 0;
+
+    if (balance < planFee) {
+      return alert(`দুঃখিত! আপনার ওয়ালেটে পর্যাপ্ত ব্যালেন্স নেই। (প্রয়োজন ₹${planFee})`);
+    }
+
+    if (!confirm(`আপনার ওয়ালেট থেকে ₹${planFee} কেটে বারকোড প্ল্যান চালু করা হবে। নিশ্চিত?`)) return;
+
+    try {
+      // ওয়ালেট থেকে টাকা কাটা এবং isBarcodeActive ট্রু করা
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        walletBalance: balance - planFee,
+        isBarcodeActive: true,
+        barcodePlanExpiry: new Date(new Date().setDate(new Date().getDate() + 30)) // ৩০ দিনের মেয়াদ
+      });
+
+      globalUserData.walletBalance = balance - planFee;
+      globalUserData.isBarcodeActive = true;
+      
+      updateTopbarWallet(balance - planFee);
+      alert("🎉 সফলভাবে বারকোড প্ল্যান চালু হয়েছে!");
+      window.location.reload(); // পেজ রিফ্রেশ করে চেঞ্জগুলো দেখানো
+
+    } catch(e) {
+      console.error(e);
+      alert("প্ল্যান চালু করতে সমস্যা হয়েছে!");
+    }
+  };
+
+  // খ) স্ট্যাটাস আপডেট ফাংশন (দোকানদার ড্যাশবোর্ডে কল হবে)
+  function loadBarcodePlanStatus() {
+    const statusEl = document.getElementById('barcode-plan-status');
+    const buyBtn = document.getElementById('barcode-plan-buy-btn');
+    if(!statusEl || !buyBtn) return;
+
+    if (globalUserData.isBarcodeActive) {
+      statusEl.innerHTML = `<div style="background:#e6f4ea; color:#0f9d58; padding:10px; border-radius:6px; font-weight:bold; text-align:center;">✅ আপনার বারকোড প্ল্যান চালু আছে</div>`;
+      buyBtn.style.display = 'none';
+    } else {
+      statusEl.innerHTML = `<div style="background:#fce8e6; color:#d93025; padding:10px; border-radius:6px; font-weight:bold; text-align:center;">❌ প্ল্যান চালু নেই</div>`;
+      buyBtn.style.display = 'block';
+    }
+  }
+    
+    </script>
 
 <!-- Live Tracking Modal (Customer) -->
 <div id="dlv-track-modal" class="dlv-modal-overlay">
