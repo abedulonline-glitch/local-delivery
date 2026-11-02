@@ -2300,19 +2300,20 @@ window.filterCustomerProducts = function() {
     updateTopbarWallet(userData.walletBalance);
 
     // 🚀 বারকোড সেকশন কন্ট্রোল (শুধু অ্যাডমিন এবং সাবস্ক্রিপশন থাকা দোকানদার)
-    // 🚀 বারকোড সেকশন কন্ট্রোল
+    // 🚀 বারকোড সেকশন কন্ট্রোল (শুধু অ্যাডমিন এবং স্ট্যান্ডঅ্যালোন/প্ল্যান থাকা দোকানদার)
     const barcodeSection = document.getElementById('barcode-section-wrapper');
     if (barcodeSection) {
       if (role === 'admin') {
         barcodeSection.classList.remove('mp-hidden');
+        loadBarcodeProducts(); // অ্যাডমিনের জন্য প্রোডাক্ট লোড
       } else if (role === 'shopkeeper') {
-        // 🚀 এখানে isBarcodeActive চেক করা হচ্ছে
-        if (userData.isBarcodeActive === true || userData.subscriptionStatus === 'active' || userData.isStandalone === true) {
+        // 🚀 শর্ত: নিজস্ব স্টোর মোড (isStandalone) অথবা বারকোড প্ল্যান (isBarcodeActive) থাকতে হবে
+        if (userData.isStandalone === true || userData.isBarcodeActive === true) {
           barcodeSection.classList.remove('mp-hidden');
+          loadBarcodeProducts(); // দোকানদারের নিজস্ব প্রোডাক্ট লোড
         } else {
           barcodeSection.classList.add('mp-hidden');
         }
-        loadBarcodePlanStatus(); // স্ট্যাটাস লোড করা
       } else {
         barcodeSection.classList.add('mp-hidden');
       }
@@ -5428,22 +5429,35 @@ window.clearImageSearch = function() {
   let allProductsForBarcode = [];
 
   // ১. বারকোড ড্রপডাউনে প্রোডাক্ট লোড করা
+   // ==================== BARCODE PRODUCT LOADING (FIXED) ====================
   function loadBarcodeProducts() {
     const select = document.getElementById('bc-product-select');
     if(!select) return;
 
-    onSnapshot(collection(db, "master_products"), (snap) => {
-      allProductsForBarcode = [];
-      select.innerHTML = '<option value="">-- প্রোডাক্ট সিলেক্ট করুন --</option>';
-      
-      snap.forEach(docSnap => {
-        const p = docSnap.data();
-        allProductsForBarcode.push({ id: docSnap.id, ...p });
-        select.innerHTML += `<option value="${docSnap.id}">${p.name} (${p.grade} - ${p.baseWeight}${p.unit})</option>`;
-      });
-    });
-  }
+    select.innerHTML = '<option value="">-- প্রোডাক্ট সিলেক্ট করুন --</option>';
+    allProductsForBarcode = [];
 
+    if (userRole === 'admin') {
+      // 🚀 অ্যাডমিন সব দোকানের প্রোডাক্ট দেখতে পাবে (অথবা চাইলে master_products)
+      onSnapshot(collection(db, "products"), (snap) => {
+        snap.forEach(docSnap => {
+          const p = docSnap.data();
+          allProductsForBarcode.push({ id: docSnap.id, ...p });
+          select.innerHTML += `<option value="${docSnap.id}">${p.name} (${p.shopName})</option>`;
+        });
+      });
+    } else {
+      // 🚀 দোকানদার শুধু তার নিজের প্রোডাক্ট দেখতে পাবে
+      const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+      onSnapshot(q, (snap) => {
+        snap.forEach(docSnap => {
+          const p = docSnap.data();
+          allProductsForBarcode.push({ id: docSnap.id, ...p });
+          select.innerHTML += `<option value="${docSnap.id}">${p.name} (${p.baseWeight || 1000}${p.unit || 'gm'})</option>`;
+        });
+      });
+    }
+  }
    // 🚀 এরর ১ ফিক্স: খালি ফাংশন (HTML-এ onchange দেওয়া আছে তাই এটি লাগবে)
   window.updateBarcodePreview = function() {
     // আপাতত কিছুই করার দরকার নেই
