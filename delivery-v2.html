@@ -594,7 +594,6 @@
           <button class="mp-btn mp-btn-primary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px;" onclick="openAddProductModal()">+ Add</button>
                <div style="display: flex; gap: 5px;">
           <button class="mp-btn" style="width: auto; padding: 6px 10px; margin: 0; font-size: 12px; background: #f9a825; color: #000; font-weight: bold;" onclick="scrollToBarcodeCenter()">🏷️ বারকোড</button>
-          <button class="mp-btn mp-btn-primary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px;" onclick="openAddProductModal()">+ Add</button>
         </div>
          </h3>
         <div id="shop-product-list"></div>
@@ -1169,18 +1168,35 @@
 </div>
 
 <!-- Set Price Modal (When a master product is clicked) -->
+<!-- Set Price Modal (Shopkeeper) -->
 <div id="dlv-set-price-modal" class="dlv-modal-overlay">
-  <div class="dlv-modal-content">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-set-price-modal').classList.remove('active')">&times;</span>
     <h3 style="margin-bottom: 15px; color: var(--mp-primary);" id="sp-title">রেট ও স্টক দিন</h3>
     
     <div class="dlv-form-group">
-      <label>আপনার রেট (₹) *</label>
-      <input type="number" id="sp-price" class="dlv-input" placeholder="0.00">
+      <label>আপনার বিক্রয় মূল্য (₹) *</label>
+      <input type="number" id="sp-price" class="dlv-input" placeholder="যেমন: 120">
     </div>
+    
     <div class="dlv-form-group">
-      <label>স্টক পরিমাণ *</label>
-      <input type="number" id="sp-stock" class="dlv-input" placeholder="0">
+      <label>বেস ওজন/পরিমাণ (যেমন 1000gm বা 1pcs) *</label>
+      <input type="number" id="sp-base-weight" class="dlv-input" placeholder="যেমন: 1000">
+    </div>
+
+    <div class="dlv-form-group">
+      <label>প্যাকিং চার্জ (₹)</label>
+      <input type="number" id="sp-packaging-charge" class="dlv-input" placeholder="যেমন: 5">
+    </div>
+
+    <div class="dlv-form-group">
+      <label>মিনিমাম অর্ডার পরিমাণ</label>
+      <input type="number" id="sp-min-order" class="dlv-input" placeholder="যেমন: 100">
+    </div>
+
+    <div class="dlv-form-group">
+      <label>আপনার স্টক (মোট পরিমাণ) *</label>
+      <input type="number" id="sp-stock" class="dlv-input" placeholder="যেমন: 5000">
     </div>
 
     <button class="mp-btn mp-btn-success" onclick="saveShopProduct()">💾 সেভ করুন</button>
@@ -3310,13 +3326,20 @@ window.openAddProductModal = function() {
 
   // ৩. দোকানদারের নিজের রেট সেভ করা
   window.saveShopProduct = async function() {
-    // 🚀 ১. ডেটা রিড ও ফ্যালব্যাক (যদি খালি থাকে তবে ডিফল্ট ভ্যালু নেবে)
-    const price = parseFloat(document.getElementById('sp-price').value) || 0;
-    const baseWeight = parseFloat(document.getElementById('sp-base-weight').value) || 1000; // ডিফল্ট ১০০০
-    const packagingCharge = parseFloat(document.getElementById('sp-packaging-charge').value) || 0;
-    const minOrder = parseFloat(document.getElementById('sp-min-order').value) || 0;
-    const stock = parseFloat(document.getElementById('sp-stock').value) || 0;
+    // 🚀 ১. নিরাপদভাবে ইনপুট ভ্যালু রিড করা (null চেক সহ)
+    const priceEl = document.getElementById('sp-price');
+    const weightEl = document.getElementById('sp-base-weight');
+    const packEl = document.getElementById('sp-packaging-charge');
+    const minOrderEl = document.getElementById('sp-min-order');
+    const stockEl = document.getElementById('sp-stock');
 
+    const price = priceEl ? (parseFloat(priceEl.value) || 0) : 0;
+    const baseWeight = weightEl ? (parseFloat(weightEl.value) || 1000) : 1000;
+    const packagingCharge = packEl ? (parseFloat(packEl.value) || 0) : 0;
+    const minOrder = minOrderEl ? (parseFloat(minOrderEl.value) || 0) : 0;
+    const stock = stockEl ? (parseFloat(stockEl.value) || 0) : 0;
+
+    // যদি দাম না দেওয়া থাকে
     if (price <= 0) {
       alert("দয়া করে সঠিক দাম দিন!");
       return;
@@ -3325,7 +3348,7 @@ window.openAddProductModal = function() {
     try {
       // 🚀 ২. AI ভেক্টর জেনারেশন (যদি ছবি থাকে)
       let generatedVectorStr = "";
-      if (selectedMasterProduct.image && window.CLIPVisionModelWithProjection) {
+      if (selectedMasterProduct && selectedMasterProduct.image && window.CLIPVisionModelWithProjection) {
         try {
           if (!window.clipProcessor) {
             window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
@@ -3342,7 +3365,7 @@ window.openAddProductModal = function() {
         }
       }
 
-      // 🚀 ৩. ডেটাবেসে সেভ (সব ফিল্ড নিশ্চিতভাবে ডিফাইন করা)
+      // 🚀 ৩. ডেটাবেসে সেভ (নিরাপদ ফিল্ড ম্যাপিং)
       await addDoc(collection(db, "products"), {
         shopId: currentUser.uid,
         shopName: globalUserData.name || 'Unknown Shop',
@@ -3353,7 +3376,6 @@ window.openAddProductModal = function() {
         unit: selectedMasterProduct.unit || 'pcs',
         image: selectedMasterProduct.image || '',
         
-        // 🚀 সেভ করা ফিল্ডগুলো (কোনো undefined নেই)
         price: price,
         baseWeight: baseWeight,
         packagingCharge: packagingCharge,
