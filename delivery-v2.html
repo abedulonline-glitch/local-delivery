@@ -1185,45 +1185,96 @@
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-set-price-modal').classList.remove('active')">&times;</span>
     <h3 style="margin-bottom: 15px; color: var(--mp-primary);" id="sp-title">রেট ও স্টক দিন</h3>
     
+    <!-- বেস প্রাইস ও ওজন -->
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       <div class="dlv-form-group">
         <label>বেস দাম (₹) *</label>
         <input type="number" id="sp-price" class="dlv-input" placeholder="যেমন: 120">
       </div>
       <div class="dlv-form-group">
-        <label>বেস ওজন (gm/pcs) *</label>
-        <input type="number" id="sp-base-weight" class="dlv-input" placeholder="যেমন: 1000">
+        <label>বেস ওজন *</label>
+        <div style="display: flex; gap: 5px;">
+          <input type="number" id="sp-base-weight" class="dlv-input" placeholder="যেমন: 1" style="flex: 1;">
+          <select id="sp-base-unit" class="dlv-input" style="width: 80px; padding: 5px;">
+            <option value="kg">kg</option>
+            <option value="gm">gm</option>
+            <option value="pcs">pcs</option>
+            <option value="ltr">ltr</option>
+          </select>
+        </div>
       </div>
     </div>
 
+    <!-- প্যাকিং চার্জ ও স্টক -->
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       <div class="dlv-form-group">
         <label>প্যাকিং চার্জ (₹)</label>
         <input type="number" id="sp-packaging-charge" class="dlv-input" placeholder="যেমন: 5">
       </div>
       <div class="dlv-form-group">
-        <label>স্টক (মোট পরিমাণ) *</label>
-        <input type="number" id="sp-stock" class="dlv-input" placeholder="যেমন: 5000">
+        <label>স্টক *</label>
+        <div style="display: flex; gap: 5px;">
+          <input type="number" id="sp-stock" class="dlv-input" placeholder="যেমন: 50" style="flex: 1;">
+          <select id="sp-stock-unit" class="dlv-input" style="width: 80px; padding: 5px;">
+            <option value="kg">kg</option>
+            <option value="gm">gm</option>
+            <option value="pcs">pcs</option>
+            <option value="ltr">ltr</option>
+          </select>
+        </div>
       </div>
     </div>
 
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>মিনিমাম অর্ডার (gm/pcs)</label>
-        <input type="number" id="sp-min-order" class="dlv-input" placeholder="যেমন: 100">
-      </div>
-      <div class="dlv-form-group">
-        <label>ম্যাক্সিমাম অর্ডার (gm/pcs)</label>
-        <input type="number" id="sp-max-order" class="dlv-input" placeholder="যেমন: 5000">
-      </div>
+    <div class="dlv-form-group">
+      <label>গ্রেড (Grade) *</label>
+      <select id="sp-grade" class="dlv-input">
+        <option value="A" selected>Grade A</option>
+        <option value="B">Grade B</option>
+        <option value="C">Grade C</option>
+      </select>
     </div>
 
-    <!-- কাস্টম ওয়েট অপশন -->
-    <div style="background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:15px;">
-      <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin:0;">
+    <!-- 🚀 কাস্টম ওয়েট এবং মিনিমাম/ম্যাক্সিমাম লজিক -->
+    <div style="background:#f8f9fa; padding:12px; border-radius:8px; margin-bottom:15px;">
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin-bottom:10px;">
         <input type="checkbox" id="sp-allow-custom" checked style="width:18px; height:18px; margin:0; cursor:pointer;">
         <span>⚖️ কাস্টম ওজন নেওয়ার অনুমতি দিন (স্লাইডার)</span>
       </label>
+      
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="dlv-form-group" style="margin: 0;">
+          <label style="font-size: 11px;">মিনিমাম অর্ডার</label>
+          <div style="display: flex; gap: 5px;">
+            <input type="number" id="sp-min-order" class="dlv-input" placeholder="যেমন: 100" style="flex: 1;">
+            <select id="sp-min-unit" class="dlv-input" style="width: 60px; padding: 2px; font-size: 11px;">
+              <option value="gm">gm</option>
+              <option value="kg">kg</option>
+            </select>
+          </div>
+          <select id="sp-min-extra" class="dlv-input" style="margin-top: 5px; font-size: 11px; padding: 4px;">
+            <option value="0">কোনো বাড়তি নেই</option>
+            <option value="2">+২% বাড়তি চার্জ</option>
+            <option value="3">+৩% বাড়তি চার্জ</option>
+            <option value="5">+৫% বাড়তি চার্জ</option>
+          </select>
+        </div>
+        <div class="dlv-form-group" style="margin: 0;">
+          <label style="font-size: 11px;">ম্যাক্সিমাম অর্ডার</label>
+          <div style="display: flex; gap: 5px;">
+            <input type="number" id="sp-max-order" class="dlv-input" placeholder="যেমন: 5" style="flex: 1;">
+            <select id="sp-max-unit" class="dlv-input" style="width: 60px; padding: 2px; font-size: 11px;">
+              <option value="kg">kg</option>
+              <option value="gm">gm</option>
+            </select>
+          </div>
+          <select id="sp-max-discount" class="dlv-input" style="margin-top: 5px; font-size: 11px; padding: 4px;">
+            <option value="0">কোনো ছাড় নেই</option>
+            <option value="1">-১% ডিসকাউন্ট</option>
+            <option value="2">-২% ডিসকাউন্ট</option>
+            <option value="5">-৫% ডিসকাউন্ট</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <button class="mp-btn mp-btn-success" onclick="saveShopProduct()">💾 সেভ করুন</button>
@@ -1235,7 +1286,7 @@
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="closeMasterProductModal()">&times;</span>
     <h3 style="margin-bottom: 15px; color: var(--mp-primary);">🏷️ মাস্টার প্রোডাক্ট (টেমপ্লেট)</h3>
-    <p style="font-size:11px; color:#666; margin-bottom:15px;">অ্যাডমিন শুধু প্রোডাক্টের ধরন তৈরি করবেন। দাম ও স্টক দোকানদার বসাবেন।</p>
+    <p style="font-size:11px; color:#666; margin-bottom:15px;">অ্যাডমিন শুধু প্রোডাক্টের নাম ও ছবি দেবেন। দাম, ওজন ও ইউনিট দোকানদার বসাবেন।</p>
     
     <div class="dlv-form-group">
       <label>প্রোডাক্টের নাম *</label>
@@ -1245,28 +1296,6 @@
     <div class="dlv-form-group">
       <label>ক্যাটাগরি *</label>
       <select id="mp-category" class="dlv-input" onchange="checkCustomOption(this)"></select>
-    </div>
-
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>ইউনিট *</label>
-        <select id="mp-unit" class="dlv-input" onchange="updateUnitLabels('mp')">
-          <option value="kg">কেজি (kg)</option>
-          <option value="gm">গ্রাম (gm)</option>
-          <option value="ltr">লিটার (ltr)</option>
-          <option value="pcs">পিস (pcs)</option>
-          <option value="box">বক্স (box)</option>
-          <option value="drsjon">ডজন (drsjon)</option>
-        </select>
-      </div>
-      <div class="dlv-form-group">
-        <label>গ্রেড (Grade) *</label>
-        <select id="mp-grade" class="dlv-input">
-          <option value="A">Grade A</option>
-          <option value="B">Grade B</option>
-          <option value="C">Grade C</option>
-        </select>
-      </div>
     </div>
 
     <div class="dlv-form-group">
@@ -3354,31 +3383,28 @@ window.openAddProductModal = function() {
 
   // ৩. দোকানদারের নিজের রেট সেভ করা
   window.saveShopProduct = async function() {
-    const priceEl = document.getElementById('sp-price');
-    const weightEl = document.getElementById('sp-base-weight');
-    const packEl = document.getElementById('sp-packaging-charge');
-    const minOrderEl = document.getElementById('sp-min-order');
-    const maxOrderEl = document.getElementById('sp-max-order');
-    const stockEl = document.getElementById('sp-stock');
-    const allowCustomEl = document.getElementById('sp-allow-custom');
+    const price = parseFloat(document.getElementById('sp-price').value) || 0;
+    const baseWeight = parseFloat(document.getElementById('sp-base-weight').value) || 1;
+    const baseUnit = document.getElementById('sp-base-unit').value;
+    const packagingCharge = parseFloat(document.getElementById('sp-packaging-charge').value) || 0;
+    const stock = parseFloat(document.getElementById('sp-stock').value) || 0;
+    const stockUnit = document.getElementById('sp-stock-unit').value;
+    const grade = document.getElementById('sp-grade').value;
+    
+    const allowCustom = document.getElementById('sp-allow-custom').checked;
+    const minOrder = parseFloat(document.getElementById('sp-min-order').value) || 0;
+    const minUnit = document.getElementById('sp-min-unit').value;
+    const minExtra = parseFloat(document.getElementById('sp-min-extra').value) || 0;
+    const maxOrder = parseFloat(document.getElementById('sp-max-order').value) || 0;
+    const maxUnit = document.getElementById('sp-max-unit').value;
+    const maxDiscount = parseFloat(document.getElementById('sp-max-discount').value) || 0;
 
-    const price = priceEl ? (parseFloat(priceEl.value) || 0) : 0;
-    const baseWeight = weightEl ? (parseFloat(weightEl.value) || 1000) : 1000;
-    const packagingCharge = packEl ? (parseFloat(packEl.value) || 0) : 0;
-    const minOrder = minOrderEl ? (parseFloat(minOrderEl.value) || 0) : 0;
-    const maxOrder = maxOrderEl ? (parseFloat(maxOrderEl.value) || 0) : 0;
-    const stock = stockEl ? (parseFloat(stockEl.value) || 0) : 0;
-    const allowCustom = allowCustomEl ? allowCustomEl.checked : false;
-
-    if (price <= 0) {
-      alert("দয়া করে সঠিক দাম দিন!");
-      return;
-    }
+    if (price <= 0) return alert("সঠিক দাম দিন!");
 
     try {
-      // 🚀 AI ভেক্টর জেনারেশন
+      // AI ভেক্টর জেনারেশন (আপনার আগের কোড অনুযায়ী)
       let generatedVectorStr = "";
-      if (selectedMasterProduct && selectedMasterProduct.image && window.CLIPVisionModelWithProjection) {
+      if (selectedMasterProduct.image && window.CLIPVisionModelWithProjection) {
         try {
           if (!window.clipProcessor) {
             window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
@@ -3387,43 +3413,46 @@ window.openAddProductModal = function() {
           const image = await window.RawImage.fromURL(selectedMasterProduct.image);
           const image_inputs = await window.clipProcessor(image);
           const { image_embeds } = await window.clipVisionModel(image_inputs);
-          
           const vectorArray = Array.from(image_embeds.data).slice(0, 256);
           generatedVectorStr = JSON.stringify(vectorArray); 
-        } catch (err) {
-          console.warn("Vector generation skipped:", err);
-        }
+        } catch (err) { console.warn("Vector skipped:", err); }
       }
 
-      // 🚀 ডেটাবেসে সেভ
+      // ডেটাবেসে সেভ
       await addDoc(collection(db, "products"), {
         shopId: currentUser.uid,
-        shopName: globalUserData.name || 'Unknown Shop',
+        shopName: globalUserData.name || 'Unknown',
         masterProductId: selectedMasterProduct.masterId || '',
-        name: selectedMasterProduct.name || 'Unknown Product',
+        name: selectedMasterProduct.name || 'Unknown',
         category: selectedMasterProduct.category || 'General',
-        grade: selectedMasterProduct.grade || 'A',
-        unit: selectedMasterProduct.unit || 'pcs',
         image: selectedMasterProduct.image || '',
         
+        // নতুন ফিল্ড
         price: price,
         baseWeight: baseWeight,
+        baseUnit: baseUnit,
         packagingCharge: packagingCharge,
-        minOrderWeight: minOrder,
-        maxOrderWeight: maxOrder, // 🚀 ম্যাক্সিমাম ওয়েট যোগ হলো
-        allowCustomWeight: allowCustom, // 🚀 কাস্টম ওয়েট যোগ হলো
         stock: stock,
-        imageVector: generatedVectorStr, 
+        stockUnit: stockUnit,
+        grade: grade,
+        allowCustomWeight: allowCustom,
+        minOrderWeight: minOrder,
+        minOrderUnit: minUnit,
+        minExtraCharge: minExtra,
+        maxOrderWeight: maxOrder,
+        maxOrderUnit: maxUnit,
+        maxDiscount: maxDiscount,
         
+        imageVector: generatedVectorStr,
         createdAt: serverTimestamp()
       });
       
-      alert("আপনার প্রোডাক্ট সফলভাবে যুক্ত হয়েছে!");
+      alert("প্রোডাক্ট সফলভাবে যুক্ত হয়েছে!");
       document.getElementById('dlv-set-price-modal').classList.remove('active');
       
     } catch (e) {
-      console.error("Save product error:", e);
-      alert("সেভ করতে সমস্যা হয়েছে: " + e.message);
+      console.error(e);
+      alert("সেভ করতে সমস্যা: " + e.message);
     }
   };
 
@@ -5461,30 +5490,55 @@ window.clearImageSearch = function() {
 
   // ৪. ফাইনাল প্রাইস ক্যালকুলেশন (ভলিউম ডিসকাউন্ট সহ)
   function calculateFinalPrice(weight) {
-    // বেস প্রাইস বের করা (গ্রামের সাথে রেশিও)
-    const baseWeightInGrams = calcProduct.baseWeight * calcProduct.factor;
-    let finalPrice = (weight / baseWeightInGrams) * calcProduct.basePrice;
+    // ওজনকে গ্রামে কনভার্ট করা (যদি kg বা ltr হয়)
+    let baseWeightGrams = calcProduct.baseWeight;
+    if (calcProduct.baseUnit === 'kg' || calcProduct.baseUnit === 'ltr') baseWeightGrams *= 1000;
+    
+    let minOrderGrams = calcProduct.minOrderWeight;
+    if (calcProduct.minOrderUnit === 'kg') minOrderGrams *= 1000;
+    
+    let maxOrderGrams = calcProduct.maxOrderWeight;
+    if (calcProduct.maxOrderUnit === 'kg') maxOrderGrams *= 1000;
 
-    // 🚀 স্মার্ট ভলিউম লজিক (বেশি কিনলে দাম কমবে, কম কিনলে দাম বাড়বে)
-    const ratio = weight / baseWeightInGrams;
-    if (ratio > 1) {
-      // বেশি কিনলে ২% ডিসকাউন্ট
-      finalPrice = finalPrice * 0.98; 
-    } else if (ratio < 1) {
-      // কম কিনলে ২% এক্সট্রা চার্জ (ছোট প্যাকিংয়ের জন্য)
-      finalPrice = finalPrice * 1.02;
+    // বেস প্রাইস বের করা
+    let finalPrice = (weight / baseWeightGrams) * calcProduct.price;
+    let extraChargePct = 0;
+    let discountPct = 0;
+
+    // 🚀 মিনিমাম লজিক (কম নিলে বাড়তি চার্জ)
+    if (weight < baseWeightGrams && calcProduct.minExtraCharge > 0) {
+      extraChargePct = calcProduct.minExtraCharge;
+      finalPrice = finalPrice * (1 + extraChargePct / 100);
+    }
+    
+    // 🚀 ম্যাক্সিমাম লজিক (বেশি নিলে ডিসকাউন্ট)
+    if (weight > baseWeightGrams && calcProduct.maxDiscount > 0) {
+      discountPct = calcProduct.maxDiscount;
+      finalPrice = finalPrice * (1 - discountPct / 100);
     }
 
-    // প্যাকিং চার্জ যোগ করা
-    finalPrice = finalPrice + (calcProduct.packCharge || 0);
+    // প্যাকিং চার্জ যোগ
+    finalPrice += (calcProduct.packagingCharge || 0);
 
-    // UI তে দেখানো
-    const displayW = (weight / calcProduct.factor).toFixed(2).replace(/\.00$/, '');
-    document.getElementById('calc-res-prod-price').innerText = `₹${(finalPrice - calcProduct.packCharge).toFixed(2)}`;
-    document.getElementById('calc-res-weight').innerText = `${displayW} ${calcProduct.displayUnit}`;
+    // UI আপডেট
+    const displayW = (weight / 1000).toFixed(2).replace(/\.00$/, '');
+    document.getElementById('calc-res-prod-price').innerText = `₹${(finalPrice - calcProduct.packagingCharge).toFixed(2)}`;
+    document.getElementById('calc-res-weight').innerText = `${displayW} ${calcProduct.baseUnit}`;
     document.getElementById('calc-res-total').innerText = `₹${finalPrice.toFixed(2)}`;
     
-    document.getElementById('calc-error').style.display = 'none';
+    // কাস্টমারকে দেখানো: বাড়তি চার্জ নাকি ডিসকাউন্ট
+    let infoEl = document.getElementById('calc-error');
+    if (extraChargePct > 0) {
+      infoEl.style.display = 'block';
+      infoEl.style.color = '#f9a825';
+      infoEl.innerText = `⚠️ ছোট প্যাকিংয়ের জন্য ${extraChargePct}% বাড়তি চার্জ প্রযোজ্য।`;
+    } else if (discountPct > 0) {
+      infoEl.style.display = 'block';
+      infoEl.style.color = '#0f9d58';
+      infoEl.innerText = `🎉 বাল্ক অর্ডারে ${discountPct}% ডিসকাউন্ট প্রযোজ্য!`;
+    } else {
+      infoEl.style.display = 'none';
+    }
   }
 
   // ৫. অর্ডার কনফার্ম করা
