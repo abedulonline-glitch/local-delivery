@@ -1129,11 +1129,12 @@
   </div>
 </div>
 
-<!-- Master Product Modal (Admin - ADD) -->
+<!-- Master Product Add Modal (Admin - Simplified) -->
 <div id="dlv-master-product-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="closeMasterProductModal()">&times;</span>
-    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">🏷️ মাস্টার প্রোডাক্ট যোগ করুন</h3>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">🏷️ মাস্টার প্রোডাক্ট (টেমপ্লেট)</h3>
+    <p style="font-size:11px; color:#666; margin-bottom:15px;">অ্যাডমিন শুধু প্রোডাক্টের ধরন তৈরি করবেন। দাম ও স্টক দোকানদার বসাবেন।</p>
     
     <div class="dlv-form-group">
       <label>প্রোডাক্টের নাম *</label>
@@ -1142,24 +1143,19 @@
 
     <div class="dlv-form-group">
       <label>ক্যাটাগরি *</label>
-      <select id="mp-category" class="dlv-input" onchange="checkCustomOption(this)">
-        <option value="Grocery">মুদি (Grocery)</option>
-        <option value="Restaurant">রেস্টুরেন্ট (Restaurant)</option>
-        <option value="custom">➕ কাস্টম ক্যাটাগরি</option>
-      </select>
+      <select id="mp-category" class="dlv-input" onchange="checkCustomOption(this)"></select>
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       <div class="dlv-form-group">
         <label>ইউনিট *</label>
-      <select id="mp-unit" class="dlv-input" onchange="updateUnitLabels('mp')">
+        <select id="mp-unit" class="dlv-input" onchange="updateUnitLabels('mp')">
           <option value="kg">কেজি (kg)</option>
+          <option value="gm">গ্রাম (gm)</option>
           <option value="ltr">লিটার (ltr)</option>
           <option value="pcs">পিস (pcs)</option>
           <option value="box">বক্স (box)</option>
-          <option value="grm">গ্রাম (grm)</option>
           <option value="drsjon">ডজন (drsjon)</option>
-          <option value="custom">➕ কাস্টম ইউনিট</option>
         </select>
       </div>
       <div class="dlv-form-group">
@@ -1172,39 +1168,8 @@
       </div>
     </div>
 
-    <!-- 🚀 স্মার্ট অ্যাট্রিবিউট ফিল্ডসমূহ -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>বেস দাম (₹) *</label>
-        <input type="number" id="mp-price" class="dlv-input" placeholder="যেমন: 100">
-      </div>
-      <div class="dlv-form-group">
-        <!-- 🚀 এখানে id="mp-lbl-weight" আছে -->
-        <label id="mp-lbl-weight">বেস পরিমাণ (gm) *</label>
-        <input type="number" id="mp-base-weight" class="dlv-input" placeholder="যেমন: 1000">
-      </div>
-    </div>
-
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>প্যাকিং চার্জ (₹) *</label>
-        <input type="number" id="mp-packaging-charge" class="dlv-input" placeholder="যেমন: 5">
-      </div>
-      <div class="dlv-form-group">
-        <!-- 🚀 এখানে id="mp-lbl-minorder" আছে -->
-        <label id="mp-lbl-minorder">মিনিমাম অর্ডার (gm)</label>
-        <input type="number" id="mp-min-order" class="dlv-input" placeholder="যেমন: 100">
-      </div>
-    </div>
-
     <div class="dlv-form-group">
-      <!-- 🚀 এখানে id="mp-lbl-stock" আছে -->
-      <label id="mp-lbl-stock">মোট স্টক (gm) *</label>
-      <input type="number" id="mp-stock" class="dlv-input" placeholder="যেমন: 10000">
-    </div>
-
-    <div class="dlv-form-group">
-      <label>প্রোডাক্টের ছবি</label>
+      <label>প্রোডাক্টের ছবি (AI ভেক্টরের জন্য জরুরি)</label>
       <div style="display: flex; gap: 10px; margin-bottom: 10px;">
         <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'mp')">📷 ক্যামেরা</button>
         <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'mp')">🖼️ গ্যালারি</button>
@@ -4290,13 +4255,13 @@ window.closeMasterProductModal = function() {
   const unit = document.getElementById('mp-unit').value;
   const grade = document.getElementById('mp-grade').value;
   
-  if (!name) return alert("নাম দিন!");
+  if (!name || !category) return alert("নাম এবং ক্যাটাগরি দিন!");
 
   const btn = document.getElementById('btn-save-mp');
   btn.innerText = "⏳ সেভ হচ্ছে..."; 
   btn.disabled = true;
 
-  let generatedVectorStr = ""; // 🚀 স্ট্রিং হিসেবে সেভ হবে
+  let generatedVectorStr = ""; // 🚀 স্ট্রিং হিসেবে সেভ হবে (AI সার্চের জন্য)
 
   if (uploadedImageUrl && window.CLIPVisionModelWithProjection) {
     try {
@@ -4309,24 +4274,27 @@ window.closeMasterProductModal = function() {
       const image_inputs = await window.clipProcessor(image);
       const { image_embeds } = await window.clipVisionModel(image_inputs);
       
-      // 🚀 অ্যারে থেকে স্ট্রিং এ কনভার্ট করা হলো (পুরোনো অ্যাপের মতো)
+      // 🚀 অ্যারে থেকে স্ট্রিং এ কনভার্ট (যাতে ফায়ারবেসে সেভ হতে সমস্যা না হয়)
       const vectorArray = Array.from(image_embeds.data).slice(0, 256);
       generatedVectorStr = JSON.stringify(vectorArray); 
-      
     } catch (error) { 
       console.error("❌ Vector Error:", error); 
     }
   }
 
   try {
+    // 🚀 এখানে শুধু বেসিক তথ্য সেভ হচ্ছে, কোনো দাম বা স্টক নেই
     await addDoc(collection(db, "master_products"), {
-      name: name, category: category, unit: unit, grade: grade, 
+      name: name, 
+      category: category, 
+      unit: unit, 
+      grade: grade, 
       image: uploadedImageUrl, 
-      imageVector: generatedVectorStr, // 🚀 স্ট্রিং সেভ হচ্ছে
+      imageVector: generatedVectorStr, // ভেক্টর সেভ
       createdAt: serverTimestamp()
     });
     
-    alert("সফলভাবে সেভ হয়েছে!");
+    alert("সফলভাবে টেমপ্লেট সেভ হয়েছে!");
     closeMasterProductModal();
   } catch (e) { 
     console.error(e);
