@@ -1602,10 +1602,11 @@
 
   function checkRoleForLocation() {
     const regSection = document.getElementById('reg-location-section');
-    if (registerRole === 'shopkeeper' || registerRole === 'delivery') {
-      regSection.classList.remove('mp-hidden');
+    // 🚀 শুধুমাত্র দোকানদারের ক্ষেত্রে ম্যাপ দেখাবে
+    if (registerRole === 'shopkeeper') {
+      if(regSection) regSection.classList.remove('mp-hidden');
     } else {
-      regSection.classList.add('mp-hidden');
+      if(regSection) regSection.classList.add('mp-hidden');
     }
   }
 
@@ -1819,8 +1820,9 @@
       return;
     }
 
-    if ((registerRole === 'shopkeeper' || registerRole === 'delivery') && (!regLat || !regLng)) {
-      errorEl.innerText = "দয়া করে ম্যাপে আপনার লোকেশন পিন করুন!";
+    // 🚀 নতুন কোড: শুধুমাত্র দোকানদারের ক্ষেত্রে লোকেশন বাধ্যতামূলক
+    if (registerRole === 'shopkeeper' && (!regLat || !regLng)) {
+      errorEl.innerText = "দয়া করে ম্যাপে আপনার দোকানের লোকেশন পিন করুন!";
       return;
     }
 
@@ -1931,10 +1933,11 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
     }
     
     // ২. যদি দোকানদার বা ডেলিভারি বয় হয়, তবে ম্যাপ সেকশনটি দেখা যাবে
-    if (urlRole === 'shopkeeper' || urlRole === 'delivery') {
+    // 🚀 শুধুমাত্র দোকানদারের ক্ষেত্রে ম্যাপ সেকশন দেখাবে
+    if (urlRole === 'shopkeeper') {
       const locSection = document.getElementById('reg-location-section');
       if (locSection) {
-        locSection.classList.remove('mp-hidden'); // হাইড ক্লাস সরিয়ে ফেলা
+        locSection.classList.remove('mp-hidden'); 
       }
     }
   }
