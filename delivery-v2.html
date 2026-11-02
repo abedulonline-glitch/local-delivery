@@ -298,30 +298,34 @@
 </div>
 
       <div id="reg-location-section" class="mp-hidden" style="margin-bottom: 15px; border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fafafa;">
-        <div class="dlv-form-group" style="margin-bottom: 0;">
-          <label style="text-align: left; display: block; font-size: 12px; color: #555; font-weight: bold;">📍 আপনার দোকান/বেসের লোকেশন ম্যাপে পিন করুন *</label>
-          <p style="font-size: 11px; color: #888; margin-bottom: 8px;">ম্যাপে পিন ধরে টেনে সঠিক লোকেশন সেট করুন।</p>
-          
-          <div id="reg-map-container" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1; display: none;"></div>
-          
-          <!-- 🚀 ম্যাপ কন্ট্রোল বাটন -->
-          <div style="display: flex; gap: 8px; margin-top: 8px;">
-            <button type="button" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #e8f0fe; color: var(--mp-primary); flex: 1;" onclick="getRegCurrentLocation()">📍 আমার লোকেশন</button>
-            <button type="button" id="reg-btn-satellite" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #f0f2f5; color: #333; flex: 1;" onclick="toggleRegMapLayer()">🛰️ স্যাটেলাইট</button>
+        
+        <!-- 🚀 দোকানদারের জন্য ম্যাপ (অপরিবর্তিত) -->
+        <div id="shopkeeper-map-area" class="mp-hidden">
+          <div class="dlv-form-group" style="margin-bottom: 0;">
+            <label style="text-align: left; display: block; font-size: 12px; color: #555; font-weight: bold;">📍 আপনার দোকানের লোকেশন ম্যাপে পিন করুন *</label>
+            <p style="font-size: 11px; color: #888; margin-bottom: 8px;">ম্যাপে পিন ধরে টেনে সঠিক লোকেশন সেট করুন।</p>
+            
+            <div id="reg-map-container" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1; display: none;"></div>
+            
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <button type="button" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #e8f0fe; color: var(--mp-primary); flex: 1;" onclick="getRegCurrentLocation()">📍 আমার লোকেশন</button>
+              <button type="button" id="reg-btn-satellite" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #f0f2f5; color: #333; flex: 1;" onclick="toggleRegMapLayer()">🛰️ স্যাটেলাইট</button>
+            </div>
+
+            <div id="reg-location-status" style="font-size: 12px; color: var(--mp-danger); margin-top: 5px; font-weight: bold;">❌ লোকেশন সেট করা হয়নি</div>
           </div>
-
-          <div id="reg-location-status" style="font-size: 12px; color: var(--mp-danger); margin-top: 5px; font-weight: bold;">❌ লোকেশন সেট করা হয়নি</div>
         </div>
+
+        <!-- 🚀 ডেলিভারি বয়ের জন্য পিনকোড (নতুন) -->
+        <div id="delivery-pincode-area" class="mp-hidden">
+          <div class="dlv-form-group" style="margin-bottom: 0;">
+            <label style="text-align: left; display: block; font-size: 12px; color: #555; font-weight: bold;">📍 আপনি কোন পিনকোডে কাজ করেন? *</label>
+            <p style="font-size: 11px; color: #888; margin-bottom: 8px;">আপনার এলাকার পিনকোডটি লিখুন (যেমন: 721139)।</p>
+            <input type="text" id="reg-delivery-pincode" class="dlv-input" placeholder="৬ ডিজিটের পিনকোড" maxlength="6">
+          </div>
+        </div>
+
       </div>
-
-      <button class="mp-btn mp-btn-success" onclick="handleRegister()" id="reg-btn">রেজিস্ট্রেশন করুন</button>
-      <div id="reg-error" style="color: red; font-size: 12px; margin-top: 10px;"></div>
-      
-      <p style="margin-top: 15px; font-size: 13px;">অ্যাকাউন্ট আছে? <a href="#" onclick="toggleAuthMode()" style="color: var(--mp-primary); font-weight: bold;">লগইন করুন</a></p>
-    </div>
-
-  </div>
-</div>
   
   <!-- Main App Container -->
 <div id="mp-app" class="mp-hidden">
@@ -1542,14 +1546,23 @@
     checkRoleForLocation();
   };
 
-  function checkRoleForLocation() {
+  window.checkRoleForLocation = function() {
     const regSection = document.getElementById('reg-location-section');
-    if (registerRole === 'shopkeeper' || registerRole === 'delivery') {
+    const shopMapArea = document.getElementById('shopkeeper-map-area');
+    const deliveryPinArea = document.getElementById('delivery-pincode-area');
+
+    if (registerRole === 'shopkeeper') {
       regSection.classList.remove('mp-hidden');
+      shopMapArea.classList.remove('mp-hidden');
+      deliveryPinArea.classList.add('mp-hidden');
+    } else if (registerRole === 'delivery') {
+      regSection.classList.remove('mp-hidden');
+      shopMapArea.classList.add('mp-hidden');
+      deliveryPinArea.classList.remove('mp-hidden');
     } else {
       regSection.classList.add('mp-hidden');
     }
-  }
+  };
 
   // ==================== SMART REGISTRATION MAP LOGIC ====================
   let regMap = null;
@@ -1761,7 +1774,33 @@
       return;
     }
 
-    if ((registerRole === 'shopkeeper' || registerRole === 'delivery') && (!regLat || !regLng)) {
+       // 🚀 ভ্যালিডেশন: দোকানদারের জন্য ম্যাপ, ডেলিভারি বয়ের জন্য পিনকোড
+    let finalPinCode = "000000";
+
+    if (registerRole === 'shopkeeper') {
+      if (!regLat || !regLng) {
+        errorEl.innerText = "দয়া করে ম্যাপে আপনার লোকেশন পিন করুন!";
+        btn.innerText = "রেজিস্ট্রেশন করুন";
+        btn.disabled = false;
+        return;
+      }
+      // ম্যাপ থেকে পিনকোড বের করা (আগের লজিক)
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${regLat}&lon=${regLng}&format=json`);
+        const data = await res.json();
+        if (data.address && data.address.postcode) finalPinCode = data.address.postcode;
+      } catch(e) {}
+
+    } else if (registerRole === 'delivery') {
+      const pinInput = document.getElementById('reg-delivery-pincode').value.trim();
+      if (!pinInput || pinInput.length < 6) {
+        errorEl.innerText = "দয়া করে সঠিক ৬ ডিজিটের পিনকোড লিখুন!";
+        btn.innerText = "রেজিস্ট্রেশন করুন";
+        btn.disabled = false;
+        return;
+      }
+      finalPinCode = pinInput;
+    }
       errorEl.innerText = "দয়া করে ম্যাপে আপনার লোকেশন পিন করুন!";
       return;
     }
@@ -1773,7 +1812,6 @@
     btn.disabled = true;
 
     try {
-      // ১. ছবি থাকলে ImgBB-তে আপলোড (ঐচ্ছিক)
       // ১. ছবি আপলোড (যদি ছবি দেওয়া থাকে)
 const fileInput = document.getElementById('reg-profile-pic-file'); // 🚀 আইডি ঠিক করা হলো
 if (fileInput && fileInput.files && fileInput.files.length > 0) {
