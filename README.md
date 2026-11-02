@@ -6,6 +6,16 @@ This is a comprehensive, single-page application (SPA) built with **Vanilla Java
 The system operates on a multi-tenant SaaS model where the Admin controls the platform, Managers oversee specific PIN codes, Shopkeepers sell products, Delivery Boys fulfill orders, and Customers make purchases.
 
 ---
+## 📂 Quick Access to Project Files
+
+> **For AI Models & Developers:** Click the links below to instantly view the raw code for each file.
+
+*   **[delivery-v2.html](https://raw.githubusercontent.com/abedulonline-glitch/coupon-app/main/delivery-v2.html)** - The core Hyperlocal Delivery, POS, and Manager Dashboard App.
+*   **[firebase-config-beta.js](https://raw.githubusercontent.com/abedulonline-glitch/coupon-app/main/firebase-config-beta.js)** - Firebase project credentials and initialization.
+*   **[i18n.js](https://raw.githubusercontent.com/abedulonline-glitch/coupon-app/main/i18n.js)** - Multi-language dictionary (12 Indian Languages).
+*   **[beta.html](https://raw.githubusercontent.com/abedulonline-glitch/coupon-app/main/beta.html)** - Original Coupon SaaS (Legacy).
+*   **[stock-beta.html](https://raw.githubusercontent.com/abedulonline-glitch/coupon-app/main/stock-beta.html)** - Stock Management (Legacy).
+
 
 ## 🏗️ Tech Stack & Libraries
 *   **Frontend:** HTML5, CSS3, Vanilla JavaScript (ES Modules)
