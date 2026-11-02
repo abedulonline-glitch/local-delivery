@@ -298,34 +298,30 @@
 </div>
 
       <div id="reg-location-section" class="mp-hidden" style="margin-bottom: 15px; border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fafafa;">
-        
-        <!-- 🚀 দোকানদারের জন্য ম্যাপ (অপরিবর্তিত) -->
-        <div id="shopkeeper-map-area" class="mp-hidden">
-          <div class="dlv-form-group" style="margin-bottom: 0;">
-            <label style="text-align: left; display: block; font-size: 12px; color: #555; font-weight: bold;">📍 আপনার দোকানের লোকেশন ম্যাপে পিন করুন *</label>
-            <p style="font-size: 11px; color: #888; margin-bottom: 8px;">ম্যাপে পিন ধরে টেনে সঠিক লোকেশন সেট করুন।</p>
-            
-            <div id="reg-map-container" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1; display: none;"></div>
-            
-            <div style="display: flex; gap: 8px; margin-top: 8px;">
-              <button type="button" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #e8f0fe; color: var(--mp-primary); flex: 1;" onclick="getRegCurrentLocation()">📍 আমার লোকেশন</button>
-              <button type="button" id="reg-btn-satellite" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #f0f2f5; color: #333; flex: 1;" onclick="toggleRegMapLayer()">🛰️ স্যাটেলাইট</button>
-            </div>
-
-            <div id="reg-location-status" style="font-size: 12px; color: var(--mp-danger); margin-top: 5px; font-weight: bold;">❌ লোকেশন সেট করা হয়নি</div>
+        <div class="dlv-form-group" style="margin-bottom: 0;">
+          <label style="text-align: left; display: block; font-size: 12px; color: #555; font-weight: bold;">📍 আপনার দোকান/বেসের লোকেশন ম্যাপে পিন করুন *</label>
+          <p style="font-size: 11px; color: #888; margin-bottom: 8px;">ম্যাপে পিন ধরে টেনে সঠিক লোকেশন সেট করুন।</p>
+          
+          <div id="reg-map-container" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1; display: none;"></div>
+          
+          <!-- 🚀 ম্যাপ কন্ট্রোল বাটন -->
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button type="button" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #e8f0fe; color: var(--mp-primary); flex: 1;" onclick="getRegCurrentLocation()">📍 আমার লোকেশন</button>
+            <button type="button" id="reg-btn-satellite" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #f0f2f5; color: #333; flex: 1;" onclick="toggleRegMapLayer()">🛰️ স্যাটেলাইট</button>
           </div>
-        </div>
 
-        <!-- 🚀 ডেলিভারি বয়ের জন্য পিনকোড (নতুন) -->
-        <div id="delivery-pincode-area" class="mp-hidden">
-          <div class="dlv-form-group" style="margin-bottom: 0;">
-            <label style="text-align: left; display: block; font-size: 12px; color: #555; font-weight: bold;">📍 আপনি কোন পিনকোডে কাজ করেন? *</label>
-            <p style="font-size: 11px; color: #888; margin-bottom: 8px;">আপনার এলাকার পিনকোডটি লিখুন (যেমন: 721139)।</p>
-            <input type="text" id="reg-delivery-pincode" class="dlv-input" placeholder="৬ ডিজিটের পিনকোড" maxlength="6">
-          </div>
+          <div id="reg-location-status" style="font-size: 12px; color: var(--mp-danger); margin-top: 5px; font-weight: bold;">❌ লোকেশন সেট করা হয়নি</div>
         </div>
-
       </div>
+
+      <button class="mp-btn mp-btn-success" onclick="handleRegister()" id="reg-btn">রেজিস্ট্রেশন করুন</button>
+      <div id="reg-error" style="color: red; font-size: 12px; margin-top: 10px;"></div>
+      
+      <p style="margin-top: 15px; font-size: 13px;">অ্যাকাউন্ট আছে? <a href="#" onclick="toggleAuthMode()" style="color: var(--mp-primary); font-weight: bold;">লগইন করুন</a></p>
+    </div>
+
+  </div>
+</div>
   
   <!-- Main App Container -->
 <div id="mp-app" class="mp-hidden">
@@ -602,7 +598,8 @@
        <!-- ==================== MANAGER DASHBOARD ==================== -->
 <div id="dlv-view-manager" class="mp-hidden">
   <!-- 🚀 নতুন অর্ডারের জন্য সাউন্ড ফাইল -->
- <audio id="mgr-notify-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio> <div class="dlv-dashboard-title" style="display: flex; justify-content: space-between; align-items: center;">
+  <audio id="mgr-notify-sound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2447ec3bdf.mp3?filename=notification-alert-98342.mp3" preload="auto"></audio>
+  <div class="dlv-dashboard-title" style="display: flex; justify-content: space-between; align-items: center;">
     <span>👨‍💼 ম্যানেজার ড্যাশবোর্ড</span>
     <!-- 🚀 নতুন অর্ডার অ্যালার্ট ব্যাজ -->
     <span id="mgr-alert-badge" class="mp-hidden" style="background: var(--mp-danger); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; animation: pulse 1s infinite;">🔔 নতুন অর্ডার</span>
@@ -1545,23 +1542,14 @@
     checkRoleForLocation();
   };
 
-  window.checkRoleForLocation = function() {
+  function checkRoleForLocation() {
     const regSection = document.getElementById('reg-location-section');
-    const shopMapArea = document.getElementById('shopkeeper-map-area');
-    const deliveryPinArea = document.getElementById('delivery-pincode-area');
-
-    if (registerRole === 'shopkeeper') {
+    if (registerRole === 'shopkeeper' || registerRole === 'delivery') {
       regSection.classList.remove('mp-hidden');
-      shopMapArea.classList.remove('mp-hidden');
-      deliveryPinArea.classList.add('mp-hidden');
-    } else if (registerRole === 'delivery') {
-      regSection.classList.remove('mp-hidden');
-      shopMapArea.classList.add('mp-hidden');
-      deliveryPinArea.classList.remove('mp-hidden');
     } else {
       regSection.classList.add('mp-hidden');
     }
-  };
+  }
 
   // ==================== SMART REGISTRATION MAP LOGIC ====================
   let regMap = null;
@@ -1762,7 +1750,7 @@
   };
   
   // নতুন ইউজার রেজিস্ট্রেশন
-   window.handleRegister = async function() {
+  window.handleRegister = async function() {
     const name = document.getElementById('reg-name').value.trim();
     const phone = document.getElementById('reg-phone').value.trim();
     const btn = document.getElementById('reg-btn');
@@ -1773,33 +1761,9 @@
       return;
     }
 
-    // 🚀 ১. নতুন ভ্যালিডেশন লজিক ও পিনকোড বের করা
-    let finalPinCode = "000000";
-
-    if (registerRole === 'shopkeeper') {
-      if (!regLat || !regLng) {
-        errorEl.innerText = "দয়া করে ম্যাপে আপনার লোকেশন পিন করুন!";
-        return;
-      }
-      // ম্যাপ থেকে পিনকোড বের করা
-      try {
-        btn.innerText = "⏳ লোকেশন চেক হচ্ছে...";
-        btn.disabled = true;
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${regLat}&lon=${regLng}&format=json`);
-        const data = await res.json();
-        if (data.address && data.address.postcode) {
-          finalPinCode = data.address.postcode;
-        }
-      } catch(e) { 
-        console.log("Pin fetch error:", e); 
-      }
-    } else if (registerRole === 'delivery') {
-      const pinInput = document.getElementById('reg-delivery-pincode').value.trim();
-      if (!pinInput || pinInput.length < 6) {
-        errorEl.innerText = "দয়া করে সঠিক ৬ ডিজিটের পিনকোড লিখুন!";
-        return;
-      }
-      finalPinCode = pinInput;
+    if ((registerRole === 'shopkeeper' || registerRole === 'delivery') && (!regLat || !regLng)) {
+      errorEl.innerText = "দয়া করে ম্যাপে আপনার লোকেশন পিন করুন!";
+      return;
     }
 
     // ফোন নাম্বারকে ইমেইলে কনভার্ট করা হচ্ছে
@@ -1809,9 +1773,17 @@
     btn.disabled = true;
 
     try {
-      // 🚀 ২. ছবি আপলোড (যদি ছবি দেওয়া থাকে)
-      const fileInput = document.getElementById('reg-profile-pic-file');
-      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+      // ১. ছবি থাকলে ImgBB-তে আপলোড (ঐচ্ছিক)
+      // ১. ছবি আপলোড (যদি ছবি দেওয়া থাকে)
+const fileInput = document.getElementById('reg-profile-pic-file'); // 🚀 আইডি ঠিক করা হলো
+if (fileInput && fileInput.files && fileInput.files.length > 0) {
+  const formData = new FormData();
+  formData.append("image", fileInput.files[0]);
+  const imgRes = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
+  const imgData = await imgRes.json();
+  if (imgData.success) regProfilePicUrl = imgData.data.url;
+}
+      if (fileInput.files.length > 0) {
         const formData = new FormData();
         formData.append("image", fileInput.files[0]);
         const imgRes = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
@@ -1819,40 +1791,52 @@
         if (imgData.success) regProfilePicUrl = imgData.data.url;
       }
 
-      // 🚀 ৩. অ্যাকাউন্ট তৈরি
+      // ২. অ্যাকাউন্ট তৈরি (ইমেইল ও ফিক্সড পাসওয়ার্ড দিয়ে)
       const userCredential = await createUserWithEmailAndPassword(auth, fakeEmail, DUMMY_PASSWORD);
       const user = userCredential.user;
+
+           // 🚀 ম্যাপের লোকেশন থেকে পিনকোড বের করা (Nominatim API)
+      let userPinCode = "000000";
+      if (regLat && regLng) {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${regLat}&lon=${regLng}&format=json`);
+          const data = await res.json();
+          if (data.address && data.address.postcode) {
+            userPinCode = data.address.postcode;
+          }
+        } catch (e) { console.log("Pin fetch error:", e); }
+      }
       
-      // 🚀 ৪. ফায়ারস্টোরে ডেটা সেভ
+      // ৩. ফায়ারস্টোরে ডেটা সেভ
       await setDoc(doc(db, "users", user.uid), {
         name: name,
-        phone: phone, 
-        email: fakeEmail, 
+        phone: phone, // আসল ফোন নাম্বারটি সেভ করা হলো
+        email: fakeEmail, // সিস্টেমের জন্য
         role: registerRole,
         walletBalance: 0,
         isManager: registerRole === 'manager' ? true : false,
         profilePic: regProfilePicUrl || null,
-        pinCode: finalPinCode, // নতুন পিনকোড সেভ হচ্ছে
         lat: regLat || null,
         lng: regLng || null,
         createdAt: serverTimestamp()
       });
 
       alert("সফলভাবে রেজিস্ট্রেশন সম্পন্ন হয়েছে!");
-      
     } catch (error) {
-      console.error(error);
-      if(error.code === 'auth/email-already-in-use') {
-        errorEl.innerText = "এই মোবাইল নাম্বারটি দিয়ে আগেই অ্যাকাউন্ট করা হয়েছে! দয়া করে লগইন করুন।";
-      } else if (error.code === 'auth/weak-password') {
-        errorEl.innerText = "পাসওয়ার্ডটি খুব দুর্বল! (অ্যাডমিনের সাথে যোগাযোগ করুন)";
-      } else {
-        errorEl.innerText = "সমস্যা: " + error.message; 
-      }
-      btn.innerText = "রেজিস্ট্রেশন করুন";
-      btn.disabled = false;
-    }
+  console.error(error);
+  if(error.code === 'auth/email-already-in-use') {
+    errorEl.innerText = "এই মোবাইল নাম্বারটি দিয়ে আগেই অ্যাকাউন্ট করা হয়েছে! দয়া করে লগইন করুন।";
+  } else if (error.code === 'auth/weak-password') {
+    errorEl.innerText = "পাসওয়ার্ডটি খুব দুর্বল! (অ্যাডমিনের সাথে যোগাযোগ করুন)";
+  } else {
+    // আসল এররটি স্ক্রিনে দেখাবে
+    errorEl.innerText = "সমস্যা: " + error.message; 
+  }
+  btn.innerText = "রেজিস্ট্রেশন করুন";
+  btn.disabled = false;
+}
   };
+
   // WhatsApp-এ ইনভাইট লিংক শেয়ার করা
   window.shareInvite = function(role) {
     const baseUrl = window.location.origin + window.location.pathname;
