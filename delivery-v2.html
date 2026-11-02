@@ -578,7 +578,11 @@
         <h3 style="justify-content: space-between;">
           📦 আমার প্রোডাক্ট লিস্ট
           <button class="mp-btn mp-btn-primary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px;" onclick="openAddProductModal()">+ Add</button>
-        </h3>
+               <div style="display: flex; gap: 5px;">
+          <button class="mp-btn" style="width: auto; padding: 6px 10px; margin: 0; font-size: 12px; background: #f9a825; color: #000; font-weight: bold;" onclick="scrollToBarcodeCenter()">🏷️ বারকোড</button>
+          <button class="mp-btn mp-btn-primary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px;" onclick="openAddProductModal()">+ Add</button>
+        </div>
+         </h3>
         <div id="shop-product-list"></div>
       </div>
 
@@ -2715,7 +2719,7 @@ window.filterCustomerProducts = function() {
   // SHOPKEEPER FUNCTIONS
   // ============================================================
   // ৩. মোড অনুযায়ী প্রোডাক্ট লিস্ট রেন্ডার
-  function renderShopProducts() {
+   function renderShopProducts() {
     const list = document.getElementById('shop-product-list');
     if (!list) return;
     
@@ -2741,8 +2745,12 @@ window.filterCustomerProducts = function() {
             <div class="prod-details">
               <div class="prod-title">${prod.name} ${prod.isStandalone ? '<span style="font-size:10px; color:#7b1fa2;">(নিজস্ব)</span>' : ''}</div>
               <div class="prod-price">₹${prod.price} / ${prod.unit}</div>
-              <div class="prod-stock">Stock: ${prod.price} / ${prod.unit}</div>
+              <div class="prod-stock">স্টক: ${prod.stock} ${prod.unit || 'টি'}</div>
             </div>
+            <!-- 🚀 প্রিন্ট বাটন -->
+            <button onclick="quickPrintBarcode('${docSnap.id}')" style="background:#e8f0fe; color:var(--mp-primary); border:none; border-radius:6px; padding:8px 10px; font-size:16px; cursor:pointer; margin-left: auto;" title="বারকোড প্রিন্ট করুন">
+              🏷️
+            </button>
           </div>
         `;
       });
@@ -5838,6 +5846,31 @@ async function assignClosestDeliveryBoy(orderId, order) {
     console.error("Auto dispatch error:", e);
   }
 }
+
+  // ১. বারকোড বাটনে ক্লিক করলে বারকোড সেকশনে স্ক্রল করে নিয়ে যাবে
+  window.scrollToBarcodeCenter = function() {
+    const wrapper = document.getElementById('barcode-section-wrapper');
+    if (wrapper && !wrapper.classList.contains('mp-hidden')) {
+      wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      alert("⚠️ আপনার বারকোড প্রিন্ট সেন্টারটি চালু নেই। দয়া করে সাবস্ক্রিপশন বা প্ল্যান চেক করুন।");
+    }
+  };
+
+  // ২. প্রোডাক্টের পাশের আইকনে ক্লিক করলে সরাসরি ওই প্রোডাক্ট সিলেক্ট হয়ে বারকোড পেজে যাবে
+  window.quickPrintBarcode = function(prodId) {
+    const wrapper = document.getElementById('barcode-section-wrapper');
+    if (wrapper && !wrapper.classList.contains('mp-hidden')) {
+      wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      const select = document.getElementById('bc-product-select');
+      if (select) {
+        select.value = prodId; // অটোমেটিক প্রোডাক্ট সিলেক্ট হবে
+      }
+    } else {
+      alert("⚠️ আপনার বারকোড প্রিন্ট সেন্টারটি চালু নেই। দয়া করে সাবস্ক্রিপশন বা প্ল্যান চেক করুন।");
+    }
+  };
 
 </script>
 
