@@ -3103,20 +3103,21 @@ window.saveShopLocation = async function() {
   }
 };
   // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্কসহ)
+// ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্ক ও এডিট বাটনসহ)
 window.openAddProductModal = function() {
   document.getElementById('dlv-catalog-modal').classList.add('active');
   const list = document.getElementById('catalog-list-container');
-  list.innerHTML = '<div style="text-align: center; color: #999;">লোড হচ্ছে...</div>';
+  list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">লোড হচ্ছে...</div>';
 
   // দোকানদারের নিজের প্রোডাক্টগুলো খোঁজা
   const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
   
   onSnapshot(myProductsQ, (mySnap) => {
-    // দোকানদার আগে থেকে কোন কোন মাস্টার প্রোডাক্ট অ্যাড করেছে, তার আইডি লিস্ট
-    const myAddedMasterIds = [];
+    // দোকানদার আগে থেকে কোন কোন মাস্টার প্রোডাক্ট অ্যাড করেছে, তার ডেটা ম্যাপ
+    const myAddedProducts = {};
     mySnap.forEach(d => {
       const p = d.data();
-      if(p.masterProductId) myAddedMasterIds.push(p.masterProductId);
+      if(p.masterProductId) myAddedProducts[p.masterProductId] = { docId: d.id, ...p };
     });
 
     // এবার অ্যাডমিনের মাস্টার প্রোডাক্টগুলো লোড করা
@@ -3131,24 +3132,30 @@ window.openAddProductModal = function() {
         const p = docSnap.data();
         const masterId = docSnap.id;
         
-        // 🚀 চেক করা হচ্ছে দোকানদার এটি আগেই অ্যাড করেছে কি না
-        const isAdded = myAddedMasterIds.includes(masterId);
+        // চেক করা হচ্ছে দোকানদার এটি আগেই অ্যাড করেছে কি না
+        const isAdded = myAddedProducts[masterId] ? true : false;
+        const myData = myAddedProducts[masterId];
+
+        // ডিফল্ট ইউনিট এবং গ্রেড (যেহেতু নতুন মাস্টার প্রোডাক্টে এগুলো নেই)
+        const displayUnit = p.unit || myData?.unit || 'pcs';
+        const displayGrade = p.grade || myData?.grade || 'A';
 
         html += `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid #eee;">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px 10px; border-bottom: 1px solid #eee;">
             <div style="display:flex; align-items:center; gap:10px;">
-              <div style="width:40px; height:40px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
+              <div style="width:45px; height:45px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
                 ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
               </div>
               <div>
-                <div style="font-size:13px; font-weight:600;">${p.name}</div>
-                <div style="font-size:11px; color:#666;">${p.grade} | ${p.unit}</div>
+                <div style="font-size:14px; font-weight:600;">${p.name}</div>
+                <div style="font-size:11px; color:#666;">${displayGrade} | ${displayUnit}</div>
               </div>
             </div>
             
+            <!-- 🚀 এখানে এডিট এবং রেট দিন বাটনের লজিক -->
             ${isAdded 
-              ? `<span style="font-size:11px; font-weight:bold; color:var(--mp-success); background:#e6f4ea; padding:6px 10px; border-radius:6px;">✅ যুক্ত করা হয়েছে</span>`
-              : `<button class="mp-btn" style="width:auto; margin:0; padding:6px 10px; background:#e8f0fe; color:var(--mp-primary); font-size:11px;" onclick='selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;")}, "${masterId}")'>রেট দিন</button>`
+              ? `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick='editShopProduct(${JSON.stringify(myData).replace(/'/g, "&#39;")}, "${masterId}")'>✏️ এডিট</button>`
+              : `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick='selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;")}, "${masterId}")'>➕ রেট দিন</button>`
             }
           </div>
         `;
@@ -3156,6 +3163,38 @@ window.openAddProductModal = function() {
       list.innerHTML = html;
     });
   });
+};
+
+// 🚀 নতুন যোগ করা হলো: দোকানদার তার নিজের দেওয়া রেট এডিট করার জন্য
+window.editShopProduct = function(myData, masterId) {
+  selectedMasterProduct = { ...myData, masterId: masterId };
+  
+  document.getElementById('sp-title').innerText = `${myData.name} - রেট এডিট করুন`;
+  
+  // আগের ডেটাগুলো ফর্মে বসানো
+  document.getElementById('sp-price').value = myData.price || '';
+  document.getElementById('sp-base-weight').value = myData.baseWeight || '';
+  document.getElementById('sp-base-unit').value = myData.baseUnit || 'kg';
+  
+  document.getElementById('sp-packaging-charge').value = myData.packagingCharge || '';
+  document.getElementById('sp-stock').value = myData.stock || '';
+  document.getElementById('sp-stock-unit').value = myData.stockUnit || 'kg';
+  
+  document.getElementById('sp-grade').value = myData.grade || 'A';
+  
+  document.getElementById('sp-allow-custom').checked = myData.allowCustomWeight !== false;
+  
+  document.getElementById('sp-min-order').value = myData.minOrderWeight || '';
+  document.getElementById('sp-min-unit').value = myData.minOrderUnit || 'gm';
+  document.getElementById('sp-min-extra').value = myData.minExtraCharge || '0';
+  
+  document.getElementById('sp-max-order').value = myData.maxOrderWeight || '';
+  document.getElementById('sp-max-unit').value = myData.maxOrderUnit || 'kg';
+  document.getElementById('sp-max-discount').value = myData.maxDiscount || '0';
+
+  // মডাল পরিবর্তন
+  document.getElementById('dlv-catalog-modal').classList.remove('active');
+  document.getElementById('dlv-set-price-modal').classList.add('active');
 };
 
   // ৫. নিজস্ব প্রোডাক্ট সেভ করা
@@ -3249,79 +3288,80 @@ window.openAddProductModal = function() {
   };
 
   // ৩. দোকানদারের নিজের রেট সেভ করা
-  window.saveShopProduct = async function() {
-    const price = parseFloat(document.getElementById('sp-price').value) || 0;
-    const baseWeight = parseFloat(document.getElementById('sp-base-weight').value) || 1;
-    const baseUnit = document.getElementById('sp-base-unit').value;
-    const packagingCharge = parseFloat(document.getElementById('sp-packaging-charge').value) || 0;
-    const stock = parseFloat(document.getElementById('sp-stock').value) || 0;
-    const stockUnit = document.getElementById('sp-stock-unit').value;
-    const grade = document.getElementById('sp-grade').value;
-    
-    const allowCustom = document.getElementById('sp-allow-custom').checked;
-    const minOrder = parseFloat(document.getElementById('sp-min-order').value) || 0;
-    const minUnit = document.getElementById('sp-min-unit').value;
-    const minExtra = parseFloat(document.getElementById('sp-min-extra').value) || 0;
-    const maxOrder = parseFloat(document.getElementById('sp-max-order').value) || 0;
-    const maxUnit = document.getElementById('sp-max-unit').value;
-    const maxDiscount = parseFloat(document.getElementById('sp-max-discount').value) || 0;
+window.saveShopProduct = async function() {
+  const price = parseFloat(document.getElementById('sp-price').value) || 0;
+  const baseWeight = parseFloat(document.getElementById('sp-base-weight').value) || 1;
+  const baseUnit = document.getElementById('sp-base-unit').value;
+  const packagingCharge = parseFloat(document.getElementById('sp-packaging-charge').value) || 0;
+  const stock = parseFloat(document.getElementById('sp-stock').value) || 0;
+  const stockUnit = document.getElementById('sp-stock-unit').value;
+  const grade = document.getElementById('sp-grade').value;
+  
+  const allowCustom = document.getElementById('sp-allow-custom').checked;
+  const minOrder = parseFloat(document.getElementById('sp-min-order').value) || 0;
+  const minUnit = document.getElementById('sp-min-unit').value;
+  const minExtra = parseFloat(document.getElementById('sp-min-extra').value) || 0;
+  const maxOrder = parseFloat(document.getElementById('sp-max-order').value) || 0;
+  const maxUnit = document.getElementById('sp-max-unit').value;
+  const maxDiscount = parseFloat(document.getElementById('sp-max-discount').value) || 0;
 
-    if (price <= 0) return alert("সঠিক দাম দিন!");
+  if (price <= 0) return alert("সঠিক দাম দিন!");
 
-    try {
-      // AI ভেক্টর জেনারেশন (আপনার আগের কোড অনুযায়ী)
-      let generatedVectorStr = "";
-      if (selectedMasterProduct.image && window.CLIPVisionModelWithProjection) {
-        try {
-          if (!window.clipProcessor) {
-            window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
-            window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
-          }
-          const image = await window.RawImage.fromURL(selectedMasterProduct.image);
-          const image_inputs = await window.clipProcessor(image);
-          const { image_embeds } = await window.clipVisionModel(image_inputs);
-          const vectorArray = Array.from(image_embeds.data).slice(0, 256);
-          generatedVectorStr = JSON.stringify(vectorArray); 
-        } catch (err) { console.warn("Vector skipped:", err); }
-      }
+  // মডালের সেভ বাটনে ক্লিক করলে লোডিং দেখানোর জন্য
+  const modalBtn = document.querySelector('#dlv-set-price-modal .mp-btn-success');
+  const originalText = modalBtn.innerText;
+  modalBtn.innerText = "⏳ সেভ হচ্ছে..."; 
+  modalBtn.disabled = true;
 
-      // ডেটাবেসে সেভ
-      await addDoc(collection(db, "products"), {
-        shopId: currentUser.uid,
-        shopName: globalUserData.name || 'Unknown',
-        masterProductId: selectedMasterProduct.masterId || '',
-        name: selectedMasterProduct.name || 'Unknown',
-        category: selectedMasterProduct.category || 'General',
-        image: selectedMasterProduct.image || '',
-        
-        // নতুন ফিল্ড
-        price: price,
-        baseWeight: baseWeight,
-        baseUnit: baseUnit,
-        packagingCharge: packagingCharge,
-        stock: stock,
-        stockUnit: stockUnit,
-        grade: grade,
-        allowCustomWeight: allowCustom,
-        minOrderWeight: minOrder,
-        minOrderUnit: minUnit,
-        minExtraCharge: minExtra,
-        maxOrderWeight: maxOrder,
-        maxOrderUnit: maxUnit,
-        maxDiscount: maxDiscount,
-        
-        imageVector: generatedVectorStr,
-        createdAt: serverTimestamp()
-      });
+  try {
+    // ডেটা অবজেক্ট তৈরি
+    const productData = {
+      shopId: currentUser.uid,
+      shopName: globalUserData.name || 'Unknown',
+      masterProductId: selectedMasterProduct.masterId || '',
+      name: selectedMasterProduct.name || 'Unknown',
+      category: selectedMasterProduct.category || 'General',
+      image: selectedMasterProduct.image || '',
       
+      price: price,
+      baseWeight: baseWeight,
+      baseUnit: baseUnit,
+      packagingCharge: packagingCharge,
+      stock: stock,
+      stockUnit: stockUnit,
+      grade: grade,
+      allowCustomWeight: allowCustom,
+      minOrderWeight: minOrder,
+      minOrderUnit: minUnit,
+      minExtraCharge: minExtra,
+      maxOrderWeight: maxOrder,
+      maxOrderUnit: maxUnit,
+      maxDiscount: maxDiscount,
+      
+      updatedAt: serverTimestamp()
+    };
+
+    // 🚀 যদি আগে থেকেই ডকুমেন্ট আইডি থাকে (অর্থাৎ এডিট হচ্ছে), তবে আপডেট হবে
+    if (selectedMasterProduct.docId) {
+      await updateDoc(doc(db, "products", selectedMasterProduct.docId), productData);
+      alert("প্রোডাক্ট সফলভাবে আপডেট হয়েছে!");
+    } else {
+      // নতুন প্রোডাক্ট হলে addDoc হবে
+      productData.createdAt = serverTimestamp();
+      await addDoc(collection(db, "products"), productData);
       alert("প্রোডাক্ট সফলভাবে যুক্ত হয়েছে!");
-      document.getElementById('dlv-set-price-modal').classList.remove('active');
-      
-    } catch (e) {
-      console.error(e);
-      alert("সেভ করতে সমস্যা: " + e.message);
     }
-  };
+    
+    document.getElementById('dlv-set-price-modal').classList.remove('active');
+    
+  } catch (e) {
+    console.error(e);
+    alert("সেভ করতে সমস্যা: " + e.message);
+  } finally {
+    modalBtn.innerText = originalText;
+    modalBtn.disabled = false;
+  }
+};
 
   // ============================================================
   // DELIVERY BOY FUNCTIONS
