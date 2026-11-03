@@ -1179,7 +1179,7 @@
   </div>
 </div>
 
-<!-- Set Price Modal (Shopkeeper - Advanced UI 40/40/20 Fixed) -->
+<!-- Set Price Modal (Shopkeeper - 4 Units Fixed) -->
 <div id="dlv-set-price-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-set-price-modal').classList.remove('active')">&times;</span>
@@ -1244,14 +1244,16 @@
       </label>
       
       <div style="display:flex; gap:10px;">
-        <!-- মিনিমাম অর্ডার (30% + 20% = 50%) -->
+        <!-- মিনিমাম অর্ডার (4 Units Added) -->
         <div style="flex: 0 0 50%;">
           <label style="font-size: 11px; font-weight: 600; color: #555; display: block; margin-bottom: 5px;">মিনিমাম অর্ডার</label>
           <div style="display: flex; gap: 5px;">
             <input type="number" id="sp-min-order" class="dlv-input" placeholder="0" style="flex: 0 0 60%; padding: 8px;">
             <select id="sp-min-unit" class="dlv-input" style="flex: 0 0 40%; padding: 8px 2px; font-size: 12px; text-align: center;">
-              <option value="gm">gm</option>
               <option value="kg">kg</option>
+              <option value="gm">gm</option>
+              <option value="pcs">pcs</option>
+              <option value="ltr">ltr</option>
             </select>
           </div>
           <select id="sp-min-extra" class="dlv-input" style="margin-top: 5px; font-size: 11px; padding: 6px;">
@@ -1262,7 +1264,7 @@
           </select>
         </div>
 
-        <!-- ম্যাক্সিমাম অর্ডার (30% + 20% = 50%) -->
+        <!-- ম্যাক্সিমাম অর্ডার (4 Units Added) -->
         <div style="flex: 0 0 50%;">
           <label style="font-size: 11px; font-weight: 600; color: #555; display: block; margin-bottom: 5px;">ম্যাক্সিমাম অর্ডার</label>
           <div style="display: flex; gap: 5px;">
@@ -1270,6 +1272,8 @@
             <select id="sp-max-unit" class="dlv-input" style="flex: 0 0 40%; padding: 8px 2px; font-size: 12px; text-align: center;">
               <option value="kg">kg</option>
               <option value="gm">gm</option>
+              <option value="pcs">pcs</option>
+              <option value="ltr">ltr</option>
             </select>
           </div>
           <select id="sp-max-discount" class="dlv-input" style="margin-top: 5px; font-size: 11px; padding: 6px;">
