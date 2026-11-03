@@ -5401,10 +5401,13 @@ window.clearImageSearch = function() {
   let currentPcsQty = 1; 
 
   window.openCustomCalc = function(prodId, name, unit, basePrice, baseWeight, packCharge, minOrder, shopId, shopName, maxOrder, minExtraCharge, isBulkDiscountActive, discountTiersStr) {
-    // 🚀 ডেটা ক্লিনআপ
-    if (!unit || unit === 'undefined') unit = 'pcs';
-    if (!baseWeight || baseWeight === 'undefined' || isNaN(baseWeight) || baseWeight == 0) baseWeight = 1;
-    if (!basePrice || isNaN(basePrice)) basePrice = 0;
+    // 🚀 ডেটা ক্লিনআপ (যদি ডেটাবেসে ভুল বা 0 থাকে)
+    if (!unit || unit === 'undefined' || unit === null) unit = 'pcs';
+    
+    // যদি বেস ওজন 0 বা undefined থাকে, তবে সেটি 1 করে দেওয়া হবে, যাতে ক্যালকুলেশন ক্র্যাশ না করে
+    if (!baseWeight || baseWeight === 'undefined' || isNaN(baseWeight) || baseWeight == 0) baseWeight = 1; 
+    
+    if (!basePrice || isNaN(basePrice) || basePrice == 0) basePrice = 0;
 
     let parsedDiscountTiers = [];
     try {
@@ -5425,6 +5428,7 @@ window.clearImageSearch = function() {
       shopId, shopName 
     };
     
+    // UI তে ডেটা দেখানো
     document.getElementById('calc-prod-name').innerText = name;
     document.getElementById('calc-base-info').innerText = `স্ট্যান্ডার্ড রেট: ₹${basePrice} / ${baseWeight} ${unit}`;
     document.getElementById('dlv-custom-calc-modal').classList.add('active');
@@ -5433,7 +5437,7 @@ window.clearImageSearch = function() {
     const chipsContainer = document.getElementById('calc-chips-container');
     const manualInput = document.getElementById('calc-manual-input');
     
-    // 🚀 pcs বা box হলে + - বাটন, ওজন হলে স্লাইডার
+    // পিস/বক্স নাকি ওজন?
     if (unit === 'pcs' || unit === 'box' || unit === 'drsjon') {
       sliderSection.style.display = 'none';
       chipsContainer.style.display = 'none';
@@ -5458,7 +5462,6 @@ window.clearImageSearch = function() {
       calculateFinalPrice(currentPcsQty * calcProduct.baseWeight);
       
     } else {
-      // === ওজন/লিটারের জন্য স্লাইডার ===
       sliderSection.style.display = 'block';
       chipsContainer.style.display = 'flex';
       if (manualInput) manualInput.parentElement.style.display = 'flex'; 
@@ -5468,26 +5471,21 @@ window.clearImageSearch = function() {
 
       let factor = (unit === 'kg' || unit === 'ltr') ? 1000 : 1;
       calcProduct.factor = factor;
-      calcProduct.displayUnit = unit;
 
       const slider = document.getElementById('calc-weight-slider');
       
-      // 🚀 স্মার্ট মিন এবং ম্যাক্স লজিক
-      const minW = (calcProduct.minOrder > 0 ? calcProduct.minOrder * factor : calcProduct.baseWeight * factor * 0.1); // মিন না দিলে বেসের ১০%
-      const maxW = (calcProduct.maxOrder > 0 ? calcProduct.maxOrder * factor : calcProduct.baseWeight * factor * 5); // ম্যাক্স না দিলে বেসের ৫ গুণ
+      // মিন ও ম্যাক্স (যদি 0 থাকে তবে ডিফল্ট সেট হবে)
+      const minW = (calcProduct.minOrder > 0 ? calcProduct.minOrder : calcProduct.baseWeight / 10) * factor;
+      const maxW = (calcProduct.maxOrder > 0 ? calcProduct.maxOrder : calcProduct.baseWeight * 5) * factor;
       
       slider.min = minW;
       slider.max = maxW;
       slider.step = maxW <= 500 ? 10 : (maxW <= 2000 ? 50 : 100);
       slider.value = minW; 
       
-      // 🚀 স্লাইডারের নিচের লেবেল আপডেট
-      document.getElementById('calc-min-label').innerText = `Min: ${(minW/factor).toFixed(2).replace(/\.00$/, '')}${unit}`;
-      document.getElementById('calc-max-label').innerText = `Max: ${(maxW/factor).toFixed(2).replace(/\.00$/, '')}${unit}`;
+      document.getElementById('calc-min-label').innerText = `Min: ${(minW/factor).toFixed(2).replace(/\.00$/, '')} ${unit}`;
+      document.getElementById('calc-max-label').innerText = `Max: ${(maxW/factor).toFixed(2).replace(/\.00$/, '')} ${unit}`;
       
-      // ম্যানুয়াল ইনপুটের পাশের লেবেল
-      if(manualInput) manualInput.nextElementSibling.innerText = unit;
-
       renderCalcChips(minW, maxW, factor, unit);
       updateSliderCalculation(minW);
     }
@@ -6197,6 +6195,19 @@ async function assignClosestDeliveryBoy(orderId, order) {
       alert("সমস্যা হয়েছে!"); 
       toggleEl.checked = !isChecked; 
     }
+  };
+
+  // ৬. অর্ডার কনফার্ম করা
+  window.confirmCustomOrder = function() {
+    // টোটাল দাম এবং পরিমাণ বের করা
+    const totalPrice = parseFloat(document.getElementById('calc-res-total').innerText.replace('₹', ''));
+    const finalWeightStr = document.getElementById('calc-res-weight').innerText;
+    
+    // মডাল বন্ধ করা
+    document.getElementById('dlv-custom-calc-modal').classList.remove('active');
+    
+    // placeOrder ফাংশনে ডেটা পাঠানো (এখানে calcProduct এর ভেতরের ভ্যালুগুলো ব্যবহার করা হয়েছে)
+    placeOrder(calcProduct.prodId, `${calcProduct.name} (${finalWeightStr})`, totalPrice, calcProduct.shopId, calcProduct.shopName);
   };
 
 </script>
