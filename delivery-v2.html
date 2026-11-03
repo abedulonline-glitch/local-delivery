@@ -3263,6 +3263,7 @@ window.openAddProductModal = function() {
     const maxUnit = document.getElementById('sp-max-unit').value;
 
     if (price <= 0) return alert("সঠিক দাম দিন!");
+    if (baseWeight <= 0) return alert("দয়া করে সঠিক বেস ওজন দিন (যেমন: ১ কেজি বা ৫০০ গ্রাম)!");
 
     // ডিসকাউন্ট ডেটা সংগ্রহ
     const isBulkDiscountActive = document.getElementById('sp-enable-bulk-discount').checked;
@@ -5395,13 +5396,14 @@ window.clearImageSearch = function() {
     calculateFinalPrice(finalWeight);
   };
 
-  // ==================== SMART CUSTOMER CALCULATOR (NEW) ====================
+  // ==================== SMART CUSTOMER CALCULATOR (FIXED) ====================
   let calcProduct = null;
   let currentPcsQty = 1; 
 
   window.openCustomCalc = function(prodId, name, unit, basePrice, baseWeight, packCharge, minOrder, shopId, shopName, maxOrder, minExtraCharge, isBulkDiscountActive, discountTiersStr) {
+    // 🚀 ডেটা ক্লিনআপ
     if (!unit || unit === 'undefined') unit = 'pcs';
-    if (!baseWeight || baseWeight === 'undefined' || isNaN(baseWeight)) baseWeight = 1;
+    if (!baseWeight || baseWeight === 'undefined' || isNaN(baseWeight) || baseWeight == 0) baseWeight = 1;
     if (!basePrice || isNaN(basePrice)) basePrice = 0;
 
     let parsedDiscountTiers = [];
@@ -5423,8 +5425,6 @@ window.clearImageSearch = function() {
       shopId, shopName 
     };
     
-    // ... [বাকি কোড আগের মতোই থাকবে]
-    
     document.getElementById('calc-prod-name').innerText = name;
     document.getElementById('calc-base-info').innerText = `স্ট্যান্ডার্ড রেট: ₹${basePrice} / ${baseWeight} ${unit}`;
     document.getElementById('dlv-custom-calc-modal').classList.add('active');
@@ -5433,16 +5433,14 @@ window.clearImageSearch = function() {
     const chipsContainer = document.getElementById('calc-chips-container');
     const manualInput = document.getElementById('calc-manual-input');
     
-    // 🚀 চেক করা হচ্ছে পিস/বক্স নাকি ওজন
+    // 🚀 pcs বা box হলে + - বাটন, ওজন হলে স্লাইডার
     if (unit === 'pcs' || unit === 'box' || unit === 'drsjon') {
-      // === পিস/বক্সের জন্য স্লাইডার ও ইনপুট হাইড ===
       sliderSection.style.display = 'none';
       chipsContainer.style.display = 'none';
       if (manualInput) manualInput.parentElement.style.display = 'none'; 
       
       currentPcsQty = 1;
       
-      // + - বাটন তৈরি করা
       let qtyUI = document.getElementById('pcs-qty-ui');
       if(!qtyUI) {
          qtyUI = document.createElement('div');
@@ -5457,11 +5455,10 @@ window.clearImageSearch = function() {
         <button onclick="changePcsQty(1)" style="width:45px; height:45px; border-radius:50%; background:#e8f0fe; color:var(--mp-primary); border:none; font-size:24px; font-weight:bold; cursor:pointer;">+</button>
       `;
       
-      // প্রথমবার দাম ক্যালকুলেট করা
       calculateFinalPrice(currentPcsQty * calcProduct.baseWeight);
       
     } else {
-      // === ওজন/লিটারের জন্য স্লাইডার দেখানো ===
+      // === ওজন/লিটারের জন্য স্লাইডার ===
       sliderSection.style.display = 'block';
       chipsContainer.style.display = 'flex';
       if (manualInput) manualInput.parentElement.style.display = 'flex'; 
@@ -5471,31 +5468,35 @@ window.clearImageSearch = function() {
 
       let factor = (unit === 'kg' || unit === 'ltr') ? 1000 : 1;
       calcProduct.factor = factor;
+      calcProduct.displayUnit = unit;
 
       const slider = document.getElementById('calc-weight-slider');
-      // মিনিমাম ওজন (যদি minOrder 0 থাকে তবে বেস ওজনের ১০%)
-      const minW = (calcProduct.minOrder > 0 ? calcProduct.minOrder : calcProduct.baseWeight / 10) * factor;
-      const maxW = (calcProduct.maxOrder > 0 ? calcProduct.maxOrder : calcProduct.baseWeight * 5) * factor;
+      
+      // 🚀 স্মার্ট মিন এবং ম্যাক্স লজিক
+      const minW = (calcProduct.minOrder > 0 ? calcProduct.minOrder * factor : calcProduct.baseWeight * factor * 0.1); // মিন না দিলে বেসের ১০%
+      const maxW = (calcProduct.maxOrder > 0 ? calcProduct.maxOrder * factor : calcProduct.baseWeight * factor * 5); // ম্যাক্স না দিলে বেসের ৫ গুণ
       
       slider.min = minW;
       slider.max = maxW;
       slider.step = maxW <= 500 ? 10 : (maxW <= 2000 ? 50 : 100);
       slider.value = minW; 
       
-      document.getElementById('calc-min-label').innerText = `Min: ${(minW/factor).toFixed(2)}${unit}`;
-      document.getElementById('calc-max-label').innerText = `Max: ${(maxW/factor).toFixed(2)}${unit}`;
+      // 🚀 স্লাইডারের নিচের লেবেল আপডেট
+      document.getElementById('calc-min-label').innerText = `Min: ${(minW/factor).toFixed(2).replace(/\.00$/, '')}${unit}`;
+      document.getElementById('calc-max-label').innerText = `Max: ${(maxW/factor).toFixed(2).replace(/\.00$/, '')}${unit}`;
       
+      // ম্যানুয়াল ইনপুটের পাশের লেবেল
+      if(manualInput) manualInput.nextElementSibling.innerText = unit;
+
       renderCalcChips(minW, maxW, factor, unit);
       updateSliderCalculation(minW);
     }
   };
 
-  // পিস বাড়ানো/কমানোর ফাংশন
   window.changePcsQty = function(change) {
     currentPcsQty += change;
     if (currentPcsQty < 1) currentPcsQty = 1; 
     document.getElementById('pcs-qty-display').innerText = currentPcsQty;
-    // এখানে currentPcsQty * baseWeight (যা pcs এর জন্য 1) হবে
     calculateFinalPrice(currentPcsQty * calcProduct.baseWeight);
   };
 
@@ -5507,17 +5508,23 @@ window.clearImageSearch = function() {
     calculateFinalPrice(weight);
   };
 
-  // ৩. পিস বাড়ানো/কমানোর ফাংশন (পিস/বক্সের জন্য)
-  window.changePcsQty = function(change) {
-    currentPcsQty += change;
-    if (currentPcsQty < 1) currentPcsQty = 1; 
+  window.updateFromManualInput = function(displayValue) {
+    const val = parseFloat(displayValue);
+    if (isNaN(val) || val <= 0) return;
     
-    document.getElementById('pcs-qty-display').innerText = currentPcsQty;
-    const totalWeight = currentPcsQty * calcProduct.baseWeight; 
-    calculateFinalPrice(totalWeight);
+    const actualWeight = val * calcProduct.factor; 
+    const slider = document.getElementById('calc-weight-slider');
+    
+    let finalWeight = actualWeight;
+    if (finalWeight < parseFloat(slider.min)) finalWeight = parseFloat(slider.min);
+    if (finalWeight > parseFloat(slider.max)) finalWeight = parseFloat(slider.max);
+    
+    slider.value = finalWeight;
+    calcProduct.currentWeight = finalWeight;
+    calculateFinalPrice(finalWeight);
   };
 
-  // ৪. ফাইনাল প্রাইস ক্যালকুলেশন (সব ইউনিটের জন্য অটো-স্মার্ট)
+  // 🚀 মূল ক্যালকুলেশন (ইউনিট ফিক্স সহ)
   function calculateFinalPrice(weight) {
     let baseWeightGrams = calcProduct.baseWeight;
     let unit = calcProduct.unit;
@@ -5538,7 +5545,7 @@ window.clearImageSearch = function() {
     let discountPct = 0;
     let nextTierText = "";
 
-    // 🚀 চেক করা হচ্ছে ডিসকাউন্ট ফিচার অন কি না
+    // 🚀 ডিসকাউন্ট লজিক
     if (calcProduct.isBulkDiscountActive && calcProduct.discountTiers && calcProduct.discountTiers.length > 0) {
       let sortedTiers = [...calcProduct.discountTiers].sort((a, b) => a.qty - b.qty);
       
@@ -5570,12 +5577,14 @@ window.clearImageSearch = function() {
 
     finalPrice += calcProduct.packCharge;
 
+    // 🚀 ফাইনাল রেজাল্টে ইউনিট দেখানোর লজিক (5 kg এর জায়গায় আর gm আসবে না)
     let displayWText = '';
     if(isPcs) {
        displayWText = `${actualWeight} ${unit}`;
     } else {
        let factor = (unit === 'kg' || unit === 'ltr') ? 1000 : 1;
-       displayWText = `${(actualWeight / factor).toFixed(2).replace(/\.00$/, '')} ${unit}`;
+       let finalValue = actualWeight / factor;
+       displayWText = `${finalValue.toFixed(2).replace(/\.00$/, '')} ${unit}`;
     }
     
     document.getElementById('calc-res-prod-price').innerText = `₹${(finalPrice - calcProduct.packCharge).toFixed(2)}`;
@@ -5604,18 +5613,6 @@ window.clearImageSearch = function() {
       }
     }
   }
-
-  // ৫. অর্ডার কনফার্ম করা
-  window.confirmCustomOrder = function() {
-    const totalPrice = parseFloat(document.getElementById('calc-res-total').innerText.replace('₹', ''));
-    const finalWeightStr = document.getElementById('calc-res-weight').innerText;
-    
-    document.getElementById('dlv-custom-calc-modal').classList.remove('active');
-    
-    // placeOrder ফাংশনে কাস্টম ডেটা পাঠানো
-    placeOrder(calcProduct.prodId, `${calcProduct.name} (${finalWeightStr})`, totalPrice, calcProduct.shopId, calcProduct.shopName);
-  };
-
   // ==================== BARCODE GENERATOR LOGIC (PART 3) ====================
   let allProductsForBarcode = [];
 
