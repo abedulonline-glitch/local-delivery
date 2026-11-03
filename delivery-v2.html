@@ -2691,7 +2691,7 @@ window.filterCustomerProducts = function() {
   // SHOPKEEPER FUNCTIONS
   // ============================================================
   // ৩. মোড অনুযায়ী প্রোডাক্ট লিস্ট রেন্ডার
-   function renderShopProducts() {
+  function renderShopProducts() {
     const list = document.getElementById('shop-product-list');
     if (!list) return;
     
@@ -2711,15 +2711,26 @@ window.filterCustomerProducts = function() {
       list.innerHTML = '';
       snapshot.forEach((docSnap) => {
         const prod = docSnap.data();
+        
+        // 🚀 FIX: ইউনিট এবং বেস ওজনের স্মার্ট ফলব্যাক (undefined দূর করার জন্য)
+        const displayUnit = prod.unit || prod.baseUnit || 'pcs';
+        // যদি দামের পাশে দেখানোর জন্য বেস ওজন দরকার হয়:
+        const displayBaseWeight = prod.baseWeight || 1; 
+        
+        // স্টক ডিসপ্লে টেক্সট
+        const stockUnit = prod.stockUnit || displayUnit;
+        const stockDisplay = `${prod.stock} ${stockUnit}`;
+
         list.innerHTML += `
           <div class="shop-prod-item">
             <div class="prod-img-thumb">${prod.image ? `<img src="${prod.image}" style="width:100%; height:100%; border-radius:8px; object-fit:cover;">` : '📦'}</div>
             <div class="prod-details">
               <div class="prod-title">${prod.name} ${prod.isStandalone ? '<span style="font-size:10px; color:#7b1fa2;">(নিজস্ব)</span>' : ''}</div>
-              <div class="prod-price">₹${prod.price} / ${prod.unit}</div>
-              <div class="prod-stock">স্টক: ${prod.stock} ${prod.unit || 'টি'}</div>
+              <!-- 🚀 এখানে undefined এর বদলে আসল ইউনিট ও ওজন দেখাবে -->
+              <div class="prod-price">₹${prod.price} / ${displayBaseWeight}${displayUnit}</div>
+              <div class="prod-stock">স্টক: ${stockDisplay}</div>
             </div>
-            <!-- 🚀 প্রিন্ট বাটন -->
+            <!-- প্রিন্ট বাটন -->
             <button onclick="quickPrintBarcode('${docSnap.id}')" style="background:#e8f0fe; color:var(--mp-primary); border:none; border-radius:6px; padding:8px 10px; font-size:16px; cursor:pointer; margin-left: auto;" title="বারকোড প্রিন্ট করুন">
               🏷️
             </button>
