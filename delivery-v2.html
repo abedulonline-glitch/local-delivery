@@ -1179,49 +1179,51 @@
   </div>
 </div>
 
-<!-- Set Price Modal (Shopkeeper - Advanced) -->
+<!-- Set Price Modal (Shopkeeper - Advanced UI Fixed) -->
 <div id="dlv-set-price-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-set-price-modal').classList.remove('active')">&times;</span>
     <h3 style="margin-bottom: 15px; color: var(--mp-primary);" id="sp-title">রেট ও স্টক দিন</h3>
     
     <!-- বেস প্রাইস ও ওজন -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>বেস দাম (₹) *</label>
-        <input type="number" id="sp-price" class="dlv-input" placeholder="যেমন: 120">
+    <div style="display:flex; gap:10px; margin-bottom: 15px;">
+      <div class="dlv-form-group" style="flex: 0 0 45%; margin-bottom: 0;">
+        <label style="font-size: 11px; white-space: nowrap;">বেস দাম (₹) *</label>
+        <input type="number" id="sp-price" class="dlv-input" placeholder="0" style="padding: 8px;">
       </div>
-      <div class="dlv-form-group">
-        <label>বেস ওজন *</label>
-        <div style="display: flex; gap: 5px;">
-          <input type="number" id="sp-base-weight" class="dlv-input" placeholder="যেমন: 1" style="flex: 1;">
-          <select id="sp-base-unit" class="dlv-input" style="width: 80px; padding: 5px;">
-            <option value="kg">kg</option>
-            <option value="gm">gm</option>
-            <option value="pcs">pcs</option>
-            <option value="ltr">ltr</option>
-          </select>
-        </div>
+      <div class="dlv-form-group" style="flex: 0 0 45%; margin-bottom: 0;">
+        <label style="font-size: 11px; white-space: nowrap;">বেস ওজন *</label>
+        <input type="number" id="sp-base-weight" class="dlv-input" placeholder="0" style="padding: 8px;">
+      </div>
+      <div class="dlv-form-group" style="flex: 0 0 10%; margin-bottom: 0;">
+        <label style="font-size: 11px;">&nbsp;</label>
+        <select id="sp-base-unit" class="dlv-input" style="padding: 8px 2px; font-size: 12px; text-align: center;">
+          <option value="kg">kg</option>
+          <option value="gm">gm</option>
+          <option value="pcs">pcs</option>
+          <option value="ltr">ltr</option>
+        </select>
       </div>
     </div>
 
     <!-- প্যাকিং চার্জ ও স্টক -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>প্যাকিং চার্জ (₹)</label>
-        <input type="number" id="sp-packaging-charge" class="dlv-input" placeholder="যেমন: 5">
+    <div style="display:flex; gap:10px; margin-bottom: 15px;">
+      <div class="dlv-form-group" style="flex: 0 0 45%; margin-bottom: 0;">
+        <label style="font-size: 11px; white-space: nowrap;">প্যাকিং চার্জ (₹)</label>
+        <input type="number" id="sp-packaging-charge" class="dlv-input" placeholder="0" style="padding: 8px;">
       </div>
-      <div class="dlv-form-group">
-        <label>স্টক *</label>
-        <div style="display: flex; gap: 5px;">
-          <input type="number" id="sp-stock" class="dlv-input" placeholder="যেমন: 50" style="flex: 1;">
-          <select id="sp-stock-unit" class="dlv-input" style="width: 80px; padding: 5px;">
-            <option value="kg">kg</option>
-            <option value="gm">gm</option>
-            <option value="pcs">pcs</option>
-            <option value="ltr">ltr</option>
-          </select>
-        </div>
+      <div class="dlv-form-group" style="flex: 0 0 45%; margin-bottom: 0;">
+        <label style="font-size: 11px; white-space: nowrap;">স্টক *</label>
+        <input type="number" id="sp-stock" class="dlv-input" placeholder="0" style="padding: 8px;">
+      </div>
+      <div class="dlv-form-group" style="flex: 0 0 10%; margin-bottom: 0;">
+        <label style="font-size: 11px;">&nbsp;</label>
+        <select id="sp-stock-unit" class="dlv-input" style="padding: 8px 2px; font-size: 12px; text-align: center;">
+          <option value="kg">kg</option>
+          <option value="gm">gm</option>
+          <option value="pcs">pcs</option>
+          <option value="ltr">ltr</option>
+        </select>
       </div>
     </div>
 
@@ -1235,39 +1237,42 @@
     </div>
 
     <!-- 🚀 কাস্টম ওয়েট এবং মিনিমাম/ম্যাক্সিমাম লজিক -->
-    <div style="background:#f8f9fa; padding:12px; border-radius:8px; margin-bottom:15px;">
-      <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin-bottom:10px;">
+    <div style="background:#f8f9fa; padding:12px; border-radius:8px; margin-bottom:15px; border: 1px solid #eee;">
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin-bottom:12px;">
         <input type="checkbox" id="sp-allow-custom" checked style="width:18px; height:18px; margin:0; cursor:pointer;">
         <span>⚖️ কাস্টম ওজন নেওয়ার অনুমতি দিন (স্লাইডার)</span>
       </label>
       
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <div class="dlv-form-group" style="margin: 0;">
-          <label style="font-size: 11px;">মিনিমাম অর্ডার</label>
+      <div style="display:flex; gap:10px;">
+        <!-- মিনিমাম অর্ডার (40% + 10% = 50%) -->
+        <div style="flex: 0 0 50%;">
+          <label style="font-size: 11px; font-weight: 600; color: #555; display: block; margin-bottom: 5px;">মিনিমাম অর্ডার</label>
           <div style="display: flex; gap: 5px;">
-            <input type="number" id="sp-min-order" class="dlv-input" placeholder="যেমন: 100" style="flex: 1;">
-            <select id="sp-min-unit" class="dlv-input" style="width: 60px; padding: 2px; font-size: 11px;">
+            <input type="number" id="sp-min-order" class="dlv-input" placeholder="0" style="flex: 0 0 80%; padding: 8px;">
+            <select id="sp-min-unit" class="dlv-input" style="flex: 0 0 calc(20% - 5px); padding: 8px 2px; font-size: 12px; text-align: center;">
               <option value="gm">gm</option>
               <option value="kg">kg</option>
             </select>
           </div>
-          <select id="sp-min-extra" class="dlv-input" style="margin-top: 5px; font-size: 11px; padding: 4px;">
+          <select id="sp-min-extra" class="dlv-input" style="margin-top: 5px; font-size: 11px; padding: 6px;">
             <option value="0">কোনো বাড়তি নেই</option>
             <option value="2">+২% বাড়তি চার্জ</option>
             <option value="3">+৩% বাড়তি চার্জ</option>
             <option value="5">+৫% বাড়তি চার্জ</option>
           </select>
         </div>
-        <div class="dlv-form-group" style="margin: 0;">
-          <label style="font-size: 11px;">ম্যাক্সিমাম অর্ডার</label>
+
+        <!-- ম্যাক্সিমাম অর্ডার (40% + 10% = 50%) -->
+        <div style="flex: 0 0 50%;">
+          <label style="font-size: 11px; font-weight: 600; color: #555; display: block; margin-bottom: 5px;">ম্যাক্সিমাম অর্ডার</label>
           <div style="display: flex; gap: 5px;">
-            <input type="number" id="sp-max-order" class="dlv-input" placeholder="যেমন: 5" style="flex: 1;">
-            <select id="sp-max-unit" class="dlv-input" style="width: 60px; padding: 2px; font-size: 11px;">
+            <input type="number" id="sp-max-order" class="dlv-input" placeholder="0" style="flex: 0 0 80%; padding: 8px;">
+            <select id="sp-max-unit" class="dlv-input" style="flex: 0 0 calc(20% - 5px); padding: 8px 2px; font-size: 12px; text-align: center;">
               <option value="kg">kg</option>
               <option value="gm">gm</option>
             </select>
           </div>
-          <select id="sp-max-discount" class="dlv-input" style="margin-top: 5px; font-size: 11px; padding: 4px;">
+          <select id="sp-max-discount" class="dlv-input" style="margin-top: 5px; font-size: 11px; padding: 6px;">
             <option value="0">কোনো ছাড় নেই</option>
             <option value="1">-১% ডিসকাউন্ট</option>
             <option value="2">-২% ডিসকাউন্ট</option>
