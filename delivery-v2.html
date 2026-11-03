@@ -4437,20 +4437,21 @@ window.closeMasterProductModal = function() {
     } catch(e) { alert("ডিলিট করতে সমস্যা হয়েছে!"); }
   };
   
-   window.saveMasterProduct = async function() {
+   // ==================== FIXED: MASTER PRODUCT SAVE ====================
+window.saveMasterProduct = async function() {
   const name = document.getElementById('mp-name').value.trim();
   const category = document.getElementById('mp-category').value;
-  const unit = document.getElementById('mp-unit').value;
-  const grade = document.getElementById('mp-grade').value;
   
-  if (!name || !category) return alert("নাম এবং ক্যাটাগরি দিন!");
+  // চেক করা হচ্ছে নাম এবং ক্যাটাগরি দেওয়া হয়েছে কি না
+  if (!name || !category) return alert("প্রোডাক্টের নাম এবং ক্যাটাগরি অবশ্যই দিতে হবে!");
 
   const btn = document.getElementById('btn-save-mp');
   btn.innerText = "⏳ সেভ হচ্ছে..."; 
   btn.disabled = true;
 
-  let generatedVectorStr = ""; // 🚀 স্ট্রিং হিসেবে সেভ হবে (AI সার্চের জন্য)
+  let generatedVectorStr = ""; // 🚀 AI ইমেজ ভেক্টর স্ট্রিং হিসেবে সেভ হবে
 
+  // ছবি থাকলে এবং AI মডেল লোড থাকলে ভেক্টর জেনারেট হবে
   if (uploadedImageUrl && window.CLIPVisionModelWithProjection) {
     try {
       btn.innerText = "🧠 AI ভেক্টর তৈরি হচ্ছে..."; 
@@ -4462,31 +4463,29 @@ window.closeMasterProductModal = function() {
       const image_inputs = await window.clipProcessor(image);
       const { image_embeds } = await window.clipVisionModel(image_inputs);
       
-      // 🚀 অ্যারে থেকে স্ট্রিং এ কনভার্ট (যাতে ফায়ারবেসে সেভ হতে সমস্যা না হয়)
+      // অ্যারে থেকে স্ট্রিং এ কনভার্ট (যাতে ফায়ারবেসে সেভ হতে সমস্যা না হয়)
       const vectorArray = Array.from(image_embeds.data).slice(0, 256);
       generatedVectorStr = JSON.stringify(vectorArray); 
     } catch (error) { 
-      console.error("❌ Vector Error:", error); 
+      console.error("❌ Vector Generation Error:", error); 
     }
   }
 
   try {
-    // 🚀 এখানে শুধু বেসিক তথ্য সেভ হচ্ছে, কোনো দাম বা স্টক নেই
+    // 🚀 এখানে শুধু আপনার নির্দেশনা অনুযায়ী ৩টি জিনিস সেভ হচ্ছে
     await addDoc(collection(db, "master_products"), {
       name: name, 
       category: category, 
-      unit: unit, 
-      grade: grade, 
-      image: uploadedImageUrl, 
-      imageVector: generatedVectorStr, // ভেক্টর সেভ
+      image: uploadedImageUrl || null, // ছবি না দিলে null যাবে
+      imageVector: generatedVectorStr, // AI ভেক্টর
       createdAt: serverTimestamp()
     });
     
-    alert("সফলভাবে টেমপ্লেট সেভ হয়েছে!");
-    closeMasterProductModal();
+    alert("সফলভাবে মাস্টার প্রোডাক্ট সেভ হয়েছে!");
+    closeMasterProductModal(); // সেভ হওয়ার পর মডাল বন্ধ হবে এবং ফর্ম রিসেট হবে
   } catch (e) { 
-    console.error(e);
-    alert("সেভ করতে সমস্যা হয়েছে!"); 
+    console.error("Save Error:", e);
+    alert("সেভ করতে সমস্যা হয়েছে! এরর: " + e.message); 
   } finally { 
     btn.innerText = "💾 সেভ করুন"; 
     btn.disabled = false; 
