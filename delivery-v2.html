@@ -1273,9 +1273,10 @@
         </div>
 
         <!-- ম্যাক্সিমাম অর্ডার (4 Units Added) -->
+         <!-- ম্যাক্সিমাম অর্ডার -->
         <div style="flex: 0 0 50%;">
           <label style="font-size: 11px; font-weight: 600; color: #555; display: block; margin-bottom: 5px;">ম্যাক্সিমাম অর্ডার</label>
-          <div style="display: flex; gap: 5px;">
+          <div style="display: flex; gap: 5px; margin-bottom: 5px;">
             <input type="number" id="sp-max-order" class="dlv-input" placeholder="0" style="flex: 0 0 60%; padding: 8px;">
             <select id="sp-max-unit" class="dlv-input" style="flex: 0 0 40%; padding: 8px 2px; font-size: 12px; text-align: center;">
               <option value="kg">kg</option>
@@ -1284,19 +1285,14 @@
               <option value="ltr">ltr</option>
             </select>
           </div>
-          <select id="sp-max-discount" class="dlv-input" style="margin-top: 5px; font-size: 11px; padding: 6px;">
-            <option value="0">কোনো ছাড় নেই</option>
-            <option value="1">-১% ডিসকাউন্ট</option>
-            <option value="2">-২% ডিসকাউন্ট</option>
-            <option value="5">-৫% ডিসকাউন্ট</option>
-          </select>
+          
+          <!-- 🚀 নতুন ডিসকাউন্ট টিয়ার সেকশন -->
+          <div style="background: #fff; border: 1px dashed #ccc; padding: 8px; border-radius: 6px; margin-top: 5px;">
+            <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 5px;">🎁 বাল্ক ডিসকাউন্ট লেয়ার</div>
+            <div id="sp-discount-tiers-container"></div>
+            <button type="button" onclick="addDiscountTierRow()" style="width: 100%; background: #e8f0fe; color: var(--mp-primary); border: none; padding: 5px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; margin-top: 5px;">+ নতুন ডিসকাউন্ট লেয়ার</button>
+          </div>
         </div>
-      </div>
-    </div>
-
-    <button class="mp-btn mp-btn-success" onclick="saveShopProduct()">💾 সেভ করুন</button>
-  </div>
-</div>
 <!-- Master Product Add Modal (Admin - Simplified) -->
 <div id="dlv-master-product-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
@@ -3189,36 +3185,38 @@ window.openAddProductModal = function() {
 };
 
 // 🚀 নতুন যোগ করা হলো: দোকানদার তার নিজের দেওয়া রেট এডিট করার জন্য
-window.editShopProduct = function(myData, masterId) {
-  selectedMasterProduct = { ...myData, masterId: masterId };
-  
-  document.getElementById('sp-title').innerText = `${myData.name} - রেট এডিট করুন`;
-  
-  // আগের ডেটাগুলো ফর্মে বসানো
-  document.getElementById('sp-price').value = myData.price || '';
-  document.getElementById('sp-base-weight').value = myData.baseWeight || '';
-  document.getElementById('sp-base-unit').value = myData.baseUnit || 'kg';
-  
-  document.getElementById('sp-packaging-charge').value = myData.packagingCharge || '';
-  document.getElementById('sp-stock').value = myData.stock || '';
-  document.getElementById('sp-stock-unit').value = myData.stockUnit || 'kg';
-  
-  document.getElementById('sp-grade').value = myData.grade || 'A';
-  
-  document.getElementById('sp-allow-custom').checked = myData.allowCustomWeight !== false;
-  
-  document.getElementById('sp-min-order').value = myData.minOrderWeight || '';
-  document.getElementById('sp-min-unit').value = myData.minOrderUnit || 'gm';
-  document.getElementById('sp-min-extra').value = myData.minExtraCharge || '0';
-  
-  document.getElementById('sp-max-order').value = myData.maxOrderWeight || '';
-  document.getElementById('sp-max-unit').value = myData.maxOrderUnit || 'kg';
-  document.getElementById('sp-max-discount').value = myData.maxDiscount || '0';
+  window.editShopProduct = function(myData, masterId) {
+    selectedMasterProduct = { ...myData, masterId: masterId };
+    
+    document.getElementById('sp-title').innerText = `${myData.name} - রেট এডিট করুন`;
+    
+    document.getElementById('sp-price').value = myData.price || '';
+    document.getElementById('sp-base-weight').value = myData.baseWeight || '';
+    document.getElementById('sp-base-unit').value = myData.baseUnit || myData.unit || 'kg';
+    
+    document.getElementById('sp-packaging-charge').value = myData.packagingCharge || '';
+    document.getElementById('sp-stock').value = myData.stock || '';
+    document.getElementById('sp-stock-unit').value = myData.stockUnit || 'kg';
+    
+    document.getElementById('sp-grade').value = myData.grade || 'A';
+    document.getElementById('sp-allow-custom').checked = myData.allowCustomWeight !== false;
+    
+    document.getElementById('sp-min-order').value = myData.minOrderWeight || '';
+    document.getElementById('sp-min-unit').value = myData.minOrderUnit || 'gm';
+    document.getElementById('sp-min-extra').value = myData.minExtraCharge || '0';
+    
+    document.getElementById('sp-max-order').value = myData.maxOrderWeight || '';
+    document.getElementById('sp-max-unit').value = myData.maxOrderUnit || 'kg';
 
-  // মডাল পরিবর্তন
-  document.getElementById('dlv-catalog-modal').classList.remove('active');
-  document.getElementById('dlv-set-price-modal').classList.add('active');
-};
+    // 🚀 নতুন: আগের ডিসকাউন্ট লেয়ারগুলো লোড করা
+    loadDiscountTiers(myData.discountTiers);
+
+    // 🚀 নতুন: ইউনিট চেঞ্জ হলে ওয়েট ফিল্ড ডিজেবল হওয়ার লজিক কল করা
+    if(typeof handleUnitChange === 'function') handleUnitChange(myData.baseUnit || myData.unit || 'kg');
+
+    document.getElementById('dlv-catalog-modal').classList.remove('active');
+    document.getElementById('dlv-set-price-modal').classList.add('active');
+  };
 
   // ৫. নিজস্ব প্রোডাক্ট সেভ করা
   window.saveCustomProduct = async function() {
@@ -3310,81 +3308,116 @@ window.editShopProduct = function(myData, masterId) {
     document.getElementById('dlv-set-price-modal').classList.add('active');
   };
 
-  // ৩. দোকানদারের নিজের রেট সেভ করা
-window.saveShopProduct = async function() {
-  const price = parseFloat(document.getElementById('sp-price').value) || 0;
-  const baseWeight = parseFloat(document.getElementById('sp-base-weight').value) || 1;
-  const baseUnit = document.getElementById('sp-base-unit').value;
-  const packagingCharge = parseFloat(document.getElementById('sp-packaging-charge').value) || 0;
-  const stock = parseFloat(document.getElementById('sp-stock').value) || 0;
-  const stockUnit = document.getElementById('sp-stock-unit').value;
-  const grade = document.getElementById('sp-grade').value;
-  
-  const allowCustom = document.getElementById('sp-allow-custom').checked;
-  const minOrder = parseFloat(document.getElementById('sp-min-order').value) || 0;
-  const minUnit = document.getElementById('sp-min-unit').value;
-  const minExtra = parseFloat(document.getElementById('sp-min-extra').value) || 0;
-  const maxOrder = parseFloat(document.getElementById('sp-max-order').value) || 0;
-  const maxUnit = document.getElementById('sp-max-unit').value;
-  const maxDiscount = parseFloat(document.getElementById('sp-max-discount').value) || 0;
+   // 🚀 ডিসকাউন্ট লেয়ার রো তৈরি করার ফাংশন
+  window.addDiscountTierRow = function(qty = '', pct = '') {
+    const container = document.getElementById('sp-discount-tiers-container');
+    const rowId = 'tier-' + Date.now() + Math.floor(Math.random() * 100);
+    
+    const rowHtml = `
+      <div id="${rowId}" style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
+        <input type="number" placeholder="যেমন: 10" class="tier-qty" style="flex:1; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;" value="${qty}">
+        <span style="font-size:10px;">পরিমাণ</span>
+        <input type="number" placeholder="যেমন: 2" class="tier-pct" style="flex:1; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;" value="${pct}">
+        <span style="font-size:10px;">% ছাড়</span>
+        <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">&times;</button>
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', rowHtml);
+  };
 
-  if (price <= 0) return alert("সঠিক দাম দিন!");
-
-  // মডালের সেভ বাটনে ক্লিক করলে লোডিং দেখানোর জন্য
-  const modalBtn = document.querySelector('#dlv-set-price-modal .mp-btn-success');
-  const originalText = modalBtn.innerText;
-  modalBtn.innerText = "⏳ সেভ হচ্ছে..."; 
-  modalBtn.disabled = true;
-
-  try {
-    // ডেটা অবজেক্ট তৈরি
-    const productData = {
-      shopId: currentUser.uid,
-      shopName: globalUserData.name || 'Unknown',
-      masterProductId: selectedMasterProduct.masterId || '',
-      name: selectedMasterProduct.name || 'Unknown',
-      category: selectedMasterProduct.category || 'General',
-      image: selectedMasterProduct.image || '',
-      
-      price: price,
-      baseWeight: baseWeight,
-      baseUnit: baseUnit,
-      packagingCharge: packagingCharge,
-      stock: stock,
-      stockUnit: stockUnit,
-      grade: grade,
-      allowCustomWeight: allowCustom,
-      minOrderWeight: minOrder,
-      minOrderUnit: minUnit,
-      minExtraCharge: minExtra,
-      maxOrderWeight: maxOrder,
-      maxOrderUnit: maxUnit,
-      maxDiscount: maxDiscount,
-      
-      updatedAt: serverTimestamp()
-    };
-
-    // 🚀 যদি আগে থেকেই ডকুমেন্ট আইডি থাকে (অর্থাৎ এডিট হচ্ছে), তবে আপডেট হবে
-    if (selectedMasterProduct.docId) {
-      await updateDoc(doc(db, "products", selectedMasterProduct.docId), productData);
-      alert("প্রোডাক্ট সফলভাবে আপডেট হয়েছে!");
+  // 🚀 এডিট করার সময় পুরোনো ডিসকাউন্ট লেয়ার লোড করা
+  window.loadDiscountTiers = function(tiers) {
+    const container = document.getElementById('sp-discount-tiers-container');
+    if (container) container.innerHTML = ''; // ক্লিয়ার
+    if (tiers && Array.isArray(tiers) && tiers.length > 0) {
+      tiers.forEach(t => addDiscountTierRow(t.qty, t.pct));
     } else {
-      // নতুন প্রোডাক্ট হলে addDoc হবে
-      productData.createdAt = serverTimestamp();
-      await addDoc(collection(db, "products"), productData);
-      alert("প্রোডাক্ট সফলভাবে যুক্ত হয়েছে!");
+      addDiscountTierRow(); // ডিফল্ট ১টি খালি রো
     }
+  };
+  
+  // ৩. দোকানদারের নিজের রেট সেভ করা
+  window.saveShopProduct = async function() {
+    const price = parseFloat(document.getElementById('sp-price').value) || 0;
+    const baseWeight = parseFloat(document.getElementById('sp-base-weight').value) || 1;
+    const baseUnit = document.getElementById('sp-base-unit').value;
+    const packagingCharge = parseFloat(document.getElementById('sp-packaging-charge').value) || 0;
+    const stock = parseFloat(document.getElementById('sp-stock').value) || 0;
+    const stockUnit = document.getElementById('sp-stock-unit').value;
+    const grade = document.getElementById('sp-grade').value;
     
-    document.getElementById('dlv-set-price-modal').classList.remove('active');
-    
-  } catch (e) {
-    console.error(e);
-    alert("সেভ করতে সমস্যা: " + e.message);
-  } finally {
-    modalBtn.innerText = originalText;
-    modalBtn.disabled = false;
-  }
-};
+    const allowCustom = document.getElementById('sp-allow-custom').checked;
+    const minOrder = parseFloat(document.getElementById('sp-min-order').value) || 0;
+    const minUnit = document.getElementById('sp-min-unit').value;
+    const minExtra = parseFloat(document.getElementById('sp-min-extra').value) || 0;
+    const maxOrder = parseFloat(document.getElementById('sp-max-order').value) || 0;
+    const maxUnit = document.getElementById('sp-max-unit').value;
+
+    if (price <= 0) return alert("সঠিক দাম দিন!");
+
+    // 🚀 নতুন: ডিসকাউন্ট লেয়ার ডেটা সংগ্রহ করা
+    let discountTiers = [];
+    document.querySelectorAll('#sp-discount-tiers-container > div').forEach(row => {
+      const qty = parseFloat(row.querySelector('.tier-qty').value);
+      const pct = parseFloat(row.querySelector('.tier-pct').value);
+      if (!isNaN(qty) && !isNaN(pct) && qty > 0 && pct > 0) {
+        discountTiers.push({ qty: qty, pct: pct });
+      }
+    });
+    // ছোট থেকে বড় সাজানো
+    discountTiers.sort((a, b) => a.qty - b.qty);
+
+    const modalBtn = document.querySelector('#dlv-set-price-modal .mp-btn-success');
+    const originalText = modalBtn.innerText;
+    modalBtn.innerText = "⏳ সেভ হচ্ছে..."; 
+    modalBtn.disabled = true;
+
+    try {
+      const productData = {
+        shopId: currentUser.uid,
+        shopName: globalUserData.name || 'Unknown',
+        masterProductId: selectedMasterProduct.masterId || '',
+        name: selectedMasterProduct.name || 'Unknown',
+        category: selectedMasterProduct.category || 'General',
+        image: selectedMasterProduct.image || '',
+        
+        price: price,
+        baseWeight: baseWeight,
+        baseUnit: baseUnit,
+        packagingCharge: packagingCharge,
+        stock: stock,
+        stockUnit: stockUnit,
+        grade: grade,
+        allowCustomWeight: allowCustom,
+        minOrderWeight: minOrder,
+        minOrderUnit: minUnit,
+        minExtraCharge: minExtra,
+        maxOrderWeight: maxOrder,
+        maxOrderUnit: maxUnit,
+        discountTiers: discountTiers, // 🚀 ডিসকাউন্ট লেয়ার সেভ হচ্ছে
+        
+        updatedAt: serverTimestamp()
+      };
+
+      if (selectedMasterProduct.docId) {
+        await updateDoc(doc(db, "products", selectedMasterProduct.docId), productData);
+        alert("প্রোডাক্ট সফলভাবে আপডেট হয়েছে!");
+      } else {
+        productData.createdAt = serverTimestamp();
+        await addDoc(collection(db, "products"), productData);
+        alert("প্রোডাক্ট সফলভাবে যুক্ত হয়েছে!");
+      }
+      
+      document.getElementById('dlv-set-price-modal').classList.remove('active');
+      
+    } catch (e) {
+      console.error(e);
+      alert("সেভ করতে সমস্যা: " + e.message);
+    } finally {
+      modalBtn.innerText = originalText;
+      modalBtn.disabled = false;
+    }
+  };
 
   // ============================================================
   // DELIVERY BOY FUNCTIONS
@@ -5445,39 +5478,95 @@ window.clearImageSearch = function() {
     let baseWeightGrams = calcProduct.baseWeight;
     let unit = calcProduct.unit;
     
-    // kg বা ltr হলে গ্রামে কনভার্ট করা
     if (unit === 'kg' || unit === 'ltr') baseWeightGrams *= 1000;
     
     let actualWeight = weight;
+    let isPcs = (unit === 'pcs' || unit === 'box' || unit === 'drsjon');
     
-    // 🚀 pcs বা box হলে সরাসরি সংখ্যা ধরা হবে, গ্রামে কনভার্ট হবে না
-    if (unit === 'pcs' || unit === 'box' || unit === 'drsjon') {
+    if (isPcs) {
        actualWeight = weight; 
        baseWeightGrams = 1; 
     }
 
-    // মূল দাম = (কতটুকু নিচ্ছে / বেস ওজন) * বেস দাম
     let finalPrice = (actualWeight / baseWeightGrams) * calcProduct.basePrice;
     
+    let extraChargePct = 0;
+    let discountPct = 0;
+    let nextTierText = "";
+
+    // 🚀 মাল্টি-লেভেল ডিসকাউন্ট ক্যালকুলেশন
+    if (calcProduct.discountTiers && calcProduct.discountTiers.length > 0) {
+      let sortedTiers = [...calcProduct.discountTiers].sort((a, b) => a.qty - b.qty);
+      
+      // ইউনিট কনভার্সন (যদি kg হয় তবে গ্রামে চেক করবে)
+      let actualWeightForTier = actualWeight;
+      if (!isPcs && (unit === 'kg' || unit === 'ltr')) actualWeightForTier = actualWeight / 1000;
+
+      for (let i = 0; i < sortedTiers.length; i++) {
+        if (actualWeightForTier >= sortedTiers[i].qty) {
+          discountPct = sortedTiers[i].pct;
+        } else {
+          // যদি পরের লেয়ারে না পৌঁছায়, তবে লোভ দেখানোর মেসেজ তৈরি
+          let remaining = sortedTiers[i].qty - actualWeightForTier;
+          nextTierText = `💡 আর মাত্র ${remaining.toFixed(2).replace(/\.00$/, '')} ${unit} নিলে আপনি ${sortedTiers[i].pct}% ডিসকাউন্ট পাবেন!`;
+          break; 
+        }
+      }
+    }
+
+    // 🚀 বাড়তি চার্জ (মিনিমামের কম নিলে)
+    let minOrderLimit = parseFloat(calcProduct.minOrder) || 0;
+    if (!isPcs && (unit === 'kg' || unit === 'ltr')) minOrderLimit *= 1000; 
+
+    if (actualWeight < minOrderLimit && calcProduct.minExtraCharge > 0) {
+      extraChargePct = parseFloat(calcProduct.minExtraCharge);
+      finalPrice = finalPrice * (1 + extraChargePct / 100);
+    }
+
+    // 🚀 ডিসকাউন্ট অ্যাপ্লাই
+    if (discountPct > 0) {
+      finalPrice = finalPrice * (1 - discountPct / 100);
+    }
+
     // প্যাকিং চার্জ যোগ
     finalPrice += calcProduct.packCharge;
 
     // UI তে দেখানোর জন্য টেক্সট তৈরি
     let displayWText = '';
-    if(unit === 'pcs' || unit === 'box' || unit === 'drsjon') {
-       displayWText = `${actualWeight} ${unit}`; // যেমন: 2 pcs
+    if(isPcs) {
+       displayWText = `${actualWeight} ${unit}`;
     } else {
        let factor = (unit === 'kg' || unit === 'ltr') ? 1000 : 1;
-       displayWText = `${(actualWeight / factor).toFixed(2).replace(/\.00$/, '')} ${unit}`; // যেমন: 1.5 kg
+       displayWText = `${(actualWeight / factor).toFixed(2).replace(/\.00$/, '')} ${unit}`;
     }
     
-    // HTML আপডেট
+    // UI আপডেট
     document.getElementById('calc-res-prod-price').innerText = `₹${(finalPrice - calcProduct.packCharge).toFixed(2)}`;
     document.getElementById('calc-res-weight').innerText = displayWText;
     document.getElementById('calc-res-total').innerText = `₹${finalPrice.toFixed(2)}`;
     
+    // 🚀 স্মার্ট মেসেজ দেখানো (ডিসকাউন্ট / বাড়তি চার্জ / পরবর্তী লেয়ার)
     let infoEl = document.getElementById('calc-error');
-    if(infoEl) infoEl.style.display = 'none'; 
+    if(infoEl) {
+      if (discountPct > 0) {
+        infoEl.style.display = 'block';
+        infoEl.style.color = '#0f9d58'; // সবুজ
+        infoEl.innerText = `🎉 আপনি ${discountPct}% ডিসকাউন্ট পেয়েছেন!`;
+      } 
+      else if (extraChargePct > 0) {
+        infoEl.style.display = 'block';
+        infoEl.style.color = '#d93025'; // লাল
+        infoEl.innerText = `⚠️ ছোট প্যাকিংয়ের জন্য ${extraChargePct}% বাড়তি চার্জ প্রযোজ্য।`;
+      } 
+      else if (nextTierText !== "") {
+        infoEl.style.display = 'block';
+        infoEl.style.color = '#f9a825'; // হলুদ (লোভ দেখানোর জন্য)
+        infoEl.innerText = nextTierText;
+      }
+      else {
+        infoEl.style.display = 'none'; 
+      }
+    }
   }
 
   // ৫. অর্ডার কনফার্ম করা
