@@ -1312,7 +1312,7 @@
   </div>
 </div>
 
-<!-- Edit Master Product Modal (Admin) -->
+<!-- Edit Master Product Modal (Fixed) -->
 <div id="dlv-edit-mp-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-edit-mp-modal').classList.remove('active')">&times;</span>
@@ -1327,62 +1327,9 @@
 
     <div class="dlv-form-group">
       <label>ক্যাটাগরি *</label>
-      <select id="ep-category" class="dlv-input" onchange="checkCustomOption(this)">
-        <option value="Grocery">মুদি (Grocery)</option>
-        <option value="Restaurant">রেস্টুরেন্ট (Restaurant)</option>
-        <option value="custom">➕ কাস্টম ক্যাটাগরি</option>
+      <select id="ep-category" class="dlv-input">
+        <!-- Options will be loaded dynamically -->
       </select>
-    </div>
-
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>ইউনিট *</label>
-        <select id="ep-unit" class="dlv-input" onchange="updateUnitLabels('ep')">
-          <option value="kg">কেজি (kg)</option>
-          <option value="ltr">লিটার (ltr)</option>
-          <option value="pcs">পিস (pcs)</option>
-          <option value="box">বক্স (box)</option>
-          <option value="grm">গ্রাম (grm)</option>
-          <option value="drsjon">ডজন (drsjon)</option>
-          <option value="custom">➕ কাস্টম ইউনিট</option>
-        </select>
-      </div>
-      <div class="dlv-form-group">
-        <label>গ্রেড (Grade) *</label>
-        <select id="ep-grade" class="dlv-input">
-          <option value="A">Grade A</option>
-          <option value="B">Grade B</option>
-          <option value="C">Grade C</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- 🚀 স্মার্ট অ্যাট্রিবিউট ফিল্ডসমূহ -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>বেস দাম (₹) *</label>
-        <input type="number" id="ep-price" class="dlv-input">
-      </div>
-      <div class="dlv-form-group">
-        <label id="ep-lbl-weight">বেস পরিমাণ (gm) *</label>
-        <input type="number" id="ep-base-weight" class="dlv-input">
-      </div>
-    </div>
-
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>প্যাকিং চার্জ (₹) *</label>
-        <input type="number" id="ep-packaging-charge" class="dlv-input">
-      </div>
-      <div class="dlv-form-group">
-        <label id="ep-lbl-minorder">মিনিমাম অর্ডার (gm)</label>
-        <input type="number" id="ep-min-order" class="dlv-input">
-      </div>
-    </div>
-
-    <div class="dlv-form-group">
-      <label id="ep-lbl-stock">মোট স্টক (gm) *</label>
-      <input type="number" id="ep-stock" class="dlv-input">
     </div>
 
     <div class="dlv-form-group">
@@ -1399,94 +1346,6 @@
     <button class="mp-btn mp-btn-danger" onclick="deleteMasterProductFromEdit()">🗑️ প্রোডাক্ট ডিলিট করুন</button>
   </div>
 </div>
-<!-- Edit Master Product Modal (Admin) -->
-<div id="dlv-edit-mp-modal" class="dlv-modal-overlay">
-  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
-    <span class="dlv-modal-close" onclick="document.getElementById('dlv-edit-mp-modal').classList.remove('active')">&times;</span>
-    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">✏️ প্রোডাক্ট এডিট করুন</h3>
-    
-    <input type="hidden" id="ep-id">
-    
-    <div class="dlv-form-group">
-      <label>প্রোডাক্টের নাম *</label>
-      <input type="text" id="ep-name" class="dlv-input">
-    </div>
-
-    <div class="dlv-form-group">
-      <label>ক্যাটাগরি *</label>
-      <select id="ep-category" class="dlv-input" onchange="checkCustomOption(this)">
-        <option value="Grocery">মুদি (Grocery)</option>
-        <option value="Restaurant">রেস্টুরেন্ট (Restaurant)</option>
-        <option value="custom">➕ কাস্টম ক্যাটাগরি</option>
-      </select>
-    </div>
-
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>ইউনিট *</label>
-        <select id="ep-unit" class="dlv-input" onchange="checkCustomOption(this)">
-          <option value="kg">কেজি (kg)</option>
-          <option value="ltr">লিটার (ltr)</option>
-          <option value="pcs">পিস (pcs)</option>
-          <option value="box">বক্স (box)</option>
-          <option value="grm">গ্রাম (grm)</option>
-          <option value="drsjon">ডজন (drsjon)</option>
-          <option value="custom">➕ কাস্টম ইউনিট</option>
-        </select>
-      </div>
-      <div class="dlv-form-group">
-        <label>গ্রেড (Grade) *</label>
-        <select id="ep-grade" class="dlv-input">
-          <option value="A">Grade A</option>
-          <option value="B">Grade B</option>
-          <option value="C">Grade C</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- 🚀 স্মার্ট অ্যাট্রিবিউট ফিল্ডসমূহ (এখানে মার্জ করা হয়েছে) -->
-        <!-- 🚀 স্মার্ট অ্যাট্রিবিউট ফিল্ডসমূহ -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>বেস দাম (₹) *</label>
-        <input type="number" id="mp-price" class="dlv-input" placeholder="যেমন: 100">
-      </div>
-      <div class="dlv-form-group">
-        <label id="mp-lbl-weight">বেস পরিমাণ (gm) *</label>
-        <input type="number" id="mp-base-weight" class="dlv-input" placeholder="যেমন: 1000">
-      </div>
-    </div>
-
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-      <div class="dlv-form-group">
-        <label>প্যাকিং চার্জ (₹) *</label>
-        <input type="number" id="mp-packaging-charge" class="dlv-input" placeholder="যেমন: 5">
-      </div>
-      <div class="dlv-form-group">
-        <label id="mp-lbl-minorder">মিনিমাম অর্ডার (gm)</label>
-        <input type="number" id="mp-min-order" class="dlv-input" placeholder="যেমন: 100">
-      </div>
-    </div>
-
-    <div class="dlv-form-group">
-      <label id="mp-lbl-stock">মোট স্টক (gm) *</label>
-      <input type="number" id="mp-stock" class="dlv-input" placeholder="যেমন: 10000">
-    </div>
-    <div class="dlv-form-group">
-      <label>প্রোডাক্টের ছবি (পরিবর্তন করতে চাইলে)</label>
-      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'edit-mp')">📷 ক্যামেরা</button>
-        <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 10px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'edit-mp')">🖼️ গ্যালারি</button>
-      </div>
-      <img id="ep-image-preview" style="width: 100%; height: 150px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
-      <input type="file" id="ep-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'edit-mp')">
-    </div>
-
-    <button class="mp-btn mp-btn-primary" id="btn-update-mp" onclick="updateMasterProduct()" style="margin-bottom: 10px;">💾 আপডেট করুন</button>
-    <button class="mp-btn mp-btn-danger" onclick="deleteMasterProductFromEdit()">🗑️ প্রোডাক্ট ডিলিট করুন</button>
-  </div>
-</div>
-  
  <!-- Badge Terms & Conditions Modal -->
 <div id="dlv-badge-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
@@ -4327,104 +4186,81 @@ window.closeMasterProductModal = function() {
   };
 
   // এডিট মডাল ওপেন করা
-  window.openEditMasterProduct = async function(id) {
-    try {
-      const docRef = doc(db, "master_products", id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const p = docSnap.data();
-        
-        document.getElementById('ep-id').value = id;
-        document.getElementById('ep-name').value = p.name || '';
-        
-        // ক্যাটাগরি হ্যান্ডেল
-        const catSelect = document.getElementById('ep-category');
-        if(!Array.from(catSelect.options).some(o => o.value === p.category)) {
-          catSelect.add(new Option(p.category, p.category));
-        }
-        catSelect.value = p.category;
-        
-        // ইউনিট হ্যান্ডেল
-        const unitSelect = document.getElementById('ep-unit');
-        if(!Array.from(unitSelect.options).some(o => o.value === p.unit)) {
-          unitSelect.add(new Option(p.unit, p.unit));
-        }
-        unitSelect.value = p.unit;
-        
-        document.getElementById('ep-grade').value = p.grade || 'A';
-        
-        // 🚀 নতুন ফিল্ডগুলো সেভ করা (যদি পুরোনো প্রোডাক্টে না থাকে তবে ০ দেখাবে)
-        document.getElementById('ep-price').value = p.basePrice !== undefined ? p.basePrice : (p.price || 0);
-        document.getElementById('ep-base-weight').value = p.baseWeight || 0;
-        document.getElementById('ep-packaging-charge').value = p.packagingCharge || 0;
-        document.getElementById('ep-min-order').value = p.minOrderWeight || 0;
-        document.getElementById('ep-stock').value = p.stock || 0;
-        
-        // লেবেল আপডেট কল করা
-        updateUnitLabels('ep');
-
-        uploadedImageUrl = p.image;
-        const preview = document.getElementById('ep-image-preview');
-        if (p.image) {
-          preview.src = p.image;
-          preview.style.display = 'block';
-        } else {
-          preview.style.display = 'none';
-        }
-        
-        document.getElementById('dlv-edit-mp-modal').classList.add('active');
-      } else {
-        alert("প্রোডাক্টটি পাওয়া যায়নি!");
-      }
-    } catch (e) { 
-      console.error("Edit Fetch Error:", e); 
-      alert("ডেটা আনতে সমস্যা হয়েছে! এরর: " + e.message); 
-    }
-  };
-
-  // এডিট মডাল থেকে আপডেট করা
-  window.updateMasterProduct = async function() {
-    const id = document.getElementById('ep-id').value;
-    const name = document.getElementById('ep-name').value.trim();
-    const category = document.getElementById('ep-category').value;
-    const unit = document.getElementById('ep-unit').value;
-    const grade = document.getElementById('ep-grade').value;
+  // এডিট মডাল ওপেন করা (Fixed)
+window.openEditMasterProduct = async function(id) {
+  try {
+    const docRef = doc(db, "master_products", id);
+    const docSnap = await getDoc(docRef);
     
-    const price = parseFloat(document.getElementById('ep-price').value);
-    const baseWeight = parseFloat(document.getElementById('ep-base-weight').value);
-    const packagingCharge = parseFloat(document.getElementById('ep-packaging-charge').value) || 0;
-    const minOrder = parseFloat(document.getElementById('ep-min-order').value) || 0;
-    const stock = parseFloat(document.getElementById('ep-stock').value);
+    if (docSnap.exists()) {
+      const p = docSnap.data();
+      
+      // আইডি এবং নাম সেট করা
+      document.getElementById('ep-id').value = id;
+      document.getElementById('ep-name').value = p.name || '';
+      
+      // ক্যাটাগরি লোড করা
+      const catSelect = document.getElementById('ep-category');
+      catSelect.innerHTML = ''; // আগের অপশন ক্লিয়ার
+      if (!Array.from(catSelect.options).some(o => o.value === p.category)) {
+        catSelect.add(new Option(p.category, p.category));
+      }
+      catSelect.value = p.category;
 
-    if (!name || isNaN(price) || isNaN(baseWeight) || isNaN(stock)) {
-      return alert("দয়া করে সব তথ্য সঠিকভাবে দিন!");
+      // ছবি সেট করা (যদি থাকে)
+      uploadedImageUrl = p.image || null;
+      const preview = document.getElementById('ep-image-preview');
+      if (p.image) {
+        preview.src = p.image;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+      
+      // মডাল ওপেন করা
+      document.getElementById('dlv-edit-mp-modal').classList.add('active');
+    } else {
+      alert("প্রোডাক্টটি পাওয়া যায়নি!");
     }
+  } catch (e) { 
+    console.error("Edit Fetch Error:", e); 
+    alert("ডেটা আনতে সমস্যা হয়েছে! এরর: " + e.message); 
+  }
+};
 
-    const btn = document.getElementById('btn-update-mp');
-    btn.innerText = "⏳ আপডেট হচ্ছে..."; btn.disabled = true;
+  // এডিট মডাল থেকে আপডেট করা (Fixed)
+window.updateMasterProduct = async function() {
+  const id = document.getElementById('ep-id').value;
+  const name = document.getElementById('ep-name').value.trim();
+  const category = document.getElementById('ep-category').value;
 
-    try {
-      await updateDoc(doc(db, "master_products", id), {
-        name: name, 
-        category: category, 
-        unit: unit, 
-        grade: grade, 
-        image: uploadedImageUrl,
-        basePrice: price,
-        baseWeight: baseWeight,
-        packagingCharge: packagingCharge,
-        minOrderWeight: minOrder,
-        stock: stock
-      });
-      alert("সফলভাবে আপডেট হয়েছে!");
-      document.getElementById('dlv-edit-mp-modal').classList.remove('active');
-    } catch (e) { 
-      console.error(e);
-      alert("আপডেট করতে সমস্যা হয়েছে!"); 
-    } finally { 
-      btn.innerText = "💾 আপডেট করুন"; btn.disabled = false; 
-    }
-  };
+  if (!name || !category) {
+    return alert("দয়া করে নাম এবং ক্যাটাগরি দিন!");
+  }
+
+  const btn = document.getElementById('btn-update-mp');
+  btn.innerText = "⏳ আপডেট হচ্ছে..."; 
+  btn.disabled = true;
+
+  try {
+    // 🚀 শুধুমাত্র নাম, ক্যাটাগরি এবং ছবি আপডেট হবে
+    await updateDoc(doc(db, "master_products", id), {
+      name: name, 
+      category: category, 
+      image: uploadedImageUrl || null
+    });
+    
+    alert("সফলভাবে আপডেট হয়েছে!");
+    document.getElementById('dlv-edit-mp-modal').classList.remove('active');
+  } catch (e) { 
+    console.error(e);
+    alert("আপডেট করতে সমস্যা হয়েছে!"); 
+  } finally { 
+    btn.innerText = "💾 আপডেট করুন"; 
+    btn.disabled = false; 
+  }
+};
+  
 
   // এডিট মডাল থেকে ডিলিট করা
   window.deleteMasterProductFromEdit = async function() {
