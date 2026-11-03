@@ -1185,25 +1185,33 @@
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-set-price-modal').classList.remove('active')">&times;</span>
     <h3 style="margin-bottom: 15px; color: var(--mp-primary);" id="sp-title">রেট ও স্টক দিন</h3>
     
-    <!-- বেস প্রাইস ও ওজন -->
+    <!-- বেস প্রাইস ও ওজন (Smart Merge) -->
     <div style="display:flex; gap:10px; margin-bottom: 15px;">
+      
+      <!-- ১. বেস দাম -->
       <div class="dlv-form-group" style="flex: 0 0 40%; margin-bottom: 0;">
         <label style="font-size: 11px; white-space: nowrap;">বেস দাম (₹) *</label>
         <input type="number" id="sp-price" class="dlv-input" placeholder="0" style="padding: 8px;">
       </div>
-      <div class="dlv-form-group" style="flex: 0 0 40%; margin-bottom: 0;">
+
+      <!-- ২. বেস ওজন (এখানে আইডি যোগ করা হলো) -->
+      <div class="dlv-form-group" id="sp-weight-container" style="flex: 0 0 40%; margin-bottom: 0;">
         <label style="font-size: 11px; white-space: nowrap;">বেস ওজন *</label>
         <input type="number" id="sp-base-weight" class="dlv-input" placeholder="0" style="padding: 8px;">
       </div>
+
+      <!-- ৩. বেস ইউনিট (এখানে onchange যোগ করা হলো) -->
       <div class="dlv-form-group" style="flex: 0 0 20%; margin-bottom: 0;">
         <label style="font-size: 11px;">&nbsp;</label>
-        <select id="sp-base-unit" class="dlv-input" style="padding: 8px 2px; font-size: 12px; text-align: center;">
+        <select id="sp-base-unit" class="dlv-input" style="padding: 8px 2px; font-size: 12px; text-align: center;" onchange="handleUnitChange(this.value)">
           <option value="kg">kg</option>
           <option value="gm">gm</option>
           <option value="pcs">pcs</option>
           <option value="ltr">ltr</option>
+          <option value="box">box</option>
         </select>
       </div>
+
     </div>
 
     <!-- প্যাকিং চার্জ ও স্টক -->
@@ -5260,60 +5268,125 @@ window.clearImageSearch = function() {
   };
 
   // ==================== SMART SLIDER CALCULATOR (PART 2) ====================
-  let calcProduct = null;
-  let currentUnitFactor = 1; // গ্রাম নাকি কেজি
+// 🚀 স্মার্ট ক্যালকুলেটর ভেরিয়েবল
+let calcProduct = null;
+let currentUnitFactor = 1;
+let currentPcsQty = 1; 
 
-  // ১. ক্যালকুলেটর মডাল ওপেন করা
-  window.openCustomCalc = function(prodId, name, unit, basePrice, baseWeight, packCharge, minOrder, shopId, shopName, maxOrder) {
-    calcProduct = { prodId, name, unit, basePrice, baseWeight, packCharge, minOrder, maxOrder, shopId, shopName };
+window.openCustomCalc = function(prodId, name, unit, basePrice, baseWeight, packCharge, minOrder, shopId, shopName, maxOrder) {
+  calcProduct = { prodId, name, unit, basePrice, baseWeight, packCharge, minOrder, maxOrder, shopId, shopName };
+  
+  document.getElementById('calc-prod-name').innerText = name;
+  document.getElementById('calc-base-info').innerText = `₹${basePrice} / ${baseWeight}${unit}`;
+  document.getElementById('dlv-custom-calc-modal').classList.add('active');
+
+  const sliderSection = document.getElementById('calc-weight-slider').parentElement; // স্লাইডার এরিয়া
+  const chipsContainer = document.getElementById('calc-chips-container');
+  const manualInput = document.getElementById('calc-manual-input');
+  
+  // 🚀 স্মার্ট লজিক: পিস, বক্স নাকি ওজন?
+  if (unit === 'pcs' || unit === 'box' || unit === 'drsjon') {
+    // === পিস/বক্সের জন্য স্লাইডার হাইড করে + - বাটন দেখানো ===
+    sliderSection.style.display = 'none';
+    chipsContainer.style.display = 'none';
+    manualInput.parentElement.style.display = 'none'; 
     
-    // 🚀 ইউনিট নরমালাইজ করা (সব হিসাব গ্রাম/মিলি-লিটারে হবে)
-    let displayUnit = unit;
-    let factor = 1; // ১ গ্রাম = ১ গ্রাম
+    currentPcsQty = 1;
+    calculateFinalPrice(currentPcsQty * baseWeight); // মূল দাম
     
-    if (unit === 'kg' || unit === 'ltr') {
-      factor = 1000; // ১ কেজি = ১০০০ গ্রাম
-      displayUnit = unit;
-    } else if (unit === 'gm') {
-      displayUnit = 'gm';
-    } else {
-      displayUnit = unit; // pcs, box, drsjon
+    // UI তে পিস কাউন্টার রেন্ডার করা
+    let qtyUI = document.getElementById('pcs-qty-ui');
+    if(!qtyUI) {
+       qtyUI = document.createElement('div');
+       qtyUI.id = 'pcs-qty-ui';
+       qtyUI.style.cssText = "display:flex; justify-content:center; align-items:center; gap:20px; margin-top:15px; margin-bottom:15px;";
+       sliderSection.parentElement.insertBefore(qtyUI, sliderSection); // স্লাইডারের আগে বসানো
     }
+    qtyUI.style.display = 'flex';
+    qtyUI.innerHTML = `
+      <button onclick="changePcsQty(-1)" style="width:40px; height:40px; border-radius:50%; background:#e8f0fe; color:var(--mp-primary); border:none; font-size:20px; font-weight:bold; cursor:pointer;">-</button>
+      <span style="font-size:24px; font-weight:bold; color:var(--mp-primary);" id="pcs-qty-display">1</span>
+      <button onclick="changePcsQty(1)" style="width:40px; height:40px; border-radius:50%; background:#e8f0fe; color:var(--mp-primary); border:none; font-size:20px; font-weight:bold; cursor:pointer;">+</button>
+    `;
     
-    calcProduct.displayUnit = displayUnit;
-    calcProduct.factor = factor;
+  } else {
+    // === ওজন/লিটারের জন্য স্লাইডার দেখানো ===
+    sliderSection.style.display = 'block';
+    chipsContainer.style.display = 'flex';
+    manualInput.parentElement.style.display = 'flex'; 
+    
+    let pcsUI = document.getElementById('pcs-qty-ui');
+    if(pcsUI) pcsUI.style.display = 'none';
 
-    document.getElementById('calc-prod-name').innerText = name;
-    document.getElementById('calc-unit-label').innerText = displayUnit;
-    document.getElementById('calc-base-info').innerText = `₹${basePrice} / ${baseWeight}${unit}`;
-    
-    // 🚀 স্লাইডারের মিন ও ম্যাক্স সেট করা (গ্রাম/মিলি-লিটারে)
+    // ক্যালকুলেশন ফ্যাক্টর (kg হলে ১০০০)
+    let factor = (unit === 'kg' || unit === 'ltr') ? 1000 : 1;
+    calcProduct.factor = factor;
+    calcProduct.displayUnit = unit;
+
     const slider = document.getElementById('calc-weight-slider');
-    const minW = (minOrder > 0 ? minOrder : baseWeight / 10) * factor; // মিনিমাম = বেসের ১০ ভাগের ১
-    const maxW = (maxOrder > 0 ? maxOrder : baseWeight * 5) * factor; // ম্যাক্সিমাম = বেসের ৫ গুণ
+    const minW = (minOrder > 0 ? minOrder : baseWeight / 10) * factor;
+    const maxW = (maxOrder > 0 ? maxOrder : baseWeight * 5) * factor;
     
     slider.min = minW;
     slider.max = maxW;
+    slider.step = maxW <= 500 ? 10 : (maxW <= 2000 ? 50 : 100);
+    slider.value = minW; 
     
-    // 🚀 স্মার্ট স্টেপ (Step) সেট করা (নন-লিনিয়ার লজিক)
-    if (maxW <= 500) slider.step = 10;
-    else if (maxW <= 2000) slider.step = 50;
-    else if (maxW <= 5000) slider.step = 100;
-    else slider.step = 250;
-
-    slider.value = minW; // ডিফল্ট মিনিমাম
+    document.getElementById('calc-min-label').innerText = `Min: ${(minW/factor).toFixed(2)}${unit}`;
+    document.getElementById('calc-max-label').innerText = `Max: ${(maxW/factor).toFixed(2)}${unit}`;
     
-    document.getElementById('calc-min-label').innerText = `Min: ${(minW/factor).toFixed(2)}${displayUnit}`;
-    document.getElementById('calc-max-label').innerText = `Max: ${(maxW/factor).toFixed(2)}${displayUnit}`;
-    
-    // চিপস তৈরি করা
-    renderCalcChips(minW, maxW, factor, displayUnit);
-    
-    // ডিফল্ট ক্যালকুলেশন
+    renderCalcChips(minW, maxW, factor, unit);
     updateSliderCalculation(minW);
-    document.getElementById('dlv-custom-calc-modal').classList.add('active');
-  };
+  }
+};
 
+// 🚀 পিস বাড়ানো/কমানোর ফাংশন
+window.changePcsQty = function(change) {
+  currentPcsQty += change;
+  if (currentPcsQty < 1) currentPcsQty = 1; // ১ এর কম হতে পারবে না
+  
+  document.getElementById('pcs-qty-display').innerText = currentPcsQty;
+  
+  // মোট দাম = (বেস দাম × পিস সংখ্যা)
+  // যেহেতু baseWeight=1, তাই সরাসরি basePrice * qty
+  const totalWeight = currentPcsQty * calcProduct.baseWeight; 
+  calculateFinalPrice(totalWeight);
+};
+
+// 🚀 নতুন ক্যালকুলেশন লজিক (দাম যাতে ভুল না আসে)
+function calculateFinalPrice(weight) {
+  let baseWeightGrams = calcProduct.baseWeight;
+  if (calcProduct.unit === 'kg' || calcProduct.unit === 'ltr') baseWeightGrams *= 1000;
+  
+  let actualWeight = weight;
+  // যদি পিস/বক্স হয়, তবে ওজন আসলে পিস সংখ্যা
+  if(calcProduct.unit === 'pcs' || calcProduct.unit === 'box' || calcProduct.unit === 'drsjon') {
+     actualWeight = weight; 
+     baseWeightGrams = 1; // ১ পিস
+  }
+
+  let finalPrice = (actualWeight / baseWeightGrams) * calcProduct.basePrice;
+  
+  // প্যাকিং চার্জ যোগ
+  finalPrice += (calcProduct.packCharge || 0);
+
+  // UI আপডেট
+  let displayWText = '';
+  if(calcProduct.unit === 'pcs' || calcProduct.unit === 'box' || calcProduct.unit === 'drsjon') {
+     displayWText = `${actualWeight} ${calcProduct.unit}`;
+  } else {
+     let factor = (calcProduct.unit === 'kg' || calcProduct.unit === 'ltr') ? 1000 : 1;
+     displayWText = `${(actualWeight / factor).toFixed(2).replace(/\.00$/, '')} ${calcProduct.unit}`;
+  }
+  
+  document.getElementById('calc-res-prod-price').innerText = `₹${(finalPrice - calcProduct.packCharge).toFixed(2)}`;
+  document.getElementById('calc-res-weight').innerText = displayWText;
+  document.getElementById('calc-res-total').innerText = `₹${finalPrice.toFixed(2)}`;
+  
+  let infoEl = document.getElementById('calc-error');
+  infoEl.style.display = 'none'; // পিস-এ কোনো বাড়তি চার্জ দেখানোর দরকার নেই
+}
+ 
   // 🚀 চিপস তৈরি করার ফাংশন (Quick Select)
   function renderCalcChips(minW, maxW, factor, displayUnit) {
     const container = document.getElementById('calc-chips-container');
@@ -5340,18 +5413,6 @@ window.clearImageSearch = function() {
       }
     });
   }
-
-  // ২. স্লাইডার নাড়ালে লাইভ ক্যালকুলেশন
-  window.updateSliderCalculation = function(weightVal) {
-    const weight = parseFloat(weightVal);
-    calcProduct.currentWeight = weight; // গ্রামে সেভ
-    
-    // ম্যানুয়াল ইনপুটে দেখানো (কেজি হলে কেজিতে কনভার্ট করে)
-    const displayW = (weight / calcProduct.factor).toFixed(2).replace(/\.00$/, '');
-    document.getElementById('calc-manual-input').value = displayW;
-    
-    calculateFinalPrice(weight);
-  };
 
   // ৩. ম্যানুয়াল ইনপুট থেকে আপডেট (কাস্টমার নিজে টাইপ করলে)
   window.updateFromManualInput = function(displayValue) {
@@ -5959,7 +6020,22 @@ async function assignClosestDeliveryBoy(orderId, order) {
     }
   }
     
-    </script>
+ window.handleUnitChange = function(unit) {
+  const weightContainer = document.getElementById('sp-weight-container');
+  const weightInput = document.getElementById('sp-base-weight');
+  
+  if (unit === 'pcs' || unit === 'box' || unit === 'drsjon') {
+    weightContainer.style.opacity = '0.5'; // হাইলাইট কমিয়ে দেওয়া
+    weightInput.value = 1; // ডিফল্ট ১ সেট করা
+    weightInput.disabled = true; // ডিজেবল করে দেওয়া
+  } else {
+    weightContainer.style.opacity = '1';
+    weightInput.disabled = false;
+    if (weightInput.value == 1) weightInput.value = ''; // আগের ১ থাকলে মুছে দেওয়া
+  }
+}; 
+
+</script>
 
 <!-- Live Tracking Modal (Customer) -->
 <div id="dlv-track-modal" class="dlv-modal-overlay">
