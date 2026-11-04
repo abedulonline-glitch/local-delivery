@@ -3332,15 +3332,15 @@ window.toggleSmartPricing = function(isChecked) {
   }
 };
 
-// ২. ডিসকাউন্ট এবং বাড়তি চার্জ রো তৈরি
+// ২. ডিসকাউন্ট এবং বাড়তি চার্জ রো তৈরি (Mobile Friendly UI)
 window.addDiscountTierRow = function(qty = '', pct = '') {
   const container = document.getElementById('sp-discount-tiers-container');
   const rowId = 'disc-' + Date.now() + Math.floor(Math.random() * 100);
   container.insertAdjacentHTML('beforeend', `
     <div id="${rowId}" style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
-      <input type="number" placeholder="যেমন: 5 (kg/pcs)" class="tier-qty" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${qty}">
-      <input type="number" placeholder="ছাড় (%)" class="tier-pct" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${pct}">
-      <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">&times;</button>
+      <input type="number" placeholder="পরিমাণ" class="tier-qty" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; min-width:0;" value="${qty}">
+      <input type="number" placeholder="ছাড় (%)" class="tier-pct" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; min-width:0;" value="${pct}">
+      <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px; padding:0 5px;">&times;</button>
     </div>
   `);
 };
@@ -3350,9 +3350,9 @@ window.addExtraChargeRow = function(qty = '', pct = '') {
   const rowId = 'extra-' + Date.now() + Math.floor(Math.random() * 100);
   container.insertAdjacentHTML('beforeend', `
     <div id="${rowId}" style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
-      <input type="number" placeholder="যেমন: 500 (gm)" class="extra-qty" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${qty}">
-      <input type="number" placeholder="বাড়তি (%)" class="extra-pct" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${pct}">
-      <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">&times;</button>
+      <input type="number" placeholder="পরিমাণ" class="extra-qty" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; min-width:0;" value="${qty}">
+      <input type="number" placeholder="বাড়তি (%)" class="extra-pct" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; min-width:0;" value="${pct}">
+      <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px; padding:0 5px;">&times;</button>
     </div>
   `);
 };
@@ -3375,8 +3375,16 @@ function renderMatrixTable() {
   const thead = document.getElementById('matrix-thead');
   const tbody = document.getElementById('matrix-tbody');
 
-  // হেডার তৈরি (সাইজ)
-  let thHtml = '<tr><th style="padding:5px; border:1px solid #ddd; text-align:left; background:#e8f0fe;">ব্র্যান্ড \\ সাইজ</th>';
+  // 🚀 হেডার তৈরি: 'ব্র্যান্ড \ সাইজ' লেখার বদলে আইকন ও ছোট ডিজাইন
+  let thHtml = `
+    <tr>
+      <th style="padding:5px; border:1px solid #ddd; text-align:left; background:#e8f0fe; width: 90px;">
+        <div style="font-size:11px; color:var(--mp-primary); font-weight:bold; display:flex; align-items:center; gap:3px;">
+          🏷️ ব্র্যান্ড
+        </div>
+      </th>
+  `;
+  
   for (let i = 1; i <= matrixCols; i++) {
     thHtml += `
       <th style="padding:5px; border:1px solid #ddd; background:#e8f0fe;">
@@ -3402,13 +3410,13 @@ function renderMatrixTable() {
     tbHtml += `
       <td style="padding:5px; border:1px solid #ddd; background:#f8f9fa;">
         <div style="display:flex; gap:5px; align-items:center;">
-          <input type="text" placeholder="ব্র্যান্ডের নাম" class="matrix-brand-name" style="width:80px; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
+          <input type="text" placeholder="নাম" class="matrix-brand-name" style="width:70px; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
           ${r > 1 ? `<button type="button" onclick="removeMatrixRow()" style="background:#d93025; color:white; border:none; border-radius:50%; width:16px; height:16px; font-size:10px; cursor:pointer; line-height:1;">x</button>` : ''}
         </div>
       </td>
     `;
     for (let c = 1; c <= matrixCols; c++) {
-      tbHtml += `<td style="padding:5px; border:1px solid #ddd;"><input type="number" placeholder="₹ দাম" class="matrix-price" style="width:60px; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; text-align:center;"></td>`;
+      tbHtml += `<td style="padding:5px; border:1px solid #ddd;"><input type="number" placeholder="₹" class="matrix-price" style="width:100%; max-width:60px; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; text-align:center;"></td>`;
     }
     tbHtml += '</tr>';
   }
@@ -3605,21 +3613,21 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
    // 🚀 ডিসকাউন্ট লেয়ার রো তৈরি করার ফাংশন
-  window.addDiscountTierRow = function(qty = '', pct = '') {
-    const container = document.getElementById('sp-discount-tiers-container');
-    const rowId = 'tier-' + Date.now() + Math.floor(Math.random() * 100);
+ // window.addDiscountTierRow = function(qty = '', pct = '') {
+    //const container = document.getElementById('sp-discount-tiers-container');
+  //  const rowId = 'tier-' + Date.now() + Math.floor(Math.random() * 100);
     
-    const rowHtml = `
-      <div id="${rowId}" style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
-        <input type="number" placeholder="যেমন: 10" class="tier-qty" style="flex:1; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;" value="${qty}">
-        <span style="font-size:10px;">পরিমাণ</span>
-        <input type="number" placeholder="যেমন: 2" class="tier-pct" style="flex:1; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;" value="${pct}">
-        <span style="font-size:10px;">% ছাড়</span>
-        <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">&times;</button>
-      </div>
-    `;
-    container.insertAdjacentHTML('beforeend', rowHtml);
-  };
+  //  const rowHtml = `
+    //  <div id="${rowId}" style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
+       // <input type="number" placeholder="যেমন: 10" class="tier-qty" style="flex:1; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;" value="${qty}">
+      //  <span style="font-size:10px;">পরিমাণ</span>
+       // <input type="number" placeholder="যেমন: 2" class="tier-pct" style="flex:1; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;" value="${pct}">
+      //  <span style="font-size:10px;">% ছাড়</span>
+      //  <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">&times;</button>
+    //  </div>
+  //  `;
+  //  container.insertAdjacentHTML('beforeend', rowHtml);
+//  };
 
   // 🚀 এডিট করার সময় পুরোনো ডিসকাউন্ট লেয়ার লোড করা
   window.loadDiscountTiers = function(tiers) {
@@ -6357,20 +6365,20 @@ async function assignClosestDeliveryBoy(orderId, order) {
   };
 
   // 🚀 ২. ডাইনামিক ডিসকাউন্ট রো তৈরি
-  window.addDiscountTierRow = function(qty = '', pct = '') {
-    const container = document.getElementById('sp-discount-tiers-container');
-    const rowId = 'tier-' + Date.now() + Math.floor(Math.random() * 100);
+//  window.addDiscountTierRow = function(qty = '', pct = '') {
+   // const container = document.getElementById('sp-discount-tiers-container');
+  //  const rowId = 'tier-' + Date.now() + Math.floor(Math.random() * 100);
     
-    const rowHtml = `
-      <div id="${rowId}" style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
-        <input type="number" placeholder="পরিমাণ (যেমন: 10)" class="tier-qty" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${qty}">
-        <input type="number" placeholder="ছাড় (যেমন: 2)" class="tier-pct" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${pct}">
-        <span style="font-size:12px;">%</span>
-        <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">&times;</button>
-      </div>
-    `;
-    container.insertAdjacentHTML('beforeend', rowHtml);
-  };
+  //  const rowHtml = `
+     // <div id="${rowId}" style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
+       // <input type="number" placeholder="পরিমাণ (যেমন: 10)" class="tier-qty" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${qty}">
+       // <input type="number" placeholder="ছাড় (যেমন: 2)" class="tier-pct" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${pct}">
+     //   <span style="font-size:12px;">%</span>
+      //  <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">&times;</button>
+    //  </div>
+ //   `;
+  //  container.insertAdjacentHTML('beforeend', rowHtml);
+ // };
 
   // 🚀 ৩. দোকানদার ড্যাশবোর্ডের টগল লজিক
   window.handleBulkDiscountToggle = async function(isChecked, toggleEl) {
