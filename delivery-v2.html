@@ -1360,10 +1360,6 @@
 <div style="background:#f8f9fa; padding:12px; border-radius:8px; margin-bottom:15px; border: 1px solid #eee; overflow-x:auto;">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
     <div style="font-size:12px; font-weight:bold; color:var(--mp-primary);">📦 ব্র্যান্ড ও সাইজ ভ্যারিয়েন্ট</div>
-    <div style="display:flex; gap:5px;">
-      <button type="button" onclick="addMatrixRow()" style="background:#0f9d58; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">+ ব্র্যান্ড</button>
-      <button type="button" onclick="addMatrixCol()" style="background:#1a73e8; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">+ সাইজ</button>
-    </div>
   </div>
   
   <table id="variant-matrix-table" style="width:100%; border-collapse:collapse; font-size:12px;">
@@ -3375,12 +3371,14 @@ function renderMatrixTable() {
   const thead = document.getElementById('matrix-thead');
   const tbody = document.getElementById('matrix-tbody');
 
-  // 🚀 হেডার তৈরি: 'ব্র্যান্ড \ সাইজ' লেখার বদলে আইকন ও ছোট ডিজাইন
+  // 🚀 হেডার তৈরি: ব্র্যান্ড এবং সাইজের পাশে + বাটন
   let thHtml = `
     <tr>
-      <th style="padding:5px; border:1px solid #ddd; text-align:left; background:#e8f0fe; width: 90px;">
-        <div style="font-size:11px; color:var(--mp-primary); font-weight:bold; display:flex; align-items:center; gap:3px;">
-          🏷️ ব্র্যান্ড
+      <th style="padding:5px; border:1px solid #ddd; text-align:left; background:#e8f0fe; min-width: 100px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--mp-primary); font-weight:bold;">
+          <span>🏷️ ব্র্যান্ড</span>
+          <!-- 🟢 ব্র্যান্ড রো বাড়ানোর বাটন (সবুজ) -->
+          <button type="button" onclick="addMatrixRow()" style="background:#0f9d58; color:white; border:none; border-radius:4px; width:20px; height:20px; font-size:14px; line-height:1; cursor:pointer; display:flex; justify-content:center; align-items:center;">+</button>
         </div>
       </th>
   `;
@@ -3389,18 +3387,27 @@ function renderMatrixTable() {
     thHtml += `
       <th style="padding:5px; border:1px solid #ddd; background:#e8f0fe;">
         <div style="display:flex; gap:2px; align-items:center;">
-          <input type="number" placeholder="সাইজ" class="matrix-size-val" style="width:50px; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
+          <input type="number" placeholder="সাইজ" class="matrix-size-val" style="width:45px; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
           <select class="matrix-size-unit" style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
             <option value="gm">gm</option>
             <option value="kg">kg</option>
             <option value="pcs">pcs</option>
           </select>
+          
           ${i > 1 ? `<button type="button" onclick="removeMatrixCol()" style="background:#d93025; color:white; border:none; border-radius:50%; width:16px; height:16px; font-size:10px; cursor:pointer; line-height:1;">x</button>` : ''}
         </div>
       </th>
     `;
   }
-  thHtml += '</tr>';
+  
+  // 🚀 সর্বশেষ কলামে সাইজ বাড়ানোর বাটন (নীল)
+  thHtml += `
+      <th style="padding:5px; border:1px solid #ddd; background:#e8f0fe; text-align:center; width:40px;">
+        <!-- 🔵 সাইজ কলাম বাড়ানোর বাটন (নীল) -->
+        <button type="button" onclick="addMatrixCol()" style="background:#1a73e8; color:white; border:none; border-radius:4px; width:24px; height:24px; font-size:16px; line-height:1; cursor:pointer; display:flex; justify-content:center; align-items:center; margin: 0 auto;">+</button>
+      </th>
+    </tr>
+  `;
   thead.innerHTML = thHtml;
 
   // বডি তৈরি (ব্র্যান্ড)
@@ -3418,6 +3425,8 @@ function renderMatrixTable() {
     for (let c = 1; c <= matrixCols; c++) {
       tbHtml += `<td style="padding:5px; border:1px solid #ddd;"><input type="number" placeholder="₹" class="matrix-price" style="width:100%; max-width:60px; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; text-align:center;"></td>`;
     }
+    // বাড়তি কলামের নিচে ফাঁকা ঘর (যেখানে উপরে + বাটন আছে)
+    tbHtml += `<td style="border:1px solid #ddd; background: #f8f9fa;"></td>`;
     tbHtml += '</tr>';
   }
   tbody.innerHTML = tbHtml;
