@@ -3277,43 +3277,89 @@ window.openAddProductModal = function() {
 };
 
 // 🚀 নতুন যোগ করা হলো: দোকানদার তার নিজের দেওয়া রেট এডিট করার জন্য
-   window.editShopProduct = function(myData, masterId) {
-    selectedMasterProduct = { ...myData, masterId: masterId };
-    document.getElementById('sp-title').innerText = `${myData.name} - রেট এডিট করুন`;
-    
-    document.getElementById('sp-price').value = myData.price || '';
-    document.getElementById('sp-base-weight').value = myData.baseWeight || '';
-    document.getElementById('sp-base-unit').value = myData.baseUnit || myData.unit || 'kg';
-    document.getElementById('sp-packaging-charge').value = myData.packagingCharge || '';
-    document.getElementById('sp-stock').value = myData.stock || '';
-    document.getElementById('sp-stock-unit').value = myData.stockUnit || 'kg';
-    document.getElementById('sp-grade').value = myData.grade || 'A';
-    document.getElementById('sp-allow-custom').checked = myData.allowCustomWeight !== false;
-    
-    document.getElementById('sp-min-order').value = myData.minOrderWeight || '';
-    document.getElementById('sp-min-unit').value = myData.minOrderUnit || 'gm';
-    document.getElementById('sp-min-extra').value = myData.minExtraCharge || '0';
-    
-    document.getElementById('sp-max-order').value = myData.maxOrderWeight || '';
-    document.getElementById('sp-max-unit').value = myData.maxOrderUnit || 'kg';
+   
+window.editShopProduct = function(myData, masterId) {
+  selectedMasterProduct = { ...myData, masterId: masterId };
+  document.getElementById('sp-title').innerText = `${myData.name} - রেট এডিট করুন`;
+  
+  // বেসিক ডেটা
+  document.getElementById('sp-price').value = myData.price || '';
+  document.getElementById('sp-base-weight').value = myData.baseWeight || '';
+  document.getElementById('sp-base-unit').value = myData.baseUnit || 'kg';
+  document.getElementById('sp-packaging-charge').value = myData.packagingCharge || '';
+  document.getElementById('sp-stock').value = myData.stock || '';
+  document.getElementById('sp-stock-unit').value = myData.stockUnit || 'kg';
+  document.getElementById('sp-grade').value = myData.grade || 'A';
 
-    // ডিসকাউন্ট লেয়ার লোড
-    const isDiscountActive = myData.isBulkDiscountActive === true;
-    document.getElementById('sp-enable-bulk-discount').checked = isDiscountActive;
-    toggleDiscountSection(isDiscountActive);
-    
-    const container = document.getElementById('sp-discount-tiers-container');
-    container.innerHTML = '';
-    if (isDiscountActive && myData.discountTiers && myData.discountTiers.length > 0) {
+  // স্মার্ট প্রাইসিং লোড
+  const isSmartPricing = myData.isSmartPricing === true;
+  document.getElementById('sp-enable-smart-pricing').checked = isSmartPricing;
+  toggleSmartPricing(isSmartPricing);
+
+  const discContainer = document.getElementById('sp-discount-tiers-container');
+  const extraContainer = document.getElementById('sp-extra-charge-tiers-container');
+  discContainer.innerHTML = '';
+  extraContainer.innerHTML = '';
+
+  if (isSmartPricing) {
+    if (myData.discountTiers && myData.discountTiers.length > 0) {
       myData.discountTiers.forEach(t => addDiscountTierRow(t.qty, t.pct));
     }
+    if (myData.extraChargeTiers && myData.extraChargeTiers.length > 0) {
+      myData.extraChargeTiers.forEach(t => addExtraChargeRow(t.qty, t.pct));
+    }
+  }
 
-    if(typeof handleUnitChange === 'function') handleUnitChange(myData.baseUnit || myData.unit || 'kg');
+  // ভ্যারিয়েন্ট ম্যাট্রিক্স লোড করা
+  matrixCols = 1; matrixRows = 1; // রিসেট
+  if (myData.variants && myData.variants.length > 0) {
+     // অনন্য ব্র্যান্ড এবং সাইজ বের করা
+     let uniqueBrands = [...new Set(myData.variants.map(v => v.brand))];
+     let uniqueSizes = [];
+     myData.variants.forEach(v => {
+        let sizeStr = `${v.size}_${v.unit}`;
+        if(!uniqueSizes.some(s => s.str === sizeStr)) {
+           uniqueSizes.push({ size: v.size, unit: v.unit, str: sizeStr });
+        }
+     });
 
-    document.getElementById('dlv-catalog-modal').classList.remove('active');
-    document.getElementById('dlv-set-price-modal').classList.add('active');
-  };
+     matrixRows = uniqueBrands.length || 1;
+     matrixCols = uniqueSizes.length || 1;
+     renderMatrixTable(); // টেবিল তৈরি
 
+     // ডেটা বসানো
+     setTimeout(() => {
+       const thead = document.getElementById('matrix-thead');
+       const tbody = document.getElementById('matrix-tbody');
+       
+       // সাইজ বসানো
+       let ths = thead.rows[0].querySelectorAll('th');
+       for(let i=0; i<uniqueSizes.length; i++) {
+         let sInput = ths[i+1].querySelector('.matrix-size-val');
+         let uSelect = ths[i+1].querySelector('.matrix-size-unit');
+         if(sInput && uSelect) { sInput.value = uniqueSizes[i].size; uSelect.value = uniqueSizes[i].unit; }
+       }
+
+       // ব্র্যান্ড ও দাম বসানো
+       for(let r=0; r<uniqueBrands.length; r++) {
+          let brandInput = tbody.rows[r].querySelector('.matrix-brand-name');
+          if(brandInput) brandInput.value = uniqueBrands[r];
+          
+          let priceInputs = tbody.rows[r].querySelectorAll('.matrix-price');
+          for(let c=0; c<uniqueSizes.length; c++) {
+             let variantData = myData.variants.find(v => v.brand === uniqueBrands[r] && v.size == uniqueSizes[c].size && v.unit === uniqueSizes[c].unit);
+             if(variantData && priceInputs[c]) priceInputs[c].value = variantData.price;
+          }
+       }
+     }, 100); // DOM আপডেট হওয়ার পর ডেটা বসানোর জন্য সামান্য ডিলে
+  } else {
+     renderMatrixTable(); // খালি টেবিল
+  }
+
+  // মডাল ওপেন
+  document.getElementById('dlv-catalog-modal').classList.remove('active');
+  document.getElementById('dlv-set-price-modal').classList.add('active');
+};
  // ==================== SMART MATRIX & PRICING LOGIC ====================
 
 // ১. স্মার্ট প্রাইসিং টগল
@@ -3445,91 +3491,134 @@ document.addEventListener("DOMContentLoaded", () => {
 });
   
   window.saveShopProduct = async function() {
-    const price = parseFloat(document.getElementById('sp-price').value) || 0;
-    const baseWeight = parseFloat(document.getElementById('sp-base-weight').value) || 1;
-    const baseUnit = document.getElementById('sp-base-unit').value;
-    const packagingCharge = parseFloat(document.getElementById('sp-packaging-charge').value) || 0;
-    const stock = parseFloat(document.getElementById('sp-stock').value) || 0;
-    const stockUnit = document.getElementById('sp-stock-unit').value;
-    const grade = document.getElementById('sp-grade').value;
-    
-    const allowCustom = document.getElementById('sp-allow-custom').checked;
-    const minOrder = parseFloat(document.getElementById('sp-min-order').value) || 0;
-    const minUnit = document.getElementById('sp-min-unit').value;
-    const minExtra = parseFloat(document.getElementById('sp-min-extra').value) || 0;
-    const maxOrder = parseFloat(document.getElementById('sp-max-order').value) || 0;
-    const maxUnit = document.getElementById('sp-max-unit').value;
+  const price = parseFloat(document.getElementById('sp-price').value) || 0;
+  const baseWeight = parseFloat(document.getElementById('sp-base-weight').value) || 1;
+  const baseUnit = document.getElementById('sp-base-unit').value;
+  const packagingCharge = parseFloat(document.getElementById('sp-packaging-charge').value) || 0;
+  const stock = parseFloat(document.getElementById('sp-stock').value) || 0;
+  const stockUnit = document.getElementById('sp-stock-unit').value;
+  const grade = document.getElementById('sp-grade').value;
 
-    if (price <= 0) return alert("সঠিক দাম দিন!");
-    if (baseWeight <= 0) return alert("দয়া করে সঠিক বেস ওজন দিন (যেমন: ১ কেজি বা ৫০০ গ্রাম)!");
+  if (price <= 0 || baseWeight <= 0) return alert("সঠিক ডিফল্ট দাম এবং ওজন দিন!");
 
-    // ডিসকাউন্ট ডেটা সংগ্রহ
-    const isBulkDiscountActive = document.getElementById('sp-enable-bulk-discount').checked;
-    let discountTiers = [];
-    if (isBulkDiscountActive) {
-      document.querySelectorAll('#sp-discount-tiers-container > div').forEach(row => {
-        const qty = parseFloat(row.querySelector('.tier-qty').value);
-        const pct = parseFloat(row.querySelector('.tier-pct').value);
-        if (!isNaN(qty) && !isNaN(pct) && qty > 0 && pct > 0) {
-          discountTiers.push({ qty: qty, pct: pct });
-        }
-      });
-      discountTiers.sort((a, b) => a.qty - b.qty);
-    }
+  // ১. স্মার্ট প্রাইসিং ডেটা সংগ্রহ
+  const isSmartPricing = document.getElementById('sp-enable-smart-pricing').checked;
+  let discountTiers = [];
+  let extraChargeTiers = [];
 
-    const modalBtn = document.querySelector('#dlv-set-price-modal .mp-btn-success');
-    const originalText = modalBtn.innerText;
-    modalBtn.innerText = "⏳ সেভ হচ্ছে..."; 
-    modalBtn.disabled = true;
-
-    try {
-      const productData = {
-        shopId: currentUser.uid,
-        shopName: globalUserData.name || 'Unknown',
-        masterProductId: selectedMasterProduct.masterId || '',
-        name: selectedMasterProduct.name || 'Unknown',
-        category: selectedMasterProduct.category || 'General',
-        image: selectedMasterProduct.image || '',
-        
-        price: price,
-        baseWeight: baseWeight,
-        baseUnit: baseUnit,
-        packagingCharge: packagingCharge,
-        stock: stock,
-        stockUnit: stockUnit,
-        grade: grade,
-        allowCustomWeight: allowCustom,
-        minOrderWeight: minOrder,
-        minOrderUnit: minUnit,
-        minExtraCharge: minExtra,
-        maxOrderWeight: maxOrder,
-        maxOrderUnit: maxUnit,
-        
-        isBulkDiscountActive: isBulkDiscountActive, // 🚀 নতুন ফ্ল্যাগ
-        discountTiers: discountTiers,               // 🚀 নতুন লেয়ার ডেটা
-        
-        updatedAt: serverTimestamp()
-      };
-
-      if (selectedMasterProduct.docId) {
-        await updateDoc(doc(db, "products", selectedMasterProduct.docId), productData);
-        alert("প্রোডাক্ট সফলভাবে আপডেট হয়েছে!");
-      } else {
-        productData.createdAt = serverTimestamp();
-        await addDoc(collection(db, "products"), productData);
-        alert("প্রোডাক্ট সফলভাবে যুক্ত হয়েছে!");
+  if (isSmartPricing) {
+    // ডিসকাউন্ট লেয়ার
+    document.querySelectorAll('#sp-discount-tiers-container > div').forEach(row => {
+      const qty = parseFloat(row.querySelector('.tier-qty').value);
+      const pct = parseFloat(row.querySelector('.tier-pct').value);
+      if (!isNaN(qty) && !isNaN(pct) && qty > 0 && pct > 0) {
+        discountTiers.push({ qty: qty, pct: pct });
       }
-      
-      document.getElementById('dlv-set-price-modal').classList.remove('active');
-      
-    } catch (e) {
-      console.error(e);
-      alert("সেভ করতে সমস্যা: " + e.message);
-    } finally {
-      modalBtn.innerText = originalText;
-      modalBtn.disabled = false;
+    });
+    discountTiers.sort((a, b) => a.qty - b.qty);
+
+    // বাড়তি চার্জ লেয়ার
+    document.querySelectorAll('#sp-extra-charge-tiers-container > div').forEach(row => {
+      const qty = parseFloat(row.querySelector('.extra-qty').value);
+      const pct = parseFloat(row.querySelector('.extra-pct').value);
+      if (!isNaN(qty) && !isNaN(pct) && qty > 0 && pct > 0) {
+        extraChargeTiers.push({ qty: qty, pct: pct });
+      }
+    });
+    extraChargeTiers.sort((a, b) => b.qty - a.qty); // বড় থেকে ছোট
+  }
+
+  // ২. ভ্যারিয়েন্ট ম্যাট্রিক্স ডেটা সংগ্রহ
+  let variants = [];
+  const thead = document.getElementById('matrix-thead');
+  const tbody = document.getElementById('matrix-tbody');
+  
+  // হেডার থেকে সাইজ ও ইউনিট বের করা
+  let sizes = [];
+  if(thead && thead.rows.length > 0) {
+    let ths = thead.rows[0].querySelectorAll('th');
+    for(let i = 1; i < ths.length; i++) {
+      let sizeInput = ths[i].querySelector('.matrix-size-val');
+      let unitSelect = ths[i].querySelector('.matrix-size-unit');
+      if(sizeInput && unitSelect && sizeInput.value !== '') {
+         sizes.push({ size: parseFloat(sizeInput.value), unit: unitSelect.value });
+      }
     }
-  };
+  }
+
+  // বডি থেকে ব্র্যান্ড ও দাম বের করা
+  if(tbody && tbody.rows.length > 0) {
+    for(let r = 0; r < tbody.rows.length; r++) {
+      let brandInput = tbody.rows[r].querySelector('.matrix-brand-name');
+      if(!brandInput || brandInput.value.trim() === '') continue; // নাম না থাকলে স্কিপ
+      
+      let brandName = brandInput.value.trim();
+      let priceInputs = tbody.rows[r].querySelectorAll('.matrix-price');
+      
+      for(let c = 0; c < priceInputs.length; c++) {
+        if(sizes[c] && priceInputs[c].value !== '') {
+          variants.push({
+            brand: brandName,
+            size: sizes[c].size,
+            unit: sizes[c].unit,
+            price: parseFloat(priceInputs[c].value)
+          });
+        }
+      }
+    }
+  }
+
+  // ৩. ডেটাবেসে সেভ করা
+  const modalBtn = document.querySelector('#dlv-set-price-modal .mp-btn-success');
+  const originalText = modalBtn.innerText;
+  modalBtn.innerText = "⏳ সেভ হচ্ছে..."; 
+  modalBtn.disabled = true;
+
+  try {
+    const productData = {
+      shopId: currentUser.uid,
+      shopName: globalUserData.name || 'Unknown',
+      masterProductId: selectedMasterProduct.masterId || '',
+      name: selectedMasterProduct.name || 'Unknown',
+      category: selectedMasterProduct.category || 'General',
+      image: selectedMasterProduct.image || '',
+      
+      price: price,
+      baseWeight: baseWeight,
+      baseUnit: baseUnit,
+      packagingCharge: packagingCharge,
+      stock: stock,
+      stockUnit: stockUnit,
+      grade: grade,
+      
+      // নতুন ফিল্ড
+      isSmartPricing: isSmartPricing,
+      discountTiers: discountTiers,
+      extraChargeTiers: extraChargeTiers,
+      variants: variants, // ভ্যারিয়েন্ট ম্যাট্রিক্স ডেটা
+      
+      updatedAt: serverTimestamp()
+    };
+
+    if (selectedMasterProduct.docId) {
+      await updateDoc(doc(db, "products", selectedMasterProduct.docId), productData);
+      alert("প্রোডাক্ট সফলভাবে আপডেট হয়েছে!");
+    } else {
+      productData.createdAt = serverTimestamp();
+      await addDoc(collection(db, "products"), productData);
+      alert("প্রোডাক্ট সফলভাবে যুক্ত হয়েছে!");
+    }
+    
+    document.getElementById('dlv-set-price-modal').classList.remove('active');
+    
+  } catch (e) {
+    console.error(e);
+    alert("সেভ করতে সমস্যা: " + e.message);
+  } finally {
+    modalBtn.innerText = originalText;
+    modalBtn.disabled = false;
+  }
+};
 
   // ৫. নিজস্ব প্রোডাক্ট সেভ করা
   window.saveCustomProduct = async function() {
@@ -6640,12 +6729,12 @@ window.appendBulkRow = function(imageBase64, autoName, selectedCat = '', price =
     `;
   }
 
-  // অ্যাকশন (ডিলিট)
-  let actionHtml = `
-    <td style="padding: 8px; text-align: center;">
-      <button onclick="document.getElementById('${rowId}').remove(); checkBulkTableEmpty();" style="background: none; border: none; color: var(--mp-danger); font-size: 16px; cursor: pointer;">🗑️</button>
-    </td>
-  `;
+  // অ্যাকশন কলাম (ডিলিট এবং অ্যাডভান্স বাটন)
+let actionHtml = `
+  <td style="padding: 8px; text-align: center; display:flex; justify-content:center; gap:5px;">
+    <button onclick="document.getElementById('${rowId}').remove(); checkBulkTableEmpty();" style="background: none; border: none; color: var(--mp-danger); font-size: 16px; cursor: pointer;">🗑️</button>
+  </td>
+`;
 
   tr.innerHTML = imageHtml + nameHtml + catHtml + extraColsHtml + actionHtml;
   tbody.appendChild(tr);
