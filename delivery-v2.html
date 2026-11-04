@@ -410,7 +410,85 @@
 
   <div class="mp-container">
     
- <!-- ==================== CUSTOMER DASHBOARD ==================== -->
+<!-- 🚀 Universal Bulk Editor Modal (Admin & Shopkeeper) -->
+<div id="dlv-bulk-editor-modal" class="dlv-modal-overlay" style="z-index: 10005; padding: 0;">
+  <div class="dlv-modal-content" style="max-height: 100vh; height: 100vh; border-radius: 0; max-width: 100%; display: flex; flex-direction: column;">
+    
+    <!-- হেডার -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+      <h3 style="margin: 0; color: var(--mp-primary); font-size: 16px;">📦 বাল্ক প্রোডাক্ট এডিটর</h3>
+      <span class="dlv-modal-close" onclick="document.getElementById('dlv-bulk-editor-modal').classList.remove('active')" style="position: static; font-size: 28px;">&times;</span>
+    </div>
+
+    <!-- মোড সুইচার (কোন রোলের জন্য খোলা হয়েছে) -->
+    <div id="bulk-editor-mode-label" style="font-size: 11px; font-weight: bold; color: #fff; background: var(--mp-warning); padding: 4px 8px; border-radius: 4px; margin-bottom: 10px; display: inline-block; align-self: flex-start;">
+      মোড: অ্যাডমিন
+    </div>
+
+    <!-- ৩টি স্মার্ট ট্যাব -->
+    <div style="display: flex; gap: 5px; margin-bottom: 15px; background: #f0f2f5; padding: 5px; border-radius: 8px;">
+      <button class="bulk-tab-btn active" onclick="switchBulkTab('ai-images', this)" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: white; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🪄 AI মাল্টি-ইমেজ</button>
+      <button class="bulk-tab-btn" onclick="switchBulkTab('excel-paste', this)" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: transparent; font-size: 12px; font-weight: bold; cursor: pointer;">📋 এক্সেল পেস্ট</button>
+      <button class="bulk-tab-btn" onclick="switchBulkTab('csv-upload', this)" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: transparent; font-size: 12px; font-weight: bold; cursor: pointer;">📁 CSV আপলোড</button>
+    </div>
+
+    <!-- ট্যাব ১: AI মাল্টি-ইমেজ (Zero Click) -->
+    <div id="tab-ai-images" class="bulk-tab-content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="border: 2px dashed var(--mp-primary); background: #e8f0fe; border-radius: 10px; padding: 25px 15px; text-align: center; cursor: pointer; margin-bottom: 10px;" onclick="document.getElementById('bulk-image-input').click()">
+        <div style="font-size: 30px; margin-bottom: 5px;">📸</div>
+        <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">একসাথে ৩০-৫০টি ছবি সিলেক্ট করুন</div>
+        <div style="font-size: 11px; color: #666; margin-top: 5px;">ছবির নাম থেকেই প্রোডাক্টের নাম অটো সেট হবে</div>
+        <input type="file" id="bulk-image-input" accept="image/*" multiple style="display: none;" onchange="handleBulkImages(event)">
+      </div>
+      
+      <!-- টেবিল এরিয়া -->
+      <div style="flex: 1; overflow: auto; border: 1px solid #ddd; border-radius: 8px; background: white; position: relative;">
+        <table id="bulk-editor-table" style="width: 100%; border-collapse: collapse; min-width: 600px; font-size: 12px;">
+          <thead style="background: #f8f9fa; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+            <tr id="bulk-table-headers">
+              <!-- কলাম হেডার JS দিয়ে লোড হবে -->
+            </tr>
+          </thead>
+          <tbody id="bulk-table-body">
+            <!-- রো JS দিয়ে লোড হবে -->
+            <tr><td colspan="5" style="text-align: center; padding: 20px; color: #999;">ছবি সিলেক্ট করুন অথবা ডেটা পেস্ট করুন</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ট্যাব ২: এক্সেল পেস্ট -->
+    <div id="tab-excel-paste" class="bulk-tab-content" style="flex: 1; display: none; flex-direction: column;">
+      <p style="font-size: 12px; color: #555; margin-bottom: 10px;">আপনার Excel বা Google Sheet থেকে ডেটা কপি করে নিচের বক্সে পেস্ট করুন (Ctrl+V)।</p>
+      <textarea id="bulk-excel-textarea" class="dlv-input" style="flex: 1; resize: none; font-family: monospace; font-size: 12px; padding: 10px; border: 2px dashed #ccc;" placeholder="এখানে পেস্ট করুন..."></textarea>
+      <button class="mp-btn mp-btn-primary" style="margin-top: 10px;" onclick="parseExcelPaste()">ডেটা ইমপোর্ট করুন</button>
+    </div>
+
+    <!-- ট্যাব ৩: CSV আপলোড -->
+    <div id="tab-csv-upload" class="bulk-tab-content" style="flex: 1; display: none; flex-direction: column; justify-content: center; align-items: center;">
+      <div style="text-align: center; padding: 20px;">
+        <div style="font-size: 40px; margin-bottom: 10px;">📂</div>
+        <h4 style="margin-bottom: 10px;">CSV ফাইল আপলোড করুন</h4>
+        <p style="font-size: 12px; color: #666; margin-bottom: 15px;">সঠিক ফরম্যাটে সেভ করা CSV ফাইল সিলেক্ট করুন।</p>
+        <button class="mp-btn mp-btn-primary" onclick="document.getElementById('bulk-csv-input').click()" style="width: auto; padding: 8px 20px;">ফাইল সিলেক্ট করুন</button>
+        <input type="file" id="bulk-csv-input" accept=".csv" style="display: none;" onchange="handleCSVUpload(event)">
+        
+        <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+          <a href="#" onclick="downloadCSVTemplate(event)" style="font-size: 12px; color: var(--mp-primary); font-weight: bold; text-decoration: underline;">⬇️ স্যাম্পল CSV টেমপ্লেট ডাউনলোড করুন</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ফুটার (সেভ বাটন) -->
+    <div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; display: flex; gap: 10px;">
+      <button class="mp-btn" style="margin: 0; background: #f0f2f5; color: #333; flex: 1;" onclick="clearBulkTable()">🗑️ টেবিল ক্লিয়ার</button>
+      <button class="mp-btn mp-btn-success" style="margin: 0; flex: 2;" onclick="saveBulkData()">💾 সব সেভ করুন</button>
+    </div>
+
+  </div>
+</div>
+    
+    <!-- ==================== CUSTOMER DASHBOARD ==================== -->
     <div id="dlv-view-customer" class="mp-hidden">
       <div class="dlv-wallet-header">
         <div>
@@ -948,7 +1026,8 @@
           <!-- বারকোডগুলো এখানে জেনারেট হবে -->
         </div>
       </div>
-<!-- ==================== MODALS ==================== -->
+
+    <!-- ==================== MODALS ==================== -->
 <!-- Recharge Modal -->
 <div id="dlv-recharge-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content">
@@ -5221,83 +5300,7 @@ window.clearImageSearch = function() {
     }
   }
 
- <!-- 🚀 Universal Bulk Editor Modal (Admin & Shopkeeper) -->
-<div id="dlv-bulk-editor-modal" class="dlv-modal-overlay" style="z-index: 10005; padding: 0;">
-  <div class="dlv-modal-content" style="max-height: 100vh; height: 100vh; border-radius: 0; max-width: 100%; display: flex; flex-direction: column;">
-    
-    <!-- হেডার -->
-    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
-      <h3 style="margin: 0; color: var(--mp-primary); font-size: 16px;">📦 বাল্ক প্রোডাক্ট এডিটর</h3>
-      <span class="dlv-modal-close" onclick="document.getElementById('dlv-bulk-editor-modal').classList.remove('active')" style="position: static; font-size: 28px;">&times;</span>
-    </div>
 
-    <!-- মোড সুইচার (কোন রোলের জন্য খোলা হয়েছে) -->
-    <div id="bulk-editor-mode-label" style="font-size: 11px; font-weight: bold; color: #fff; background: var(--mp-warning); padding: 4px 8px; border-radius: 4px; margin-bottom: 10px; display: inline-block; align-self: flex-start;">
-      মোড: অ্যাডমিন
-    </div>
-
-    <!-- ৩টি স্মার্ট ট্যাব -->
-    <div style="display: flex; gap: 5px; margin-bottom: 15px; background: #f0f2f5; padding: 5px; border-radius: 8px;">
-      <button class="bulk-tab-btn active" onclick="switchBulkTab('ai-images', this)" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: white; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🪄 AI মাল্টি-ইমেজ</button>
-      <button class="bulk-tab-btn" onclick="switchBulkTab('excel-paste', this)" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: transparent; font-size: 12px; font-weight: bold; cursor: pointer;">📋 এক্সেল পেস্ট</button>
-      <button class="bulk-tab-btn" onclick="switchBulkTab('csv-upload', this)" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: transparent; font-size: 12px; font-weight: bold; cursor: pointer;">📁 CSV আপলোড</button>
-    </div>
-
-    <!-- ট্যাব ১: AI মাল্টি-ইমেজ (Zero Click) -->
-    <div id="tab-ai-images" class="bulk-tab-content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-      <div style="border: 2px dashed var(--mp-primary); background: #e8f0fe; border-radius: 10px; padding: 25px 15px; text-align: center; cursor: pointer; margin-bottom: 10px;" onclick="document.getElementById('bulk-image-input').click()">
-        <div style="font-size: 30px; margin-bottom: 5px;">📸</div>
-        <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">একসাথে ৩০-৫০টি ছবি সিলেক্ট করুন</div>
-        <div style="font-size: 11px; color: #666; margin-top: 5px;">ছবির নাম থেকেই প্রোডাক্টের নাম অটো সেট হবে</div>
-        <input type="file" id="bulk-image-input" accept="image/*" multiple style="display: none;" onchange="handleBulkImages(event)">
-      </div>
-      
-      <!-- টেবিল এরিয়া -->
-      <div style="flex: 1; overflow: auto; border: 1px solid #ddd; border-radius: 8px; background: white; position: relative;">
-        <table id="bulk-editor-table" style="width: 100%; border-collapse: collapse; min-width: 600px; font-size: 12px;">
-          <thead style="background: #f8f9fa; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-            <tr id="bulk-table-headers">
-              <!-- কলাম হেডার JS দিয়ে লোড হবে -->
-            </tr>
-          </thead>
-          <tbody id="bulk-table-body">
-            <!-- রো JS দিয়ে লোড হবে -->
-            <tr><td colspan="5" style="text-align: center; padding: 20px; color: #999;">ছবি সিলেক্ট করুন অথবা ডেটা পেস্ট করুন</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ট্যাব ২: এক্সেল পেস্ট -->
-    <div id="tab-excel-paste" class="bulk-tab-content" style="flex: 1; display: none; flex-direction: column;">
-      <p style="font-size: 12px; color: #555; margin-bottom: 10px;">আপনার Excel বা Google Sheet থেকে ডেটা কপি করে নিচের বক্সে পেস্ট করুন (Ctrl+V)।</p>
-      <textarea id="bulk-excel-textarea" class="dlv-input" style="flex: 1; resize: none; font-family: monospace; font-size: 12px; padding: 10px; border: 2px dashed #ccc;" placeholder="এখানে পেস্ট করুন..."></textarea>
-      <button class="mp-btn mp-btn-primary" style="margin-top: 10px;" onclick="parseExcelPaste()">ডেটা ইমপোর্ট করুন</button>
-    </div>
-
-    <!-- ট্যাব ৩: CSV আপলোড -->
-    <div id="tab-csv-upload" class="bulk-tab-content" style="flex: 1; display: none; flex-direction: column; justify-content: center; align-items: center;">
-      <div style="text-align: center; padding: 20px;">
-        <div style="font-size: 40px; margin-bottom: 10px;">📂</div>
-        <h4 style="margin-bottom: 10px;">CSV ফাইল আপলোড করুন</h4>
-        <p style="font-size: 12px; color: #666; margin-bottom: 15px;">সঠিক ফরম্যাটে সেভ করা CSV ফাইল সিলেক্ট করুন।</p>
-        <button class="mp-btn mp-btn-primary" onclick="document.getElementById('bulk-csv-input').click()" style="width: auto; padding: 8px 20px;">ফাইল সিলেক্ট করুন</button>
-        <input type="file" id="bulk-csv-input" accept=".csv" style="display: none;" onchange="handleCSVUpload(event)">
-        
-        <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
-          <a href="#" onclick="downloadCSVTemplate(event)" style="font-size: 12px; color: var(--mp-primary); font-weight: bold; text-decoration: underline;">⬇️ স্যাম্পল CSV টেমপ্লেট ডাউনলোড করুন</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- ফুটার (সেভ বাটন) -->
-    <div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; display: flex; gap: 10px;">
-      <button class="mp-btn" style="margin: 0; background: #f0f2f5; color: #333; flex: 1;" onclick="clearBulkTable()">🗑️ টেবিল ক্লিয়ার</button>
-      <button class="mp-btn mp-btn-success" style="margin: 0; flex: 2;" onclick="saveBulkData()">💾 সব সেভ করুন</button>
-    </div>
-
-  </div>
-</div>
   
   // ==================== CATEGORY DYNAMIC & SUGGESTION LOGIC (PART 2) ====================
 
