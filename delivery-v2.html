@@ -6574,6 +6574,204 @@ window.appendBulkRow = function(imageBase64, autoName) {
   tr.innerHTML = imageHtml + nameHtml + catHtml + extraColsHtml + actionHtml;
   tbody.appendChild(tr);
 };
+
+// ==================== BULK EDITOR LOGIC (PART 4 - SAVE & AI VECTOR) ====================
+
+window.saveBulkData = async function() {
+  const tbody = document.getElementById('bulk-table-body');
+  const rows = tbody.querySelectorAll('tr');
+  
+  // যদি টেবিল খালি থাকে বা মেসেজ থাকে তবে কিছু করবে না
+  if (rows.length === 0 || tbody.innerHTML.includes('ছবি সিলেক্ট করুন') || tbody.innerHTML.includes('ডেটা পেস্ট করুন')) {
+    return alert("টেবিলে কোনো ডেটা নেই!");
+  }
+
+  // ডেটা ভ্যালিডেশন
+  let dataToSave = [];
+  for (let tr of rows) {
+    const nameInput = tr.querySelector('input[type="text"]');
+    const catSelect = tr.querySelector('.bulk-cat-select');
+    
+    if (!nameInput || !catSelect) continue;
+
+    const name = nameInput.value.trim();
+    const category = catSelect.value;
+    
+    // ইমেজ সোর্স বের করা (Base64 বা লিংক)
+    const imgEl = tr.querySelector('img');
+    const imgSrc = imgEl ? imgEl.src : '';
+
+    // অ্যাডমিন হলে শুধু নাম, ক্যাটাগরি, ছবি। দোকানদার হলে দাম, স্টকও লাগবে।
+    let price = 0, stock = 0;
+    if (currentBulkRole === 'shopkeeper') {
+      const priceInput = tr.querySelector('.bulk-price');
+      const stockInput = tr.querySelector('.bulk-stock');
+      price = parseFloat(priceInput ? priceInput.value : 0) || 0;
+      stock = parseFloat(stockInput ? stockInput.value : 0) || 0;
+      
+      if (price <= 0 || stock <= 0) {
+        return alert(`⚠️ "${name || 'নামহীন'}" এর সঠিক দাম এবং স্টক দিন!`);
+      }
+    }
+
+    if (!name || !category) {
+      return alert(`⚠️ "${name || 'নামহীন'}" এর নাম এবং ক্যাটাগরি অবশ্যই দিতে হবে!`);
+    }
+
+    dataToSave.push({
+      name: name,
+      category: category,
+      image: imgSrc,
+      price: price,
+      stock: stock
+    });
+  }
+
+  // লোডিং ওভারলে দেখানো (Progress Bar)
+  const overlay = document.createElement('div');
+  overlay.id = 'bulk-saving-overlay';
+  overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:99999; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white;";
+  overlay.innerHTML = `
+    <div class="dlv-spinner" style="margin-bottom:15px; width:50px; height:50px;"></div>
+    <h3 style="margin-bottom:10px; font-size:16px;" id="bulk-progress-title">প্রসেসিং হচ্ছে... (০/${dataToSave.length})</h3>
+    <div style="width:80%; max-width:300px; background:#555; height:10px; border-radius:5px; overflow:hidden;">
+      <div id="bulk-progress-bar" style="height:100%; background:var(--mp-success); width:0%; transition:0.3s;"></div>
+    </div>
+    <p style="font-size:11px; margin-top:15px; color:#ccc;">AI ইমেজ ভেক্টর তৈরি হতে পারে, দয়া করে অপেক্ষা করুন...</p>
+  `;
+  document.body.appendChild(overlay);
+
+  const progressTitle = document.getElementById('bulk-progress-title');
+  const progressBar = document.getElementById('bulk-progress-bar');
+
+  // AI মডেল লোড চেক (যদি আগে থেকে লোড না থাকে)
+  if (!window.clipProcessor && window.AutoProcessor) {
+    progressTitle.innerText = "🧠 AI মডেল লোড হচ্ছে...";
+    try {
+      window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+      window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+    } catch(err) { console.warn("AI Model Load Failed:", err); }
+  }
+
+  let successCount = 0;
+
+  // লুপ চালিয়ে এক এক করে ডেটা সেভ এবং ভেক্টর জেনারেট করা
+  for (let i = 0; i < dataToSave.length; i++) {
+    const item = dataToSave[i];
+    progressTitle.innerText = `প্রসেসিং: ${item.name} (${i+1}/${dataToSave.length})`;
+    progressBar.style.width = `${((i) / dataToSave.length) * 100}%`;
+
+    let finalImageUrl = item.image;
+    let generatedVectorStr = "";
+
+    // ১. ইমেজ আপলোড (যদি Base64 হয়)
+    if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
+      try {
+        const formData = new FormData();
+        formData.append("image", finalImageUrl.split(',')[1]);
+        const imgRes = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
+        const imgData = await imgRes.json();
+        if (imgData.success) {
+          finalImageUrl = imgData.data.url;
+        } else { finalImageUrl = null; }
+      } catch(e) { finalImageUrl = null; }
+    }
+
+    // ২. AI ভেক্টর জেনারেশন
+    if (finalImageUrl && window.CLIPVisionModelWithProjection) {
+      try {
+        if (!window.clipProcessor) {
+          window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+          window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+        }
+        const image = await window.RawImage.fromURL(finalImageUrl);
+        const image_inputs = await window.clipProcessor(image);
+        const { image_embeds } = await window.clipVisionModel(image_inputs);
+        const vectorArray = Array.from(image_embeds.data).slice(0, 256);
+        generatedVectorStr = JSON.stringify(vectorArray);
+      } catch (err) { console.warn("Vector Generation Failed:", err); }
+    }
+
+    // ৩. ডেটাবেসে সেভ করা
+    try {
+      if (currentBulkRole === 'admin') {
+        // অ্যাডমিন মাস্টার প্রোডাক্ট সেভ
+        await addDoc(collection(db, "master_products"), {
+          name: item.name,
+          category: item.category,
+          image: finalImageUrl || null,
+          imageVector: generatedVectorStr,
+          createdAt: serverTimestamp()
+        });
+      } else {
+        // দোকানদার নিজস্ব প্রোডাক্ট সেভ
+        await addDoc(collection(db, "products"), {
+          shopId: currentUser.uid,
+          shopName: globalUserData.name || 'Unknown',
+          name: item.name,
+          category: item.category,
+          image: finalImageUrl || null,
+          imageVector: generatedVectorStr,
+          price: item.price,
+          stock: item.stock,
+          baseWeight: 1,
+          baseUnit: 'kg',
+          packagingCharge: 0,
+          allowCustomWeight: true,
+          minOrderWeight: 0,
+          maxOrderWeight: 0,
+          minExtraCharge: 0,
+          discountTiers: [],
+          isBulkDiscountActive: false,
+          isStandalone: true,
+          shopLat: globalUserData.lat || null,
+          shopLng: globalUserData.lng || null,
+          isPremium: globalUserData.isPremium || false,
+          isVerified: globalUserData.isVerified || false,
+          createdAt: serverTimestamp()
+        });
+      }
+      successCount++;
+    } catch (err) {
+      console.error("Save Error for " + item.name, err);
+    }
+
+    // UI আপডেট
+    progressBar.style.width = `${((i+1) / dataToSave.length) * 100}%`;
+  }
+
+  // কাজ শেষ হলে
+  setTimeout(() => {
+    document.body.removeChild(overlay);
+    alert(`✅ সফলভাবে ${successCount} টি প্রোডাক্ট সেভ হয়েছে!`);
+    document.getElementById('dlv-bulk-editor-modal').classList.remove('active');
+    clearBulkTable();
+  }, 500);
+};
+
+// 🚀 ৫. স্যাম্পল CSV টেমপ্লেট ডাউনলোড লজিক
+window.downloadCSVTemplate = function(e) {
+  if(e) e.preventDefault();
+  
+  // অ্যাডমিন এবং দোকানদারের জন্য আলাদা CSV কলাম
+  let csvContent = "";
+  if (currentBulkRole === 'admin') {
+    csvContent = "Product Name,Category,Image Link\nMango,Grocery,https://example.com/mango.jpg\nRice,Grocery,https://example.com/rice.jpg";
+  } else {
+    csvContent = "Product Name,Category,Image Link,Price,Stock\nMango,Grocery,https://example.com/mango.jpg,100,50\nRice,Grocery,https://example.com/rice.jpg,60,100";
+  }
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", `bulk_template_${currentBulkRole}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 </script>
 
 <!-- Live Tracking Modal (Customer) -->
