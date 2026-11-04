@@ -1279,112 +1279,103 @@
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-set-price-modal').classList.remove('active')">&times;</span>
     <h3 style="margin-bottom: 15px; color: var(--mp-primary);" id="sp-title">রেট ও স্টক দিন</h3>
     
-    <!-- ১. বেস প্রাইস, ওজন ও স্টক -->
-    <div style="display:flex; gap:10px; margin-bottom: 15px;">
-      <div class="dlv-form-group" style="flex: 0 0 40%; margin-bottom: 0;">
-        <label style="font-size: 11px; white-space: nowrap;">বেস দাম (₹) *</label>
-        <input type="number" id="sp-price" class="dlv-input" placeholder="0" style="padding: 8px;">
-      </div>
-      <div class="dlv-form-group" id="sp-weight-container" style="flex: 0 0 40%; margin-bottom: 0;">
-        <label style="font-size: 11px; white-space: nowrap;">বেস ওজন *</label>
-        <input type="number" id="sp-base-weight" class="dlv-input" placeholder="0" style="padding: 8px;">
-      </div>
-      <div class="dlv-form-group" style="flex: 0 0 20%; margin-bottom: 0;">
-        <label style="font-size: 11px;">&nbsp;</label>
-        <select id="sp-base-unit" class="dlv-input" style="padding: 8px 2px; font-size: 12px; text-align: center;" onchange="handleUnitChange(this.value)">
-          <option value="kg">kg</option>
-          <option value="gm">gm</option>
-          <option value="pcs">pcs</option>
-          <option value="ltr">ltr</option>
-          <option value="box">box</option>
-        </select>
-      </div>
+    <!-- ১. বেসিক ইনফো (Base Rate) -->
+<div style="display:flex; gap:10px; margin-bottom: 15px;">
+  <div class="dlv-form-group" style="flex: 0 0 40%; margin-bottom: 0;">
+    <label style="font-size: 11px; white-space: nowrap;">ডিফল্ট দাম (₹) *</label>
+    <input type="number" id="sp-price" class="dlv-input" placeholder="0" style="padding: 8px;" required>
+  </div>
+  <div class="dlv-form-group" style="flex: 0 0 40%; margin-bottom: 0;">
+    <label style="font-size: 11px; white-space: nowrap;">ডিফল্ট ওজন *</label>
+    <input type="number" id="sp-base-weight" class="dlv-input" placeholder="0" style="padding: 8px;" required>
+  </div>
+  <div class="dlv-form-group" style="flex: 0 0 20%; margin-bottom: 0;">
+    <label style="font-size: 11px;">&nbsp;</label>
+    <select id="sp-base-unit" class="dlv-input" style="padding: 8px 2px; font-size: 12px; text-align: center;">
+      <option value="kg">kg</option>
+      <option value="gm">gm</option>
+      <option value="pcs">pcs</option>
+      <option value="ltr">ltr</option>
+    </select>
+  </div>
+</div>
+
+<div style="display:flex; gap:10px; margin-bottom: 15px;">
+  <div class="dlv-form-group" style="flex: 0 0 40%; margin-bottom: 0;">
+    <label style="font-size: 11px; white-space: nowrap;">প্যাকিং চার্জ (₹)</label>
+    <input type="number" id="sp-packaging-charge" class="dlv-input" placeholder="0" style="padding: 8px;">
+  </div>
+  <div class="dlv-form-group" style="flex: 0 0 40%; margin-bottom: 0;">
+    <label style="font-size: 11px; white-space: nowrap;">স্টক *</label>
+    <input type="number" id="sp-stock" class="dlv-input" placeholder="0" style="padding: 8px;">
+  </div>
+  <div class="dlv-form-group" style="flex: 0 0 20%; margin-bottom: 0;">
+    <label style="font-size: 11px;">&nbsp;</label>
+    <select id="sp-stock-unit" class="dlv-input" style="padding: 8px 2px; font-size: 12px; text-align: center;">
+      <option value="kg">kg</option>
+      <option value="gm">gm</option>
+      <option value="pcs">pcs</option>
+      <option value="ltr">ltr</option>
+    </select>
+  </div>
+</div>
+
+<div class="dlv-form-group">
+  <label>গ্রেড (Grade) *</label>
+  <select id="sp-grade" class="dlv-input">
+    <option value="A" selected>Grade A</option>
+    <option value="B">Grade B</option>
+    <option value="C">Grade C</option>
+  </select>
+</div>
+
+<!-- ২. স্মার্ট ডিসকাউন্ট ও বাড়তি চার্জ (Premium Feature) -->
+<div style="background:#fff8e1; padding:12px; border-radius:8px; margin-bottom:15px; border: 1px solid #ffe082;">
+  <label style="display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:600; cursor:pointer; color: #b06000;">
+    <span>💎 স্মার্ট প্রাইসিং (প্রিমিয়াম)</span>
+    <input type="checkbox" id="sp-enable-smart-pricing" onchange="toggleSmartPricing(this.checked)" style="width:18px; height:18px; margin:0; cursor:pointer;">
+  </label>
+  <p style="font-size:11px; color:#666; margin-top:5px; margin-bottom:0;">ভলিউম ডিসকাউন্ট এবং ছোট প্যাকিং বাড়তি চার্জ সেট করতে এটি চালু করুন।</p>
+
+  <!-- স্মার্ট প্রাইসিং সেকশন (প্রথমে হাইড থাকবে) -->
+  <div id="smart-pricing-section" style="display:none; margin-top:10px; border-top:1px dashed #ffe082; padding-top:10px;">
+    
+    <!-- ডিসকাউন্ট টিয়ার -->
+    <div style="margin-bottom:10px;">
+      <label style="font-size: 11px; font-weight:bold; color:#0f9d58;">🎁 বাল্ক ডিসকাউন্ট (কাস্টমারকে দেখানো হবে)</label>
+      <div id="sp-discount-tiers-container" style="margin-top:5px;"></div>
+      <button type="button" onclick="addDiscountTierRow()" style="width: 100%; background: #e6f4ea; color: #0f9d58; border: none; padding: 6px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; margin-top: 5px;">+ নতুন ডিসকাউন্ট লেয়ার</button>
     </div>
 
-    <div style="display:flex; gap:10px; margin-bottom: 15px;">
-      <div class="dlv-form-group" style="flex: 0 0 40%; margin-bottom: 0;">
-        <label style="font-size: 11px; white-space: nowrap;">প্যাকিং চার্জ (₹)</label>
-        <input type="number" id="sp-packaging-charge" class="dlv-input" placeholder="0" style="padding: 8px;">
-      </div>
-      <div class="dlv-form-group" style="flex: 0 0 40%; margin-bottom: 0;">
-        <label style="font-size: 11px; white-space: nowrap;">স্টক *</label>
-        <input type="number" id="sp-stock" class="dlv-input" placeholder="0" style="padding: 8px;">
-      </div>
-      <div class="dlv-form-group" style="flex: 0 0 20%; margin-bottom: 0;">
-        <label style="font-size: 11px;">&nbsp;</label>
-        <select id="sp-stock-unit" class="dlv-input" style="padding: 8px 2px; font-size: 12px; text-align: center;">
-          <option value="kg">kg</option>
-          <option value="gm">gm</option>
-          <option value="pcs">pcs</option>
-          <option value="ltr">ltr</option>
-          <option value="box">box</option>
-        </select>
-      </div>
+    <!-- বাড়তি চার্জ টিয়ার -->
+    <div>
+      <label style="font-size: 11px; font-weight:bold; color:#d93025;">⚠️ ছোট প্যাকিং বাড়তি চার্জ (কাস্টমারকে সরাসরি দেখানো হবে না)</label>
+      <div id="sp-extra-charge-tiers-container" style="margin-top:5px;"></div>
+      <button type="button" onclick="addExtraChargeRow()" style="width: 100%; background: #fce8e6; color: #d93025; border: none; padding: 6px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; margin-top: 5px;">+ নতুন বাড়তি চার্জ লেয়ার</button>
     </div>
+  </div>
+</div>
 
-    <div class="dlv-form-group">
-      <label>গ্রেড (Grade) *</label>
-      <select id="sp-grade" class="dlv-input">
-        <option value="A" selected>Grade A</option>
-        <option value="B">Grade B</option>
-        <option value="C">Grade C</option>
-      </select>
+<!-- ৩. ডাইনামিক ভ্যারিয়েন্ট ম্যাট্রিক্স -->
+<div style="background:#f8f9fa; padding:12px; border-radius:8px; margin-bottom:15px; border: 1px solid #eee; overflow-x:auto;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <div style="font-size:12px; font-weight:bold; color:var(--mp-primary);">📦 ব্র্যান্ড ও সাইজ ভ্যারিয়েন্ট</div>
+    <div style="display:flex; gap:5px;">
+      <button type="button" onclick="addMatrixRow()" style="background:#0f9d58; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">+ ব্র্যান্ড</button>
+      <button type="button" onclick="addMatrixCol()" style="background:#1a73e8; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">+ সাইজ</button>
     </div>
+  </div>
+  
+  <table id="variant-matrix-table" style="width:100%; border-collapse:collapse; font-size:12px;">
+    <thead id="matrix-thead">
+      <!-- কলাম হেডার ডাইনামিকভাবে তৈরি হবে -->
+    </thead>
+    <tbody id="matrix-tbody">
+      <!-- ব্র্যান্ড রো ডাইনামিকভাবে তৈরি হবে -->
+    </tbody>
+  </table>
+</div>
 
-    <!-- ২. কাস্টম অর্ডার সেটিংস -->
-    <div style="background:#f8f9fa; padding:12px; border-radius:8px; margin-bottom:15px; border: 1px solid #eee;">
-      <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin-bottom:12px;">
-        <input type="checkbox" id="sp-allow-custom" checked style="width:18px; height:18px; margin:0; cursor:pointer;">
-        <span>⚖️ কাস্টম ওজন নেওয়ার অনুমতি দিন (স্লাইডার)</span>
-      </label>
-      
-      <!-- মিনিমাম অর্ডার (ফুল রো) -->
-      <div style="margin-bottom: 10px;">
-        <label style="font-size: 11px; font-weight: 600; color: #555; display: block; margin-bottom: 5px;">মিনিমাম অর্ডার</label>
-        <div style="display: flex; gap: 5px;">
-          <input type="number" id="sp-min-order" class="dlv-input" placeholder="0" style="flex: 1; padding: 8px;">
-          <select id="sp-min-unit" class="dlv-input" style="width: 70px; padding: 8px 2px; font-size: 12px; text-align: center;">
-            <option value="kg">kg</option>
-            <option value="gm">gm</option>
-            <option value="pcs">pcs</option>
-            <option value="ltr">ltr</option>
-          </select>
-          <select id="sp-min-extra" class="dlv-input" style="flex: 1; font-size: 11px; padding: 6px;">
-            <option value="0">কোনো বাড়তি নেই</option>
-            <option value="2">+২% বাড়তি</option>
-            <option value="3">+৩% বাড়তি</option>
-            <option value="5">+৫% বাড়তি</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- ম্যাক্সিমাম অর্ডার (ফুল রো) -->
-      <div style="margin-bottom: 10px;">
-        <label style="font-size: 11px; font-weight: 600; color: #555; display: block; margin-bottom: 5px;">ম্যাক্সিমাম অর্ডার</label>
-        <div style="display: flex; gap: 5px;">
-          <input type="number" id="sp-max-order" class="dlv-input" placeholder="0" style="flex: 1; padding: 8px;">
-          <select id="sp-max-unit" class="dlv-input" style="width: 70px; padding: 8px 2px; font-size: 12px; text-align: center;">
-            <option value="kg">kg</option>
-            <option value="gm">gm</option>
-            <option value="pcs">pcs</option>
-            <option value="ltr">ltr</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- 🚀 ৩. বাল্ক ডিসকাউন্ট টগল এবং সেকশন -->
-      <div style="border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 10px;">
-        <label style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:600; cursor:pointer;">
-          <span>🎁 বাল্ক ডিসকাউন্ট চালু করুন</span>
-          <input type="checkbox" id="sp-enable-bulk-discount" onchange="toggleDiscountSection(this.checked)" style="width:18px; height:18px; margin:0; cursor:pointer;">
-        </label>
-        
-        <div id="sp-discount-section" style="display: none; margin-top: 10px; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
-          <div id="sp-discount-tiers-container"></div>
-          <button type="button" onclick="addDiscountTierRow()" style="width: 100%; background: #e8f0fe; color: var(--mp-primary); border: none; padding: 6px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; margin-top: 5px;">+ নতুন ডিসকাউন্ট লেয়ার</button>
-        </div>
-      </div>
-    </div>
 
     <button class="mp-btn mp-btn-success" onclick="saveShopProduct()">💾 সেভ করুন</button>
   </div>
@@ -3327,6 +3318,115 @@ window.openAddProductModal = function() {
     document.getElementById('dlv-set-price-modal').classList.add('active');
   };
 
+ // ==================== SMART MATRIX & PRICING LOGIC ====================
+
+// ১. স্মার্ট প্রাইসিং টগল
+window.toggleSmartPricing = function(isChecked) {
+  const section = document.getElementById('smart-pricing-section');
+  if (isChecked) {
+    section.style.display = 'block';
+    if (document.getElementById('sp-discount-tiers-container').children.length === 0) addDiscountTierRow();
+    if (document.getElementById('sp-extra-charge-tiers-container').children.length === 0) addExtraChargeRow();
+  } else {
+    section.style.display = 'none';
+  }
+};
+
+// ২. ডিসকাউন্ট এবং বাড়তি চার্জ রো তৈরি
+window.addDiscountTierRow = function(qty = '', pct = '') {
+  const container = document.getElementById('sp-discount-tiers-container');
+  const rowId = 'disc-' + Date.now() + Math.floor(Math.random() * 100);
+  container.insertAdjacentHTML('beforeend', `
+    <div id="${rowId}" style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
+      <input type="number" placeholder="যেমন: 5 (kg/pcs)" class="tier-qty" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${qty}">
+      <input type="number" placeholder="ছাড় (%)" class="tier-pct" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${pct}">
+      <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">&times;</button>
+    </div>
+  `);
+};
+
+window.addExtraChargeRow = function(qty = '', pct = '') {
+  const container = document.getElementById('sp-extra-charge-tiers-container');
+  const rowId = 'extra-' + Date.now() + Math.floor(Math.random() * 100);
+  container.insertAdjacentHTML('beforeend', `
+    <div id="${rowId}" style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
+      <input type="number" placeholder="যেমন: 500 (gm)" class="extra-qty" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${qty}">
+      <input type="number" placeholder="বাড়তি (%)" class="extra-pct" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${pct}">
+      <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">&times;</button>
+    </div>
+  `);
+};
+
+// ৩. ভ্যারিয়েন্ট ম্যাট্রিক্স (ব্র্যান্ড ও সাইজ) লজিক
+let matrixCols = 1; // ডিফল্ট ১টি সাইজ কলাম
+let matrixRows = 1; // ডিফল্ট ১টি ব্র্যান্ড রো
+
+window.addMatrixCol = function() {
+  matrixCols++;
+  renderMatrixTable();
+};
+
+window.addMatrixRow = function() {
+  matrixRows++;
+  renderMatrixTable();
+};
+
+function renderMatrixTable() {
+  const thead = document.getElementById('matrix-thead');
+  const tbody = document.getElementById('matrix-tbody');
+
+  // হেডার তৈরি (সাইজ)
+  let thHtml = '<tr><th style="padding:5px; border:1px solid #ddd; text-align:left; background:#e8f0fe;">ব্র্যান্ড \\ সাইজ</th>';
+  for (let i = 1; i <= matrixCols; i++) {
+    thHtml += `
+      <th style="padding:5px; border:1px solid #ddd; background:#e8f0fe;">
+        <div style="display:flex; gap:2px; align-items:center;">
+          <input type="number" placeholder="সাইজ" class="matrix-size-val" style="width:50px; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
+          <select class="matrix-size-unit" style="padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
+            <option value="gm">gm</option>
+            <option value="kg">kg</option>
+            <option value="pcs">pcs</option>
+          </select>
+          ${i > 1 ? `<button type="button" onclick="removeMatrixCol()" style="background:#d93025; color:white; border:none; border-radius:50%; width:16px; height:16px; font-size:10px; cursor:pointer; line-height:1;">x</button>` : ''}
+        </div>
+      </th>
+    `;
+  }
+  thHtml += '</tr>';
+  thead.innerHTML = thHtml;
+
+  // বডি তৈরি (ব্র্যান্ড)
+  let tbHtml = '';
+  for (let r = 1; r <= matrixRows; r++) {
+    tbHtml += '<tr>';
+    tbHtml += `
+      <td style="padding:5px; border:1px solid #ddd; background:#f8f9fa;">
+        <div style="display:flex; gap:5px; align-items:center;">
+          <input type="text" placeholder="ব্র্যান্ডের নাম" class="matrix-brand-name" style="width:80px; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px;">
+          ${r > 1 ? `<button type="button" onclick="removeMatrixRow()" style="background:#d93025; color:white; border:none; border-radius:50%; width:16px; height:16px; font-size:10px; cursor:pointer; line-height:1;">x</button>` : ''}
+        </div>
+      </td>
+    `;
+    for (let c = 1; c <= matrixCols; c++) {
+      tbHtml += `<td style="padding:5px; border:1px solid #ddd;"><input type="number" placeholder="₹ দাম" class="matrix-price" style="width:60px; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:11px; text-align:center;"></td>`;
+    }
+    tbHtml += '</tr>';
+  }
+  tbody.innerHTML = tbHtml;
+}
+
+window.removeMatrixCol = function() {
+  if (matrixCols > 1) { matrixCols--; renderMatrixTable(); }
+};
+window.removeMatrixRow = function() {
+  if (matrixRows > 1) { matrixRows--; renderMatrixTable(); }
+};
+
+// পেজ লোড হলে ম্যাট্রিক্স রেন্ডার করা
+document.addEventListener("DOMContentLoaded", () => {
+  renderMatrixTable();
+});
+  
   window.saveShopProduct = async function() {
     const price = parseFloat(document.getElementById('sp-price').value) || 0;
     const baseWeight = parseFloat(document.getElementById('sp-base-weight').value) || 1;
