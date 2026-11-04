@@ -6427,6 +6427,153 @@ window.checkBulkTableEmpty = function() {
   }
 };
 
+// ==================== BULK EDITOR LOGIC (PART 3) ====================
+let bulkCategories = []; // ক্যাটাগরি লিস্ট জমা রাখার জন্য
+
+// ১. ছবি সিলেক্ট করার লজিক (AI Zero-Click)
+window.handleBulkImages = function(event) {
+  const files = event.target.files;
+  if (!files || files.length === 0) return;
+
+  // আগের ডেটা ক্লিয়ার করা (ঐচ্ছিক, চাইলে রেখে দিতে পারেন)
+  // clearBulkTable();
+
+  // আগে ফায়ারবেস থেকে ক্যাটাগরি লোড করে নেয়া (যদি আগে না লোড করা থাকে)
+  loadBulkCategories();
+
+  let processedCount = 0;
+
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const base64Img = e.target.result;
+      
+      // 🚀 স্মার্ট নাম এক্সট্রাকশন: ফাইলের নাম থেকে .jpg, .png বাদ দেওয়া এবং আন্ডারস্কোর (_) কে স্পেসে রূপান্তর করা
+      let autoName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ").replace(/-/g, " ");
+      // প্রথম অক্ষর বড় হাতের করা
+      autoName = autoName.charAt(0).toUpperCase() + autoName.slice(1);
+
+      // টেবিলে নতুন রো যোগ করা
+      appendBulkRow(base64Img, autoName);
+      
+      processedCount++;
+      // সব প্রসেস শেষ হলে ইনপুট বক্স রিসেট করা যাতে আবার একই ছবি সিলেক্ট করা যায়
+      if (processedCount === files.length) {
+        event.target.value = ''; 
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
+// ২. ক্যাটাগরি লোড করার হেল্পার ফাংশন
+async function loadBulkCategories() {
+  if (bulkCategories.length > 0) return; // আগে থেকেই লোড থাকলে আবার লোড হবে না
+  try {
+    const snap = await getDocs(collection(db, "categories"));
+    snap.forEach(doc => bulkCategories.push(doc.data().name));
+  } catch(e) { 
+    console.warn("Category load failed", e);
+    // ফলব্যাক ক্যাটাগরি
+    bulkCategories = ['Grocery', 'Restaurant', 'Fruits', 'Vegetables']; 
+  }
+}
+
+// ৩. এক্সেল পেস্ট লজিক
+window.parseExcelPaste = function() {
+  const text = document.getElementById('bulk-excel-textarea').value.trim();
+  if (!text) return alert("দয়া করে আগে এক্সেল থেকে ডেটা কপি করে পেস্ট করুন!");
+
+  loadBulkCategories();
+
+  // এক্সেল ডেটাকে লাইন অনুযায়ী ভাগ করা (Windows \r\n এবং Mac \n দুটোই হ্যান্ডেল করবে)
+  const lines = text.split(/\r?\n/);
+  let addedCount = 0;
+
+  lines.forEach(line => {
+    if (!line.trim()) return; // খালি লাইন স্কিপ
+    
+    // ডেটাকে ট্যাব (\t) বা কমা (,) দিয়ে আলাদা করা
+    const cols = line.split('\t'); 
+    
+    // ধরে নিচ্ছি: ১ম কলাম = নাম, ২য় কলাম = ইমেজ লিংক (যদি থাকে)
+    const prodName = cols[0] ? cols[0].trim() : '';
+    const prodImg = cols[1] ? cols[1].trim() : '';
+
+    if (prodName) {
+      // appendBulkRow ফাংশনে ১ম প্যারামিটার হলো ছবি, ২য় প্যারামিটার হলো নাম
+      appendBulkRow(prodImg, prodName);
+      addedCount++;
+    }
+  });
+
+  if (addedCount > 0) {
+    document.getElementById('bulk-excel-textarea').value = ''; // পেস্ট বক্স খালি করা
+    alert(`✅ ${addedCount} টি প্রোডাক্ট টেবিলে যুক্ত হয়েছে!`);
+  } else {
+    alert("❌ কোনো সঠিক ডেটা পাওয়া যায়নি। দয়া করে চেক করুন।");
+  }
+};
+
+// 🚀 ৪. ক্যাটাগরি ড্রপডাউন আপডেট (আগের Part 2-এর appendBulkRow ফাংশনটি রিপ্লেস করছি)
+// (নোট: Part 2-এ দেওয়া আপনার পুরোনো appendBulkRow ফাংশনটি মুছে এই ফাংশনটি বসাবেন)
+window.appendBulkRow = function(imageBase64, autoName) {
+  const tbody = document.getElementById('bulk-table-body');
+  if (tbody.innerHTML.includes('ছবি সিলেক্ট করুন') || tbody.innerHTML.includes('ডেটা পেস্ট করুন')) {
+    tbody.innerHTML = '';
+  }
+
+  const rowId = 'bulk-row-' + Date.now() + Math.floor(Math.random()*1000);
+  const tr = document.createElement('tr');
+  tr.id = rowId;
+  tr.style.borderBottom = '1px solid #eee';
+
+  // ইমেজ কলাম (যদি লিংক বা বেস৬৪ হয়)
+  let imgSrc = imageBase64 || '';
+  let imageHtml = `
+    <td style="padding: 8px;">
+      <div style="width: 40px; height: 40px; border-radius: 6px; overflow: hidden; background: #f0f2f5; border: 1px solid #ddd; display: flex; justify-content: center; align-items: center;">
+        ${imgSrc ? `<img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='🚫';">` : '📦'}
+      </div>
+    </td>
+  `;
+
+  // নাম কলাম
+  let nameHtml = `<td style="padding: 8px;"><input type="text" class="dlv-input" style="padding: 6px; font-size: 12px;" value="${autoName || ''}" placeholder="নাম লিখুন..."></td>`;
+
+  // ক্যাটাগরি কলাম (ডাইনামিক)
+  let optionsHtml = '<option value="">সিলেক্ট...</option>';
+  bulkCategories.forEach(cat => {
+    optionsHtml += `<option value="${cat}">${cat}</option>`;
+  });
+
+  let catHtml = `
+    <td style="padding: 8px;">
+      <select class="dlv-input bulk-cat-select" style="padding: 6px; font-size: 12px; min-width: 100px;">
+        ${optionsHtml}
+      </select>
+    </td>
+  `;
+
+  // বাড়তি কলাম (শুধুমাত্র দোকানদারের জন্য)
+  let extraColsHtml = '';
+  if (currentBulkRole === 'shopkeeper') {
+    extraColsHtml = `
+      <td style="padding: 8px;"><input type="number" class="dlv-input bulk-price" style="padding: 6px; font-size: 12px; width: 70px;" placeholder="₹"></td>
+      <td style="padding: 8px;"><input type="number" class="dlv-input bulk-stock" style="padding: 6px; font-size: 12px; width: 70px;" placeholder="পরিমাণ"></td>
+    `;
+  }
+
+  // অ্যাকশন (ডিলিট)
+  let actionHtml = `
+    <td style="padding: 8px; text-align: center;">
+      <button onclick="document.getElementById('${rowId}').remove(); checkBulkTableEmpty();" style="background: none; border: none; color: var(--mp-danger); font-size: 16px; cursor: pointer;">🗑️</button>
+    </td>
+  `;
+
+  tr.innerHTML = imageHtml + nameHtml + catHtml + extraColsHtml + actionHtml;
+  tbody.appendChild(tr);
+};
 </script>
 
 <!-- Live Tracking Modal (Customer) -->
