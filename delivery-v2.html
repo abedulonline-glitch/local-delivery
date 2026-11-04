@@ -4333,29 +4333,32 @@ function renderAdminMasterProducts(productsToRender) {
     return;
   }
 
-  let html = '';
-  productsToRender.forEach(p => {
-    html += `
-      <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 5px; border-bottom: 1px solid #eee;">
-        
-        <!-- বাম দিক: ছবি ও নাম -->
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 40px; height: 40px; border-radius: 6px; background: #f0f2f5; display: flex; justify-content: center; align-items: center; overflow: hidden;">
-            ${p.image ? `<img src="${p.image}" style="width:100%; height:100%; object-fit:cover;">` : '📦'}
-          </div>
-          <div>
-            <div style="font-size:13px; font-weight:600; color:#202124;">${p.name}</div>
-            <div style="font-size:11px; color:#666;">${p.category} | Grade ${p.grade} | ${p.unit}</div>
-          </div>
-        </div>
+  // আপনার renderAdminMasterProducts ফাংশনের ভেতরে:
+let displayUnit = p.unit || 'pcs'; // undefined হলে pcs দেখাবে
+let displayGrade = p.grade || 'A'; // undefined হলে A দেখাবে
 
-        <!-- ডান দিক: এডিট বাটন -->
-        <button onclick="openEditMasterProduct('${p.id}')" style="background:#e8f0fe; border:none; color:var(--mp-primary); cursor:pointer; font-size:12px; padding: 6px 10px; border-radius: 6px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
-          ✏️ এডিট
-        </button>
-        
+html += `
+  <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 5px; border-bottom: 1px solid #eee;">
+    
+    <!-- বাম দিক: ছবি ও নাম -->
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 40px; height: 40px; border-radius: 6px; background: #f0f2f5; display: flex; justify-content: center; align-items: center; overflow: hidden;">
+        ${p.image ? `<img src="${p.image}" style="width:100%; height:100%; object-fit:cover;">` : '📦'}
       </div>
-    `;
+      <div>
+        <div style="font-size:13px; font-weight:600; color:#202124;">${p.name}</div>
+        <!-- 🚀 এখানে displayUnit এবং displayGrade ব্যবহার করা হলো -->
+        <div style="font-size:11px; color:#666;">${p.category} | Grade ${displayGrade} | ${displayUnit}</div>
+      </div>
+    </div>
+
+    <!-- ডান দিক: এডিট বাটন -->
+    <button onclick="openEditMasterProduct('${p.id}')" style="background:#e8f0fe; border:none; color:var(--mp-primary); cursor:pointer; font-size:12px; padding: 6px 10px; border-radius: 6px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+      ✏️ এডিট
+    </button>
+    
+  </div>
+`;
   });
   listContainer.innerHTML = html;
 }
@@ -6363,23 +6366,23 @@ window.clearBulkTable = function() {
 };
 
 // ৫. ডাইনামিক রো তৈরি করা (AJAX/AI ইমেজ আপলোডের পর কল হবে)
-window.appendBulkRow = function(imageBase64, autoName) {
-  // যদি আগে খালি মেসেজ থাকে তবে মুছে ফেলা
+window.appendBulkRow = function(imageBase64, autoName, selectedCat = '', price = 0, stock = 0) {
   const tbody = document.getElementById('bulk-table-body');
   if (tbody.innerHTML.includes('ছবি সিলেক্ট করুন') || tbody.innerHTML.includes('ডেটা পেস্ট করুন')) {
     tbody.innerHTML = '';
   }
 
-  const rowId = 'bulk-row-' + Date.now() + Math.floor(Math.random()*100);
+  const rowId = 'bulk-row-' + Date.now() + Math.floor(Math.random()*1000);
   const tr = document.createElement('tr');
   tr.id = rowId;
   tr.style.borderBottom = '1px solid #eee';
 
   // ইমেজ কলাম
+  let imgSrc = imageBase64 || '';
   let imageHtml = `
     <td style="padding: 8px;">
       <div style="width: 40px; height: 40px; border-radius: 6px; overflow: hidden; background: #f0f2f5; border: 1px solid #ddd; display: flex; justify-content: center; align-items: center;">
-        <img src="${imageBase64 || ''}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='📦';">
+        ${imgSrc ? `<img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='🚫';">` : '📦'}
       </div>
     </td>
   `;
@@ -6387,14 +6390,18 @@ window.appendBulkRow = function(imageBase64, autoName) {
   // নাম কলাম
   let nameHtml = `<td style="padding: 8px;"><input type="text" class="dlv-input" style="padding: 6px; font-size: 12px;" value="${autoName || ''}" placeholder="নাম লিখুন..."></td>`;
 
-  // ক্যাটাগরি কলাম (আপাতত একটি ডামি সিলেক্ট, পরে ডেটাবেস থেকে লোড হবে)
+  // ক্যাটাগরি কলাম
+  let optionsHtml = '<option value="">সিলেক্ট...</option>';
+  bulkCategories.forEach(cat => {
+    // 🚀 CSV থেকে আসা ক্যাটাগরি মিললে সেটি সিলেক্টেড থাকবে
+    let isSelected = (selectedCat && cat.toLowerCase() === selectedCat.toLowerCase()) ? 'selected' : '';
+    optionsHtml += `<option value="${cat}" ${isSelected}>${cat}</option>`;
+  });
+
   let catHtml = `
     <td style="padding: 8px;">
-      <select class="dlv-input" style="padding: 6px; font-size: 12px;">
-        <option value="">সিলেক্ট...</option>
-        <option value="Grocery">Grocery</option>
-        <option value="Fruits">Fruits</option>
-        <option value="Restaurant">Restaurant</option>
+      <select class="dlv-input bulk-cat-select" style="padding: 6px; font-size: 12px; min-width: 100px;">
+        ${optionsHtml}
       </select>
     </td>
   `;
@@ -6403,12 +6410,12 @@ window.appendBulkRow = function(imageBase64, autoName) {
   let extraColsHtml = '';
   if (currentBulkRole === 'shopkeeper') {
     extraColsHtml = `
-      <td style="padding: 8px;"><input type="number" class="dlv-input" style="padding: 6px; font-size: 12px; width: 70px;" placeholder="₹"></td>
-      <td style="padding: 8px;"><input type="number" class="dlv-input" style="padding: 6px; font-size: 12px; width: 70px;" placeholder="পরিমাণ"></td>
+      <td style="padding: 8px;"><input type="number" class="dlv-input bulk-price" style="padding: 6px; font-size: 12px; width: 70px;" value="${price > 0 ? price : ''}" placeholder="₹"></td>
+      <td style="padding: 8px;"><input type="number" class="dlv-input bulk-stock" style="padding: 6px; font-size: 12px; width: 70px;" value="${stock > 0 ? stock : ''}" placeholder="পরিমাণ"></td>
     `;
   }
 
-  // অ্যাকশন কলাম (ডিলিট বাটন)
+  // অ্যাকশন (ডিলিট)
   let actionHtml = `
     <td style="padding: 8px; text-align: center;">
       <button onclick="document.getElementById('${rowId}').remove(); checkBulkTableEmpty();" style="background: none; border: none; color: var(--mp-danger); font-size: 16px; cursor: pointer;">🗑️</button>
@@ -6515,65 +6522,6 @@ window.parseExcelPaste = function() {
   }
 };
 
-// 🚀 ৪. ক্যাটাগরি ড্রপডাউন আপডেট (আগের Part 2-এর appendBulkRow ফাংশনটি রিপ্লেস করছি)
-// (নোট: Part 2-এ দেওয়া আপনার পুরোনো appendBulkRow ফাংশনটি মুছে এই ফাংশনটি বসাবেন)
-window.appendBulkRow = function(imageBase64, autoName) {
-  const tbody = document.getElementById('bulk-table-body');
-  if (tbody.innerHTML.includes('ছবি সিলেক্ট করুন') || tbody.innerHTML.includes('ডেটা পেস্ট করুন')) {
-    tbody.innerHTML = '';
-  }
-
-  const rowId = 'bulk-row-' + Date.now() + Math.floor(Math.random()*1000);
-  const tr = document.createElement('tr');
-  tr.id = rowId;
-  tr.style.borderBottom = '1px solid #eee';
-
-  // ইমেজ কলাম (যদি লিংক বা বেস৬৪ হয়)
-  let imgSrc = imageBase64 || '';
-  let imageHtml = `
-    <td style="padding: 8px;">
-      <div style="width: 40px; height: 40px; border-radius: 6px; overflow: hidden; background: #f0f2f5; border: 1px solid #ddd; display: flex; justify-content: center; align-items: center;">
-        ${imgSrc ? `<img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='🚫';">` : '📦'}
-      </div>
-    </td>
-  `;
-
-  // নাম কলাম
-  let nameHtml = `<td style="padding: 8px;"><input type="text" class="dlv-input" style="padding: 6px; font-size: 12px;" value="${autoName || ''}" placeholder="নাম লিখুন..."></td>`;
-
-  // ক্যাটাগরি কলাম (ডাইনামিক)
-  let optionsHtml = '<option value="">সিলেক্ট...</option>';
-  bulkCategories.forEach(cat => {
-    optionsHtml += `<option value="${cat}">${cat}</option>`;
-  });
-
-  let catHtml = `
-    <td style="padding: 8px;">
-      <select class="dlv-input bulk-cat-select" style="padding: 6px; font-size: 12px; min-width: 100px;">
-        ${optionsHtml}
-      </select>
-    </td>
-  `;
-
-  // বাড়তি কলাম (শুধুমাত্র দোকানদারের জন্য)
-  let extraColsHtml = '';
-  if (currentBulkRole === 'shopkeeper') {
-    extraColsHtml = `
-      <td style="padding: 8px;"><input type="number" class="dlv-input bulk-price" style="padding: 6px; font-size: 12px; width: 70px;" placeholder="₹"></td>
-      <td style="padding: 8px;"><input type="number" class="dlv-input bulk-stock" style="padding: 6px; font-size: 12px; width: 70px;" placeholder="পরিমাণ"></td>
-    `;
-  }
-
-  // অ্যাকশন (ডিলিট)
-  let actionHtml = `
-    <td style="padding: 8px; text-align: center;">
-      <button onclick="document.getElementById('${rowId}').remove(); checkBulkTableEmpty();" style="background: none; border: none; color: var(--mp-danger); font-size: 16px; cursor: pointer;">🗑️</button>
-    </td>
-  `;
-
-  tr.innerHTML = imageHtml + nameHtml + catHtml + extraColsHtml + actionHtml;
-  tbody.appendChild(tr);
-};
 
 // ==================== BULK EDITOR LOGIC (PART 4 - SAVE & AI VECTOR) ====================
 
@@ -6770,6 +6718,63 @@ window.downloadCSVTemplate = function(e) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+};
+
+// ৬. CSV ফাইল আপলোড এবং পার্সিং লজিক
+window.handleCSVUpload = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const csvText = e.target.result;
+    
+    // CSV এর লাইনগুলো আলাদা করা (\r\n বা \n)
+    const lines = csvText.split(/\r?\n/);
+    if (lines.length === 0) return alert("ফাইলটি খালি!");
+
+    loadBulkCategories(); // ক্যাটাগরি লোড করা
+    let addedCount = 0;
+
+    // ধরে নিচ্ছি ১ম লাইনটি হলো হেডার (Product Name, Category, Image Link, ...)
+    // তাই লুপ ১ থেকে শুরু হবে
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      // CSV-তে ডেটা কমা (,) দিয়ে আলাদা থাকে। তবে লিংকের ভেতরে কমা থাকলে সমস্যা হতে পারে, 
+      // এখানে আমরা সাধারণ স্প্লিট করছি।
+      const cols = line.split(',');
+
+      // অ্যাডমিন বা দোকানদার অনুযায়ী কলামের ইনডেক্স
+      const prodName = cols[0] ? cols[0].trim().replace(/"/g, '') : '';
+      const prodCat = cols[1] ? cols[1].trim().replace(/"/g, '') : '';
+      const prodImg = cols[2] ? cols[2].trim().replace(/"/g, '') : '';
+      
+      let price = 0, stock = 0;
+      if (currentBulkRole === 'shopkeeper') {
+         price = parseFloat(cols[3]) || 0;
+         stock = parseFloat(cols[4]) || 0;
+      }
+
+      if (prodName) {
+        appendBulkRow(prodImg, prodName, prodCat, price, stock);
+        addedCount++;
+      }
+    }
+
+    // ইনপুট বক্স রিসেট
+    event.target.value = '';
+    
+    if (addedCount > 0) {
+      alert(`✅ ${addedCount} টি প্রোডাক্ট টেবিলে যুক্ত হয়েছে! দয়া করে ক্যাটাগরি চেক করে সেভ করুন।`);
+    } else {
+      alert("❌ ফাইলে কোনো সঠিক ডেটা পাওয়া যায়নি।");
+    }
+  };
+  
+  // ফাইলটিকে টেক্সট হিসেবে রিড করা
+  reader.readAsText(file);
 };
 
 </script>
