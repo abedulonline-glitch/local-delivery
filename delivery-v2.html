@@ -606,6 +606,7 @@
       📦 আমার প্রোডাক্ট লিস্ট
       <div style="display: flex; gap: 5px;">
         <button class="mp-btn mp-btn-primary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px;" onclick="openAddProductModal()">+ Add</button>
+        <button class="mp-btn" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px; background: #7b1fa2; color: white;" onclick="openBulkEditor()">📦 বাল্ক</button>
         <button class="mp-btn" style="width: auto; padding: 6px 10px; margin: 0; font-size: 12px; background: #f9a825; color: #000; font-weight: bold;" onclick="scrollToBarcodeCenter()">🏷️ বারকোড</button>
       </div>
     </h3>
@@ -836,6 +837,7 @@
   <h3 style="justify-content: space-between;">
     🏷️ মাস্টার প্রোডাক্ট
     <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
+    <button class="mp-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px; background: #7b1fa2; color: white;" onclick="openBulkEditor()">📦 বাল্ক</button>
   </h3>
 
         <!-- 🚀 Category Management Section -->
@@ -5219,7 +5221,85 @@ window.clearImageSearch = function() {
     }
   }
 
-   // ==================== CATEGORY DYNAMIC & SUGGESTION LOGIC (PART 2) ====================
+ <!-- 🚀 Universal Bulk Editor Modal (Admin & Shopkeeper) -->
+<div id="dlv-bulk-editor-modal" class="dlv-modal-overlay" style="z-index: 10005; padding: 0;">
+  <div class="dlv-modal-content" style="max-height: 100vh; height: 100vh; border-radius: 0; max-width: 100%; display: flex; flex-direction: column;">
+    
+    <!-- হেডার -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+      <h3 style="margin: 0; color: var(--mp-primary); font-size: 16px;">📦 বাল্ক প্রোডাক্ট এডিটর</h3>
+      <span class="dlv-modal-close" onclick="document.getElementById('dlv-bulk-editor-modal').classList.remove('active')" style="position: static; font-size: 28px;">&times;</span>
+    </div>
+
+    <!-- মোড সুইচার (কোন রোলের জন্য খোলা হয়েছে) -->
+    <div id="bulk-editor-mode-label" style="font-size: 11px; font-weight: bold; color: #fff; background: var(--mp-warning); padding: 4px 8px; border-radius: 4px; margin-bottom: 10px; display: inline-block; align-self: flex-start;">
+      মোড: অ্যাডমিন
+    </div>
+
+    <!-- ৩টি স্মার্ট ট্যাব -->
+    <div style="display: flex; gap: 5px; margin-bottom: 15px; background: #f0f2f5; padding: 5px; border-radius: 8px;">
+      <button class="bulk-tab-btn active" onclick="switchBulkTab('ai-images', this)" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: white; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🪄 AI মাল্টি-ইমেজ</button>
+      <button class="bulk-tab-btn" onclick="switchBulkTab('excel-paste', this)" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: transparent; font-size: 12px; font-weight: bold; cursor: pointer;">📋 এক্সেল পেস্ট</button>
+      <button class="bulk-tab-btn" onclick="switchBulkTab('csv-upload', this)" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: transparent; font-size: 12px; font-weight: bold; cursor: pointer;">📁 CSV আপলোড</button>
+    </div>
+
+    <!-- ট্যাব ১: AI মাল্টি-ইমেজ (Zero Click) -->
+    <div id="tab-ai-images" class="bulk-tab-content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="border: 2px dashed var(--mp-primary); background: #e8f0fe; border-radius: 10px; padding: 25px 15px; text-align: center; cursor: pointer; margin-bottom: 10px;" onclick="document.getElementById('bulk-image-input').click()">
+        <div style="font-size: 30px; margin-bottom: 5px;">📸</div>
+        <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">একসাথে ৩০-৫০টি ছবি সিলেক্ট করুন</div>
+        <div style="font-size: 11px; color: #666; margin-top: 5px;">ছবির নাম থেকেই প্রোডাক্টের নাম অটো সেট হবে</div>
+        <input type="file" id="bulk-image-input" accept="image/*" multiple style="display: none;" onchange="handleBulkImages(event)">
+      </div>
+      
+      <!-- টেবিল এরিয়া -->
+      <div style="flex: 1; overflow: auto; border: 1px solid #ddd; border-radius: 8px; background: white; position: relative;">
+        <table id="bulk-editor-table" style="width: 100%; border-collapse: collapse; min-width: 600px; font-size: 12px;">
+          <thead style="background: #f8f9fa; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+            <tr id="bulk-table-headers">
+              <!-- কলাম হেডার JS দিয়ে লোড হবে -->
+            </tr>
+          </thead>
+          <tbody id="bulk-table-body">
+            <!-- রো JS দিয়ে লোড হবে -->
+            <tr><td colspan="5" style="text-align: center; padding: 20px; color: #999;">ছবি সিলেক্ট করুন অথবা ডেটা পেস্ট করুন</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ট্যাব ২: এক্সেল পেস্ট -->
+    <div id="tab-excel-paste" class="bulk-tab-content" style="flex: 1; display: none; flex-direction: column;">
+      <p style="font-size: 12px; color: #555; margin-bottom: 10px;">আপনার Excel বা Google Sheet থেকে ডেটা কপি করে নিচের বক্সে পেস্ট করুন (Ctrl+V)।</p>
+      <textarea id="bulk-excel-textarea" class="dlv-input" style="flex: 1; resize: none; font-family: monospace; font-size: 12px; padding: 10px; border: 2px dashed #ccc;" placeholder="এখানে পেস্ট করুন..."></textarea>
+      <button class="mp-btn mp-btn-primary" style="margin-top: 10px;" onclick="parseExcelPaste()">ডেটা ইমপোর্ট করুন</button>
+    </div>
+
+    <!-- ট্যাব ৩: CSV আপলোড -->
+    <div id="tab-csv-upload" class="bulk-tab-content" style="flex: 1; display: none; flex-direction: column; justify-content: center; align-items: center;">
+      <div style="text-align: center; padding: 20px;">
+        <div style="font-size: 40px; margin-bottom: 10px;">📂</div>
+        <h4 style="margin-bottom: 10px;">CSV ফাইল আপলোড করুন</h4>
+        <p style="font-size: 12px; color: #666; margin-bottom: 15px;">সঠিক ফরম্যাটে সেভ করা CSV ফাইল সিলেক্ট করুন।</p>
+        <button class="mp-btn mp-btn-primary" onclick="document.getElementById('bulk-csv-input').click()" style="width: auto; padding: 8px 20px;">ফাইল সিলেক্ট করুন</button>
+        <input type="file" id="bulk-csv-input" accept=".csv" style="display: none;" onchange="handleCSVUpload(event)">
+        
+        <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+          <a href="#" onclick="downloadCSVTemplate(event)" style="font-size: 12px; color: var(--mp-primary); font-weight: bold; text-decoration: underline;">⬇️ স্যাম্পল CSV টেমপ্লেট ডাউনলোড করুন</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ফুটার (সেভ বাটন) -->
+    <div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; display: flex; gap: 10px;">
+      <button class="mp-btn" style="margin: 0; background: #f0f2f5; color: #333; flex: 1;" onclick="clearBulkTable()">🗑️ টেবিল ক্লিয়ার</button>
+      <button class="mp-btn mp-btn-success" style="margin: 0; flex: 2;" onclick="saveBulkData()">💾 সব সেভ করুন</button>
+    </div>
+
+  </div>
+</div>
+  
+  // ==================== CATEGORY DYNAMIC & SUGGESTION LOGIC (PART 2) ====================
 
   // ১. সব জায়গায় ক্যাটাগরি ড্রপডাউন লোড করা
   function loadCategoriesForDropdowns() {
@@ -6209,6 +6289,140 @@ async function assignClosestDeliveryBoy(orderId, order) {
     // placeOrder ফাংশনে ডেটা পাঠানো (এখানে calcProduct এর ভেতরের ভ্যালুগুলো ব্যবহার করা হয়েছে)
     placeOrder(calcProduct.prodId, `${calcProduct.name} (${finalWeightStr})`, totalPrice, calcProduct.shopId, calcProduct.shopName);
   };
+
+// ==================== BULK EDITOR UI LOGIC (PART 1) ====================
+let bulkEditorRows = []; // এখানে টেবিলের ডেটা জমা থাকবে
+let currentBulkRole = 'admin'; // ডিফল্ট
+
+// ১. বাল্ক এডিটর ওপেন করা
+window.openBulkEditor = function() {
+  currentBulkRole = userRole; // 'admin' অথবা 'shopkeeper'
+  document.getElementById('bulk-editor-mode-label').innerText = `মোড: ${currentBulkRole === 'admin' ? 'অ্যাডমিন (মাস্টার প্রোডাক্ট)' : 'দোকানদার (নিজস্ব স্টোর)'}`;
+  
+  // মোড অনুযায়ী কলাম হেডার তৈরি
+  renderBulkTableHeaders();
+  
+  // টেবিল রিসেট
+  clearBulkTable();
+  
+  document.getElementById('dlv-bulk-editor-modal').classList.add('active');
+};
+
+// ২. ট্যাব সুইচ লজিক
+window.switchBulkTab = function(tabId, btnEl) {
+  // সব ট্যাব হাইড করা
+  document.querySelectorAll('.bulk-tab-content').forEach(tab => tab.style.display = 'none');
+  document.querySelectorAll('.bulk-tab-btn').forEach(btn => {
+    btn.style.background = 'transparent';
+    btn.style.boxShadow = 'none';
+  });
+
+  // ক্লিক করা ট্যাব শো করা
+  document.getElementById(`tab-${tabId}`).style.display = 'flex';
+  btnEl.style.background = 'white';
+  btnEl.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+};
+
+// ৩. রোল অনুযায়ী কলাম হেডার রেন্ডার
+function renderBulkTableHeaders() {
+  const thead = document.getElementById('bulk-table-headers');
+  let headers = '';
+  
+  if (currentBulkRole === 'admin') {
+    headers = `
+      <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">ছবি</th>
+      <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; min-width: 150px;">প্রোডাক্টের নাম</th>
+      <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">ক্যাটাগরি</th>
+      <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">অ্যাকশন</th>
+    `;
+  } else {
+    // Shopkeeper মোডে বাড়তি কলাম থাকবে
+    headers = `
+      <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">ছবি</th>
+      <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; min-width: 150px;">প্রোডাক্টের নাম</th>
+      <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">ক্যাটাগরি</th>
+      <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">দাম (₹)</th>
+      <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">স্টক</th>
+      <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">অ্যাকশন</th>
+    `;
+  }
+  
+  thead.innerHTML = headers;
+}
+
+// ৪. টেবিল ক্লিয়ার করা
+window.clearBulkTable = function() {
+  bulkEditorRows = [];
+  const tbody = document.getElementById('bulk-table-body');
+  tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 20px; color: #999;">ছবি সিলেক্ট করুন অথবা ডেটা পেস্ট করুন</td></tr>`;
+  document.getElementById('bulk-excel-textarea').value = '';
+  document.getElementById('bulk-image-input').value = '';
+};
+
+// ৫. ডাইনামিক রো তৈরি করা (AJAX/AI ইমেজ আপলোডের পর কল হবে)
+window.appendBulkRow = function(imageBase64, autoName) {
+  // যদি আগে খালি মেসেজ থাকে তবে মুছে ফেলা
+  const tbody = document.getElementById('bulk-table-body');
+  if (tbody.innerHTML.includes('ছবি সিলেক্ট করুন') || tbody.innerHTML.includes('ডেটা পেস্ট করুন')) {
+    tbody.innerHTML = '';
+  }
+
+  const rowId = 'bulk-row-' + Date.now() + Math.floor(Math.random()*100);
+  const tr = document.createElement('tr');
+  tr.id = rowId;
+  tr.style.borderBottom = '1px solid #eee';
+
+  // ইমেজ কলাম
+  let imageHtml = `
+    <td style="padding: 8px;">
+      <div style="width: 40px; height: 40px; border-radius: 6px; overflow: hidden; background: #f0f2f5; border: 1px solid #ddd; display: flex; justify-content: center; align-items: center;">
+        <img src="${imageBase64 || ''}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='📦';">
+      </div>
+    </td>
+  `;
+
+  // নাম কলাম
+  let nameHtml = `<td style="padding: 8px;"><input type="text" class="dlv-input" style="padding: 6px; font-size: 12px;" value="${autoName || ''}" placeholder="নাম লিখুন..."></td>`;
+
+  // ক্যাটাগরি কলাম (আপাতত একটি ডামি সিলেক্ট, পরে ডেটাবেস থেকে লোড হবে)
+  let catHtml = `
+    <td style="padding: 8px;">
+      <select class="dlv-input" style="padding: 6px; font-size: 12px;">
+        <option value="">সিলেক্ট...</option>
+        <option value="Grocery">Grocery</option>
+        <option value="Fruits">Fruits</option>
+        <option value="Restaurant">Restaurant</option>
+      </select>
+    </td>
+  `;
+
+  // বাড়তি কলাম (দোকানদারের জন্য)
+  let extraColsHtml = '';
+  if (currentBulkRole === 'shopkeeper') {
+    extraColsHtml = `
+      <td style="padding: 8px;"><input type="number" class="dlv-input" style="padding: 6px; font-size: 12px; width: 70px;" placeholder="₹"></td>
+      <td style="padding: 8px;"><input type="number" class="dlv-input" style="padding: 6px; font-size: 12px; width: 70px;" placeholder="পরিমাণ"></td>
+    `;
+  }
+
+  // অ্যাকশন কলাম (ডিলিট বাটন)
+  let actionHtml = `
+    <td style="padding: 8px; text-align: center;">
+      <button onclick="document.getElementById('${rowId}').remove(); checkBulkTableEmpty();" style="background: none; border: none; color: var(--mp-danger); font-size: 16px; cursor: pointer;">🗑️</button>
+    </td>
+  `;
+
+  tr.innerHTML = imageHtml + nameHtml + catHtml + extraColsHtml + actionHtml;
+  tbody.appendChild(tr);
+};
+
+// ৬. টেবিল খালি হয়ে গেলে মেসেজ দেখানো
+window.checkBulkTableEmpty = function() {
+  const tbody = document.getElementById('bulk-table-body');
+  if (tbody.children.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 20px; color: #999;">ছবি সিলেক্ট করুন অথবা ডেটা পেস্ট করুন</td></tr>`;
+  }
+};
 
 </script>
 
