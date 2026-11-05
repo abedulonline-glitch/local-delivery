@@ -2173,85 +2173,98 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       const matchesTag = p.tags && p.tags.some(t => t.toLowerCase().includes(searchQuery));
       const matchesSearch = p.name.toLowerCase().includes(searchQuery) || (p.category && p.category.toLowerCase().includes(searchQuery)) || matchesTag;
       
-      const matchesCat = currentCategory === 'all' || (p.category && p.category === currentCategory);
-      return matchesSearch && matchesCat;
-    });
+window.filterCustomerProducts = function() {
+  const grid = document.getElementById('cst-product-grid');
+  const searchInput = document.getElementById('cst-search-input');
+  const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
+  
+  let filteredBySearch = allRawProducts.filter(p => {
+    // 🚀 সার্চে ট্যাগ (যেমন: sale) দিয়েও খোঁজা যাবে
+    const matchesTag = p.tags && p.tags.some(t => t.toLowerCase().includes(searchQuery));
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery) || (p.category && p.category.toLowerCase().includes(searchQuery)) || matchesTag;
+    
+    const matchesCat = currentCategory === 'all' || (p.category && p.category === currentCategory);
+    return matchesSearch && matchesCat;
+  });
 
-    let validProducts = filteredBySearch.filter(p => {
-      let distance = 0;
+  let validProducts = filteredBySearch.filter(p => {
+    let distance = 0;
+    
+    // 🚀 আসল বাগ ফিক্স: null চেক করা হচ্ছে
+    let hasShopLoc = (p.shopLat !== null && p.shopLat !== undefined && !isNaN(p.shopLat) && p.shopLat !== '');
+    let hasCustLoc = (customerLat !== null && customerLat !== undefined && !isNaN(customerLat) && customerLat !== '');
+
+    if (hasShopLoc && hasCustLoc) {
+      const shopLoc = L.latLng(parseFloat(p.shopLat), parseFloat(p.shopLng));
+      const custLoc = L.latLng(parseFloat(customerLat), parseFloat(customerLng));
+      distance = shopLoc.distanceTo(custLoc) / 1000; // কিমি
       
-      // 🚀 আসল বাগ ফিক্স: null চেক করা হচ্ছে
-      let hasShopLoc = (p.shopLat !== null && p.shopLat !== undefined && !isNaN(p.shopLat) && p.shopLat !== '');
-      let hasCustLoc = (customerLat !== null && customerLat !== undefined && !isNaN(customerLat) && customerLat !== '');
-
-      if (hasShopLoc && hasCustLoc) {
-        const shopLoc = L.latLng(parseFloat(p.shopLat), parseFloat(p.shopLng));
-        const custLoc = L.latLng(parseFloat(customerLat), parseFloat(customerLng));
-        distance = shopLoc.distanceTo(custLoc) / 1000; // কিমি
-        
-        if (distance > maxDistance) return false; // দূরত্ব বেশি হলে বাদ
-      }
-      return true;
-    });
-
-    let grouped = {};
-    validProducts.forEach(p => {
-      const key = p.name.toLowerCase() + '_' + (p.unit || '');
-      if (!grouped[key]) {
-        // 🚀 গ্রুপিং-এর সময় ট্যাগগুলোও সেভ করে রাখছি
-        grouped[key] = { name: p.name, category: p.category, unit: p.unit, grade: p.grade, image: p.image, shops: [], tags: p.tags || [] };
-      }
-      grouped[key].shops.push(p);
-    });
-
-    groupedProducts = Object.values(grouped);
-    groupedProducts.forEach(g => { g.shops.sort((a, b) => a.price - b.price); });
-
-    grid.innerHTML = '';
-    if(groupedProducts.length === 0) {
-      grid.innerHTML = '<div style="font-size:13px; color:#999; grid-column:1/-1; text-align:center; padding: 20px;">এই রেঞ্জে কোনো প্রোডাক্ট পাওয়া যায়নি। রেঞ্জ বাড়িয়ে দেখুন।</div>';
-      return;
+      if (distance > maxDistance) return false; // দূরত্ব বেশি হলে বাদ
     }
+    return true;
+  });
 
-    groupedProducts.forEach(g => {
-      const lowestPriceShop = g.shops[0]; 
-      const totalShops = g.shops.length;
-      
-      // 🚀 নতুন: ট্যাগ চেক করার লজিক (সবচেয়ে কম দামের দোকানের প্রোডাক্টে ট্যাগ থাকলে দেখাবে)
-      let tagHtml = '';
-      if (lowestPriceShop.tags && lowestPriceShop.tags.length > 0) {
-        let mainTag = lowestPriceShop.tags[0]; 
-        let tagBg = mainTag === '50% OFF' ? '#d93025' : '#0f9d58'; // লাল বা সবুজ
-        tagHtml = `
-          <div onclick="event.stopPropagation(); showTagPopup('${mainTag}', '${g.name.replace(/'/g, "\\'")}')" 
-               style="position:absolute; bottom:6px; left:6px; background:${tagBg}; color:white; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer; z-index:10; box-shadow:0 2px 4px rgba(0,0,0,0.2);">
-            🏷️ ${mainTag}
-          </div>
-        `;
-      }
+  let grouped = {};
+  validProducts.forEach(p => {
+    const key = p.name.toLowerCase() + '_' + (p.unit || '');
+    if (!grouped[key]) {
+      // 🚀 গ্রুপিং-এর সময় ট্যাগগুলোও সেভ করে রাখছি
+      grouped[key] = { name: p.name, category: p.category, unit: p.unit, grade: p.grade, image: p.image, shops: [], tags: p.tags || [] };
+    }
+    grouped[key].shops.push(p);
+  });
 
-      grid.innerHTML += `
-        <div class="dlv-product-card" onclick="openShopSelector('${g.name.replace(/'/g, "\\'")}')">
-          
-          <!-- 🚀 ট্যাগের জন্য position: relative যোগ করা হয়েছে -->
-          <div class="dlv-product-img-wrap" style="position: relative;">
-            ${g.image ? `<img src="${g.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
-            
-            <!-- 🚀 এখানে ট্যাগ বসানো হলো -->
-            ${tagHtml}
-            
-            <span class="dlv-badge-grade">${g.grade || 'A'}</span>
-            <span class="dlv-badge-stock" style="background:var(--mp-primary);">Best Price</span>
-          </div>
-          
-          <div class="dlv-product-name" title="${g.name}">${g.name}</div>
-          <div class="dlv-product-meta"><span>⚖️ ${g.unit || 'pcs'}</span></div>
-          <div class="dlv-product-price">₹${lowestPriceShop.price}</div>
-          <button class="dlv-add-btn">🛒 Add to Cart</button>
+  groupedProducts = Object.values(grouped);
+  groupedProducts.forEach(g => { g.shops.sort((a, b) => a.price - b.price); });
+
+  grid.innerHTML = '';
+  if(groupedProducts.length === 0) {
+    grid.innerHTML = '<div style="font-size:13px; color:#999; grid-column:1/-1; text-align:center; padding: 20px;">এই রেঞ্জে কোনো প্রোডাক্ট পাওয়া যায়নি। রেঞ্জ বাড়িয়ে দেখুন।</div>';
+    return;
+  }
+
+  groupedProducts.forEach(g => {
+    const lowestPriceShop = g.shops[0]; 
+    const totalShops = g.shops.length;
+    
+    // 🚀 ট্যাগ চেক করার লজিক
+    let tagHtml = '';
+    if (lowestPriceShop.tags && lowestPriceShop.tags.length > 0) {
+      let mainTag = lowestPriceShop.tags[0]; 
+      let tagBg = mainTag === '50% OFF' ? '#d93025' : '#0f9d58'; // লাল বা সবুজ
+      tagHtml = `
+        <div onclick="event.stopPropagation(); showTagPopup('${mainTag}', '${g.name.replace(/'/g, "\\'")}')" 
+             style="position:absolute; bottom:6px; left:6px; background:${tagBg}; color:white; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer; z-index:10; box-shadow:0 2px 4px rgba(0,0,0,0.2);">
+          🏷️ ${mainTag}
         </div>
       `;
-    });
-  };
+    }
+
+    // 🚀 দোকানের নাম হাইড করে সরাসরি কার্টে অ্যাড করার ফাংশন কল
+    // এখানে lowestPriceShop থেকে প্রয়োজনীয় সব ডেটা পাঠানো হচ্ছে
+    grid.innerHTML += `
+      <div class="dlv-product-card" onclick="addToSmartCart('${lowestPriceShop.id}', '${g.name.replace(/'/g, "\\'")}', '${g.unit || 'pcs'}', ${lowestPriceShop.price}, '${lowestPriceShop.shopId}', '${lowestPriceShop.shopName.replace(/'/g, "\\'")}', ${lowestPriceShop.stock}, ${lowestPriceShop.baseWeight || 1}, '${lowestPriceShop.baseUnit || g.unit}')">
+        
+        <div class="dlv-product-img-wrap" style="position: relative;">
+          ${g.image ? `<img src="${g.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
+          
+          ${tagHtml}
+          
+          <span class="dlv-badge-grade">${g.grade || 'A'}</span>
+          <!-- 🚀 "1 Shops" এর বদলে "Best Price" দেখানো হলো কারণ দোকান হাইড করা হলো -->
+          <span class="dlv-badge-stock" style="background:var(--mp-success);">Best Price</span>
+        </div>
+        
+        <div class="dlv-product-name" title="${g.name}">${g.name}</div>
+        <div class="dlv-product-meta"><span>⚖️ ${g.unit || 'pcs'}</span></div>
+        <div class="dlv-product-price">₹${lowestPriceShop.price}</div>
+        
+        <!-- 🚀 বাটনের টেক্সট পরিবর্তন করা হলো -->
+        <button class="dlv-add-btn">🛒 অ্যাড করুন</button>
+      </div>
+    `;
+  });
+};
    // ==================== SHOP SELECTOR MODAL ====================
   let currentGroupName = null;
 
