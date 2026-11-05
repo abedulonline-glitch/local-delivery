@@ -1115,14 +1115,6 @@
   </div>
 </div>
 
-<!-- 🚀 Smart Custom Calculator Modal -->
-<div id="dlv-custom-calc-modal" class="dlv-modal-overlay">
-  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
-    <span class="dlv-modal-close" onclick="document.getElementById('dlv-custom-calc-modal').classList.remove('active')">&times;</span>
-    
-    <h3 style="margin-bottom: 5px; color: var(--mp-primary);" id="calc-prod-name">প্রোডাক্টের নাম</h3>
-    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">স্ট্যান্ডার্ড রেট: <b id="calc-base-info">₹0 / 0gm</b></p>
-
     <!-- 🚀 স্মার্ট স্লাইডার সেকশন -->
     <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee;">
       
@@ -2263,58 +2255,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
    // ==================== SHOP SELECTOR MODAL ====================
   let currentGroupName = null;
 
-  window.openShopSelector = function(groupName) {
-    currentGroupName = groupName;
-    const group = groupedProducts.find(g => g.name === groupName);
-    if(!group) return;
-
-    document.getElementById('shop-selector-title').innerText = group.name;
-    const list = document.getElementById('shop-selector-list');
-    list.innerHTML = '';
-
-    group.shops.forEach((shop, index) => {
-      let distText = 'দূরত্ব অজানা';
-      if (shop.shopLat && shop.shopLng) {
-        const d = (L.latLng(shop.shopLat, shop.shopLng).distanceTo(L.latLng(customerLat, customerLng)) / 1000).toFixed(1);
-        distText = `${d} কিমি দূরে`;
-      }
-      
-      let eta = shop.shopLat ? Math.ceil(parseFloat(distText) * 3 + 10) + ' মিনিট' : '২০-৩০ মিনিট';
-      
-      let badges = '';
-      if (shop.isPremium) badges += '<span class="badge-premium">🌟 Premium</span> ';
-      if (shop.isVerified) badges += '<span class="badge-verified">✅</span> ';
-      
-      const isBestPrice = index === 0 ? '<span class="dlv-best-price-tag">Best Price</span>' : '';
-      const cardClass = shop.isPremium ? 'premium-shop-card' : '';
-
-      const safeUnit = shop.unit || shop.baseUnit || 'pcs';
-      const safeWeight = shop.baseWeight || 1;
-      const safePackCharge = shop.packagingCharge || 0;
-      const safeMin = shop.minOrderWeight || 0;
-      const safeMax = shop.maxOrderWeight || 0;
-      const safeMinExtra = shop.minExtraCharge || 0;
-      
-      // 🚀 ডিসকাউন্ট ডেটা স্ট্রিংফাই করে পাঠানো হচ্ছে
-      const safeDiscountActive = shop.isBulkDiscountActive === true;
-      const safeDiscountTiers = JSON.stringify(shop.discountTiers || []).replace(/"/g, '&quot;');
-
-      list.innerHTML += `
-        <div class="dlv-shop-list-item ${cardClass}">
-          <div class="dlv-shop-info">
-            <div class="dlv-shop-name">🏪 ${shop.shopName} ${badges} ${isBestPrice}</div>
-            <div class="dlv-shop-meta">📍 ${distText} | ⏱️ ${eta} | Stock: ${shop.stock}</div>
-          </div>
-          <div style="text-align: right;">
-            <div class="dlv-shop-price">₹${shop.price}</div>
-            <button class="mp-btn mp-btn-success" style="margin: 5px 0 0 0; padding: 6px 12px; font-size: 12px; width: auto;" onclick="openCustomCalc('${shop.id}', '${shop.name}', '${safeUnit}', ${shop.price}, ${safeWeight}, ${safePackCharge}, ${safeMin}, '${shop.shopId}', '${shop.shopName}', ${safeMax}, ${safeMinExtra}, ${safeDiscountActive}, '${safeDiscountTiers}')">⚖️ কিনুন</button>
-          </div>
-        </div>
-      `;
-    });
-    
-    document.getElementById('dlv-shop-selector-modal').classList.add('active');
-  };
+  
   // ক্যাটাগরি ফিল্টার হ্যান্ডেল করা
   window.filterByCategory = function(category, el) {
     document.querySelectorAll('.dlv-cat-chip').forEach(c => c.classList.remove('active'));
@@ -5736,23 +5677,6 @@ window.clearImageSearch = function() {
     });
   }
 
-  // ৩. ম্যানুয়াল ইনপুট থেকে আপডেট (কাস্টমার নিজে টাইপ করলে)
-  window.updateFromManualInput = function(displayValue) {
-    const val = parseFloat(displayValue);
-    if (isNaN(val) || val <= 0) return;
-    
-    const actualWeight = val * calcProduct.factor; // গ্রামে কনভার্ট
-    const slider = document.getElementById('calc-weight-slider');
-    
-    // স্লাইডারের লিমিটের ভেতরে রাখা
-    let finalWeight = actualWeight;
-    if (finalWeight < parseFloat(slider.min)) finalWeight = parseFloat(slider.min);
-    if (finalWeight > parseFloat(slider.max)) finalWeight = parseFloat(slider.max);
-    
-    slider.value = finalWeight;
-    calcProduct.currentWeight = finalWeight;
-    calculateFinalPrice(finalWeight);
-  };
 
   // ==================== SMART CUSTOMER CALCULATOR (FIXED) ====================
   let calcProduct = null;
@@ -5849,36 +5773,8 @@ window.clearImageSearch = function() {
     }
   };
 
-  window.changePcsQty = function(change) {
-    currentPcsQty += change;
-    if (currentPcsQty < 1) currentPcsQty = 1; 
-    document.getElementById('pcs-qty-display').innerText = currentPcsQty;
-    calculateFinalPrice(currentPcsQty * calcProduct.baseWeight);
-  };
 
-  window.updateSliderCalculation = function(weightVal) {
-    const weight = parseFloat(weightVal);
-    calcProduct.currentWeight = weight; 
-    const displayW = (weight / calcProduct.factor).toFixed(2).replace(/\.00$/, '');
-    document.getElementById('calc-manual-input').value = displayW;
-    calculateFinalPrice(weight);
-  };
 
-  window.updateFromManualInput = function(displayValue) {
-    const val = parseFloat(displayValue);
-    if (isNaN(val) || val <= 0) return;
-    
-    const actualWeight = val * calcProduct.factor; 
-    const slider = document.getElementById('calc-weight-slider');
-    
-    let finalWeight = actualWeight;
-    if (finalWeight < parseFloat(slider.min)) finalWeight = parseFloat(slider.min);
-    if (finalWeight > parseFloat(slider.max)) finalWeight = parseFloat(slider.max);
-    
-    slider.value = finalWeight;
-    calcProduct.currentWeight = finalWeight;
-    calculateFinalPrice(finalWeight);
-  };
 
   // 🚀 মূল ক্যালকুলেশন (ইউনিট ফিক্স সহ)
   function calculateFinalPrice(weight) {
@@ -6555,18 +6451,6 @@ async function assignClosestDeliveryBoy(orderId, order) {
     }
   };
 
-  // ৬. অর্ডার কনফার্ম করা
-  window.confirmCustomOrder = function() {
-    // টোটাল দাম এবং পরিমাণ বের করা
-    const totalPrice = parseFloat(document.getElementById('calc-res-total').innerText.replace('₹', ''));
-    const finalWeightStr = document.getElementById('calc-res-weight').innerText;
-    
-    // মডাল বন্ধ করা
-    document.getElementById('dlv-custom-calc-modal').classList.remove('active');
-    
-    // placeOrder ফাংশনে ডেটা পাঠানো (এখানে calcProduct এর ভেতরের ভ্যালুগুলো ব্যবহার করা হয়েছে)
-    placeOrder(calcProduct.prodId, `${calcProduct.name} (${finalWeightStr})`, totalPrice, calcProduct.shopId, calcProduct.shopName);
-  };
 
 // ==================== BULK EDITOR UI LOGIC (PART 1) ====================
 let bulkEditorRows = []; // এখানে টেবিলের ডেটা জমা থাকবে
@@ -7090,19 +6974,6 @@ window.handleCSVUpload = function(event) {
   </div>
 </div>
   
-  <!-- Shop Selection Modal -->
-<div id="dlv-shop-selector-modal" class="dlv-modal-overlay">
-  <div class="dlv-modal-content" style="max-height: 80vh; overflow-y: auto; border-radius: 20px 20px 0 0; position: absolute; bottom: 0; margin: 0; width: 100%; max-width: 100%;">
-    <div style="width: 40px; height: 4px; background: #ccc; border-radius: 4px; margin: 0 auto 15px;"></div>
-    <span class="dlv-modal-close" onclick="document.getElementById('dlv-shop-selector-modal').classList.remove('active')">&times;</span>
-    <h3 style="margin-bottom: 5px; color: var(--mp-primary);" id="shop-selector-title">দোকান সিলেক্ট করুন</h3>
-    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">আপনার এরিয়ার সেরা দামের দোকানগুলো:</p>
-    
-    <div id="shop-selector-list">
-      <!-- Shops will be loaded here -->
-    </div>
-  </div>
-</div>
 
 <!-- 🚀 Modern POS Billing Modal -->
 <div id="dlv-pos-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#f0f2f5; z-index:10005; flex-direction:column;">
