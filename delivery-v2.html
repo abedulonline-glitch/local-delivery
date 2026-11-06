@@ -2322,7 +2322,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     document.getElementById('dlv-smart-cart-modal').classList.add('active');
   };
   // ২. কার্টের UI আপডেট করা (টেবিল ও দাম)
-  window.updateSmartCartUI = function() {
+   window.updateSmartCartUI = function() {
     const tbody = document.getElementById('smart-cart-body');
     const subtotalEl = document.getElementById('cart-subtotal');
     const grandTotalEl = document.getElementById('cart-grand-total');
@@ -2341,16 +2341,19 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     let maxDistanceKm = 0; 
     let isAnyShopFree = false;
 
+    // ১. কার্টের প্রোডাক্ট লুপ ও ডেটা কালেকশন
     smartCart.forEach((item, index) => {
       const itemTotal = item.price * item.qty;
       subtotal += itemTotal;
       
+      // ওজন হিসাব (গ্রামে কনভার্ট করে)
       let w = item.baseWeight || 1;
       if (item.baseUnit === 'kg' || item.baseUnit === 'ltr') w = w * 1000;
       totalWeightGrams += w * item.qty;
 
+      // দোকানের সাথে কাস্টমারের দূরত্ব হিসাব (Haversine Formula)
       if (item.shopLat && item.shopLng && customerLat && customerLng) {
-         const R = 6371;
+         const R = 6371; // Earth radius in km
          const dLat = (item.shopLat - customerLat) * Math.PI / 180;
          const dLon = (item.shopLng - customerLng) * Math.PI / 180;
          const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(customerLat * Math.PI / 180) * Math.cos(item.shopLat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
@@ -2384,8 +2387,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
 
     tbody.innerHTML = html;
 
-    // 🚀 নতুন স্মার্ট ডেলিভারি চার্জ ক্যালকুলেশন লজিক
-    // 🚀 নতুন স্মার্ট ডেলিভারি চার্জ ক্যালকুলেশন লজিক (Fixed)
+    // 🚀 ২. নতুন স্মার্ট ডেলিভারি চার্জ ক্যালকুলেশন লজিক (Fixed)
     const deliveryMode = document.getElementById('cart-delivery-time').value;
     
     // অ্যাডমিনের সেট করা কনফিগ
@@ -2433,6 +2435,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     subtotalEl.innerText = `₹${subtotal.toFixed(2)}`;
     document.getElementById('cart-delivery-charge').innerText = `₹${finalDeliveryCharge.toFixed(2)}`;
     grandTotalEl.innerText = `₹${(subtotal + finalDeliveryCharge).toFixed(2)}`;
+  };
 
   // ৩. পরিমাণ (Qty) বাড়ানো বা কমানো
   window.changeCartQty = function(index, change) {
