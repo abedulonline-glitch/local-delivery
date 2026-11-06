@@ -2322,7 +2322,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     document.getElementById('dlv-smart-cart-modal').classList.add('active');
   };
   // ২. কার্টের UI আপডেট করা (টেবিল ও দাম)
-   window.updateSmartCartUI = function() {
+  window.updateSmartCartUI = function() {
     const tbody = document.getElementById('smart-cart-body');
     const subtotalEl = document.getElementById('cart-subtotal');
     const grandTotalEl = document.getElementById('cart-grand-total');
@@ -2339,20 +2339,18 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     let subtotal = 0;
     let totalWeightGrams = 0; 
     let maxDistanceKm = 0; 
-    let isAnyShopFree = false; // কোনো দোকান ফ্রি ডেলিভারি দিলে সেটি ট্র্যাক করার জন্য
+    let isAnyShopFree = false;
 
     smartCart.forEach((item, index) => {
       const itemTotal = item.price * item.qty;
       subtotal += itemTotal;
       
-      // ওজন হিসাব (গ্রামে কনভার্ট করে)
       let w = item.baseWeight || 1;
       if (item.baseUnit === 'kg' || item.baseUnit === 'ltr') w = w * 1000;
       totalWeightGrams += w * item.qty;
 
-      // দোকানের সাথে কাস্টমারের দূরত্ব হিসাব (Haversine Formula)
       if (item.shopLat && item.shopLng && customerLat && customerLng) {
-         const R = 6371; // Earth radius in km
+         const R = 6371;
          const dLat = (item.shopLat - customerLat) * Math.PI / 180;
          const dLon = (item.shopLng - customerLng) * Math.PI / 180;
          const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(customerLat * Math.PI / 180) * Math.cos(item.shopLat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
@@ -2386,46 +2384,50 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
 
     tbody.innerHTML = html;
 
- // 🚀 ডাইনামিক ডেলিভারি চার্জ ক্যালকুলেশন (Smart Logic)
+    // 🚀 নতুন স্মার্ট ডেলিভারি চার্জ ক্যালকুলেশন লজিক
     const deliveryMode = document.getElementById('cart-delivery-time').value;
-    let deliveryCharge = 0;
-
+    
+    // অ্যাডমিনের সেট করা কনফিগ
     const conf = globalSettings.delivery || { baseCharge: 15, perKmCharge: 2, perKgCharge: 2, urgentCharge: 15, isGlobalFree: false };
 
-    if (conf.isGlobalFree || isAnyShopFree) {
-      deliveryCharge = 0; // অ্যাডমিন বা দোকানদার ফ্রি করে দিলে
-    } else {
-      // ১. বেস ক্যালকুলেশন (দূরত্ব + ওজন + বেস চার্জ)
-      let baseCalculatedCharge = conf.baseCharge;
-      
-      // দূরত্বের চার্জ (প্রথম ২ কিমি ফ্রি)
-      if (maxDistanceKm > 2) {
-        baseCalculatedCharge += (maxDistanceKm - 2) * conf.perKmCharge;
-      }
-      
-      // ওজনের চার্জ
-      let weightKg = totalWeightGrams / 1000;
-      baseCalculatedCharge += weightKg * conf.perKgCharge;
+    // ১. স্বাভাবিক বেস চার্জ হিসাব (বেস + দূরত্ব + ওজন)
+    let normalCharge = conf.baseCharge;
+    if (maxDistanceKm > 2) {
+      normalCharge += (maxDistanceKm - 2) * conf.perKmCharge;
+    }
+    let weightKg = totalWeightGrams / 1000;
+    normalCharge += weightKg * conf.perKgCharge;
 
-      // ২. ডেলিভারি টাইম অনুযায়ী চার্জ পরিবর্তন
-      if (deliveryMode === 'urgent') {
-        // আর্জেন্ট: ফুল চার্জ + এক্সট্রা চার্জ
-        deliveryCharge = baseCalculatedCharge + conf.urgentCharge; 
-      } else if (deliveryMode === 'sameday') {
-        // সেম ডে: হাফ চার্জ (৫০%)
-        deliveryCharge = baseCalculatedCharge * 0.5; 
-      } else if (deliveryMode === 'nextday') {
-        // নেক্সট ডে: সম্পূর্ণ ফ্রি ডেলিভারি
-        deliveryCharge = 0; 
-      }
+    // ২. ফ্রি ডেলিভারি চেক (দোকানদার অথবা অ্যাডমিন)
+    let isFreeActive = (conf.isGlobalFree || isAnyShopFree);
+    let finalDeliveryCharge = 0;
 
-      // দশমিক সংখ্যা বাদ দেওয়ার জন্য Math.ceil
-      deliveryCharge = Math.ceil(deliveryCharge); 
+    // ৩. আপনার দেওয়া শর্ত অনুযায়ী লজিক
+    if (deliveryMode === 'urgent') {
+        // আর্জেন্ট: সবসময় বেস + বাড়তি চার্জ (ফ্রি টগল থাকলেও আর্জেন্টে চার্জ লাগবে)
+        finalDeliveryCharge = normalCharge + conf.urgentCharge;
+    } 
+    else if (deliveryMode === 'sameday') {
+        // সেম ডে: সবসময় অর্ধেক চার্জ
+        finalDeliveryCharge = normalCharge / 2;
+    } 
+    else if (deliveryMode === 'nextday') {
+        // নেক্সট ডে: টগল অন থাকলে ফ্রি, অফ থাকলে অর্ধেক চার্জ
+        if (isFreeActive) {
+            finalDeliveryCharge = 0;
+        } else {
+            finalDeliveryCharge = normalCharge / 2;
+        }
     }
 
+    // দশমিক সংখ্যা বাদ দেওয়া (যেমন: ২৫.৫০ কে ২৬ করা)
+    finalDeliveryCharge = Math.ceil(finalDeliveryCharge);
+    if (finalDeliveryCharge < 0) finalDeliveryCharge = 0;
+
+    // UI আপডেট
     subtotalEl.innerText = `₹${subtotal.toFixed(2)}`;
-    document.getElementById('cart-delivery-charge').innerText = `₹${deliveryCharge.toFixed(2)}`;
-    grandTotalEl.innerText = `₹${(subtotal + deliveryCharge).toFixed(2)}`;
+    document.getElementById('cart-delivery-charge').innerText = `₹${finalDeliveryCharge.toFixed(2)}`;
+    grandTotalEl.innerText = `₹${(subtotal + finalDeliveryCharge).toFixed(2)}`;
   };
 
   // ৩. পরিমাণ (Qty) বাড়ানো বা কমানো
