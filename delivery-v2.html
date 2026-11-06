@@ -750,9 +750,7 @@
        <!-- ==================== MANAGER DASHBOARD ==================== -->
 <div id="dlv-view-manager" class="mp-hidden">
   <!-- 🚀 নতুন অর্ডারের জন্য সাউন্ড ফাইল -->
-  <audio id="mgr-notify-sound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2447ec3bdf.mp3?filename=notification-alert-98342.mp3" preload="auto"></audio>
-  <div class="dlv-dashboard-title" style="display: flex; justify-content: space-between; align-items: center;">
-    <span>👨‍💼 ম্যানেজার ড্যাশবোর্ড</span>
+  <audio id="mgr-notify-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>   <span>👨‍💼 ম্যানেজার ড্যাশবোর্ড</span>
     <!-- 🚀 নতুন অর্ডার অ্যালার্ট ব্যাজ -->
     <span id="mgr-alert-badge" class="mp-hidden" style="background: var(--mp-danger); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; animation: pulse 1s infinite;">🔔 নতুন অর্ডার</span>
   </div>
@@ -2238,16 +2236,81 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
   };
 
   // সার্চ, ফিল্টার এবং গ্রুপিং লজিক
-  window.filterCustomerProducts = function() {
+   window.filterCustomerProducts = function() {
     const grid = document.getElementById('cst-product-grid');
     const searchInput = document.getElementById('cst-search-input');
     const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
     
     let filteredBySearch = allRawProducts.filter(p => {
-      // 🚀 সার্চে ট্যাগ (যেমন: sale) দিয়েও খোঁজা যাবে
       const matchesTag = p.tags && p.tags.some(t => t.toLowerCase().includes(searchQuery));
       const matchesSearch = p.name.toLowerCase().includes(searchQuery) || (p.category && p.category.toLowerCase().includes(searchQuery)) || matchesTag;
+      const matchesCat = currentCategory === 'all' || (p.category && p.category === currentCategory);
+      return matchesSearch && matchesCat;
+    });
+
+    let validProducts = filteredBySearch.filter(p => {
+      let distance = 0;
+      let hasShopLoc = (p.shopLat !== null && p.shopLat !== undefined && !isNaN(p.shopLat) && p.shopLat !== '');
+      let hasCustLoc = (customerLat !== null && customerLat !== undefined && !isNaN(customerLat) && customerLat !== '');
+
+      if (hasShopLoc && hasCustLoc) {
+        const shopLoc = L.latLng(parseFloat(p.shopLat), parseFloat(p.shopLng));
+        const custLoc = L.latLng(parseFloat(customerLat), parseFloat(customerLng));
+        distance = shopLoc.distanceTo(custLoc) / 1000; 
+        if (distance > maxDistance) return false; 
+      }
+      return true;
+    });
+
+    let grouped = {};
+    validProducts.forEach(p => {
+      const key = p.name.toLowerCase() + '_' + (p.unit || '');
+      if (!grouped[key]) {
+        grouped[key] = { name: p.name, category: p.category, unit: p.unit, grade: p.grade, image: p.image, shops: [], tags: p.tags || [] };
+      }
+      grouped[key].shops.push(p);
+    });
+
+    groupedProducts = Object.values(grouped);
+    groupedProducts.forEach(g => { g.shops.sort((a, b) => a.price - b.price); });
+
+    grid.innerHTML = '';
+    if(groupedProducts.length === 0) {
+      grid.innerHTML = '<div style="font-size:13px; color:#999; grid-column:1/-1; text-align:center; padding: 20px;">এই রেঞ্জে কোনো প্রোডাক্ট পাওয়া যায়নি। রেঞ্জ বাড়িয়ে দেখুন।</div>';
+      return;
+    }
+
+    groupedProducts.forEach(g => {
+      const lowestPriceShop = g.shops[0]; 
       
+      let tagHtml = '';
+      if (lowestPriceShop.tags && lowestPriceShop.tags.length > 0) {
+        let mainTag = lowestPriceShop.tags[0]; 
+        let tagBg = mainTag === '50% OFF' ? '#d93025' : '#0f9d58'; 
+        tagHtml = `
+          <div onclick="event.stopPropagation(); showTagPopup('${mainTag}', '${g.name.replace(/'/g, "\\'")}')" 
+               style="position:absolute; bottom:6px; left:6px; background:${tagBg}; color:white; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer; z-index:10; box-shadow:0 2px 4px rgba(0,0,0,0.2);">
+            🏷️ ${mainTag}
+          </div>
+        `;
+      }
+
+      grid.innerHTML += `
+        <div class="dlv-product-card" onclick="addToSmartCart('${lowestPriceShop.id}', '${g.name.replace(/'/g, "\\'")}', '${g.unit || 'pcs'}', ${lowestPriceShop.price}, '${lowestPriceShop.shopId}', '${lowestPriceShop.shopName.replace(/'/g, "\\'")}', ${lowestPriceShop.stock}, ${lowestPriceShop.baseWeight || 1}, '${lowestPriceShop.baseUnit || g.unit}')">
+          <div class="dlv-product-img-wrap" style="position: relative;">
+            ${g.image ? `<img src="${g.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
+            ${tagHtml}
+            <span class="dlv-badge-grade">${g.grade || 'A'}</span>
+            <span class="dlv-badge-stock" style="background:var(--mp-success);">Best Price</span>
+          </div>
+          <div class="dlv-product-name" title="${g.name}">${g.name}</div>
+          <div class="dlv-product-meta"><span>⚖️ ${g.unit || 'pcs'}</span></div>
+          <div class="dlv-product-price">₹${lowestPriceShop.price}</div>
+          <button class="dlv-add-btn">🛒 অ্যাড করুন</button>
+        </div>
+      `;
+    });
+  };
 window.filterCustomerProducts = function() {
   const grid = document.getElementById('cst-product-grid');
   const searchInput = document.getElementById('cst-search-input');
@@ -2607,11 +2670,10 @@ window.filterCustomerProducts = function() {
       
       document.getElementById('dlv-payment-modal').classList.remove('active');
       
-      // 🚀 ২. সারপ্রাইজ গিফট লজিক (এখানেই বসানো হলো)
+      // 🚀 ২. সারপ্রাইজ গিফট লজিক
       let giftMessage = "";
       if (calcProduct && calcProduct.giftSlabs && calcProduct.giftSlabs.length > 0) {
         let applicableGift = null;
-        // কাস্টমারের বিলের চেয়ে ছোট বা সমান সবচেয়ে বড় স্ল্যাব খোঁজা
         for (let i = calcProduct.giftSlabs.length - 1; i >= 0; i--) {
           if (tempOrderData.price >= calcProduct.giftSlabs[i].slab) {
             applicableGift = calcProduct.giftSlabs[i];
@@ -3601,7 +3663,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
   
   window.saveShopProduct = async function() {
-    // ১. বেসিক ডেটা সংগ্রহ
     const price = parseFloat(document.getElementById('sp-price').value) || 0;
     const baseWeight = parseFloat(document.getElementById('sp-base-weight').value) || 1;
     const baseUnit = document.getElementById('sp-base-unit').value;
@@ -3612,19 +3673,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (price <= 0 || baseWeight <= 0) return alert("সঠিক ডিফল্ট দাম এবং ওজন দিন!");
 
-    // ২. অফার ট্যাগ সংগ্রহ
+    // ১. অফার ট্যাগ সংগ্রহ
     let selectedTags = [];
     document.querySelectorAll('.offer-tag:checked').forEach(cb => {
       selectedTags.push(cb.value);
     });
 
-    // ৩. স্মার্ট প্রাইসিং ডেটা সংগ্রহ
+    // ২. স্মার্ট প্রাইসিং
     const isSmartPricing = document.getElementById('sp-enable-smart-pricing').checked;
     let discountTiers = [];
     let extraChargeTiers = [];
     
     if (isSmartPricing) {
-      // ডিসকাউন্ট লেয়ার
       document.querySelectorAll('#sp-discount-tiers-container > div').forEach(row => {
         const qty = parseFloat(row.querySelector('.tier-qty').value);
         const pct = parseFloat(row.querySelector('.tier-pct').value);
@@ -3634,7 +3694,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       discountTiers.sort((a, b) => a.qty - b.qty);
 
-      // বাড়তি চার্জ লেয়ার
       document.querySelectorAll('#sp-extra-charge-tiers-container > div').forEach(row => {
         const qty = parseFloat(row.querySelector('.extra-qty').value);
         const pct = parseFloat(row.querySelector('.extra-pct').value);
@@ -3645,25 +3704,12 @@ document.addEventListener("DOMContentLoaded", () => {
       extraChargeTiers.sort((a, b) => b.qty - a.qty); 
     }
 
-    // ৪. ভ্যারিয়েন্ট ম্যাট্রিক্স ডেটা সংগ্রহ
+    // ৩. ভ্যারিয়েন্ট ম্যাট্রিক্স
     let variants = [];
-    // 🎁 গিফট ডেটা সংগ্রহ
-    let giftSlabs = [];
-    document.querySelectorAll('#sp-gift-container > div').forEach(row => {
-      const slab = parseFloat(row.querySelector('.gift-slab').value);
-      const name = row.querySelector('.gift-name').value.trim();
-      const val = parseFloat(row.querySelector('.gift-val').value);
-      if (!isNaN(slab) && name && !isNaN(val)) {
-        giftSlabs.push({ slab: slab, name: name, val: val });
-      }
-    });
-    giftSlabs.sort((a, b) => a.slab - b.slab);
-    
     const thead = document.getElementById('matrix-thead');
     const tbody = document.getElementById('matrix-tbody');
-    
-    // হেডার থেকে সাইজ ও ইউনিট বের করা
     let sizes = [];
+    
     if(thead && thead.rows.length > 0) {
       let ths = thead.rows[0].querySelectorAll('th');
       for(let i = 1; i < ths.length; i++) {
@@ -3675,7 +3721,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // বডি থেকে ব্র্যান্ড ও দাম বের করা
     if(tbody && tbody.rows.length > 0) {
       for(let r = 0; r < tbody.rows.length; r++) {
         let brandInput = tbody.rows[r].querySelector('.matrix-brand-name');
@@ -3687,24 +3732,32 @@ document.addEventListener("DOMContentLoaded", () => {
         for(let c = 0; c < priceInputs.length; c++) {
           if(sizes[c] && priceInputs[c].value !== '') {
             variants.push({
-              brand: brandName,
-              size: sizes[c].size,
-              unit: sizes[c].unit,
-              price: parseFloat(priceInputs[c].value)
+              brand: brandName, size: sizes[c].size, unit: sizes[c].unit, price: parseFloat(priceInputs[c].value)
             });
           }
         }
       }
     }
 
-    // ৫. বাটন লোডিং স্টেট
+    // ৪. সারপ্রাইজ গিফট
+    let giftSlabs = [];
+    document.querySelectorAll('#sp-gift-container > div').forEach(row => {
+      const slab = parseFloat(row.querySelector('.gift-slab').value);
+      const name = row.querySelector('.gift-name').value.trim();
+      const val = parseFloat(row.querySelector('.gift-val').value);
+      if (!isNaN(slab) && name && !isNaN(val)) {
+        giftSlabs.push({ slab: slab, name: name, val: val });
+      }
+    });
+    giftSlabs.sort((a, b) => a.slab - b.slab);
+
+    // ৫. সেভ করা
     const modalBtn = document.querySelector('#dlv-set-price-modal .mp-btn-success');
     const originalText = modalBtn.innerText;
     modalBtn.innerText = "⏳ সেভ হচ্ছে..."; 
     modalBtn.disabled = true;
 
     try {
-      // ৬. ফাইনাল ডেটা অবজেক্ট তৈরি
       const productData = {
         shopId: currentUser.uid,
         shopName: globalUserData.name || 'Unknown',
@@ -3712,27 +3765,22 @@ document.addEventListener("DOMContentLoaded", () => {
         name: selectedMasterProduct.name || 'Unknown',
         category: selectedMasterProduct.category || 'General',
         image: selectedMasterProduct.image || '',
-        
         price: price,
         baseWeight: baseWeight,
         baseUnit: baseUnit,
         packagingCharge: packagingCharge,
         stock: stock,
         stockUnit: stockUnit,
-        giftSlabs: giftSlabs,
         grade: grade,
-        
-        // স্মার্ট ফিল্ডসমূহ
         isSmartPricing: isSmartPricing,
         discountTiers: discountTiers,
         extraChargeTiers: extraChargeTiers,
         variants: variants, 
-        tags: selectedTags, // 🚀 ট্যাগ এখানে যুক্ত হলো
-        
+        tags: selectedTags,
+        giftSlabs: giftSlabs,
         updatedAt: serverTimestamp()
       };
 
-      // ৭. ডেটাবেসে সেভ/আপডেট
       if (selectedMasterProduct.docId) {
         await updateDoc(doc(db, "products", selectedMasterProduct.docId), productData);
         alert("প্রোডাক্ট সফলভাবে আপডেট হয়েছে!");
