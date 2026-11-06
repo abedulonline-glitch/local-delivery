@@ -2386,36 +2386,41 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
 
     tbody.innerHTML = html;
 
-    // 🚀 ডাইনামিক ডেলিভারি চার্জ ক্যালকুলেশন
+ // 🚀 ডাইনামিক ডেলিভারি চার্জ ক্যালকুলেশন (Smart Logic)
     const deliveryMode = document.getElementById('cart-delivery-time').value;
     let deliveryCharge = 0;
 
-    // অ্যাডমিনের সেট করা কনফিগ (যদি না থাকে তবে ডিফল্ট মান)
     const conf = globalSettings.delivery || { baseCharge: 15, perKmCharge: 2, perKgCharge: 2, urgentCharge: 15, isGlobalFree: false };
 
     if (conf.isGlobalFree || isAnyShopFree) {
       deliveryCharge = 0; // অ্যাডমিন বা দোকানদার ফ্রি করে দিলে
     } else {
-      // ১. বেস চার্জ
-      let calculatedCharge = conf.baseCharge;
+      // ১. বেস ক্যালকুলেশন (দূরত্ব + ওজন + বেস চার্জ)
+      let baseCalculatedCharge = conf.baseCharge;
       
-      // ২. দূরত্বের চার্জ (প্রথম ২ কিমি ফ্রি, এরপর প্রতি কিমি)
+      // দূরত্বের চার্জ (প্রথম ২ কিমি ফ্রি)
       if (maxDistanceKm > 2) {
-        calculatedCharge += (maxDistanceKm - 2) * conf.perKmCharge;
+        baseCalculatedCharge += (maxDistanceKm - 2) * conf.perKmCharge;
       }
       
-      // ৩. ওজনের চার্জ (প্রতি কেজিতে)
+      // ওজনের চার্জ
       let weightKg = totalWeightGrams / 1000;
-      calculatedCharge += weightKg * conf.perKgCharge;
+      baseCalculatedCharge += weightKg * conf.perKgCharge;
 
-      // ৪. আর্জেন্ট চার্জ
+      // ২. ডেলিভারি টাইম অনুযায়ী চার্জ পরিবর্তন
       if (deliveryMode === 'urgent') {
-        calculatedCharge += conf.urgentCharge;
+        // আর্জেন্ট: ফুল চার্জ + এক্সট্রা চার্জ
+        deliveryCharge = baseCalculatedCharge + conf.urgentCharge; 
+      } else if (deliveryMode === 'sameday') {
+        // সেম ডে: হাফ চার্জ (৫০%)
+        deliveryCharge = baseCalculatedCharge * 0.5; 
       } else if (deliveryMode === 'nextday') {
-        calculatedCharge = calculatedCharge * 0.8; // নেক্সট ডে-তে ২০% ছাড়
+        // নেক্সট ডে: সম্পূর্ণ ফ্রি ডেলিভারি
+        deliveryCharge = 0; 
       }
 
-      deliveryCharge = Math.ceil(calculatedCharge); // পাইসা বাদ দেওয়ার জন্য
+      // দশমিক সংখ্যা বাদ দেওয়ার জন্য Math.ceil
+      deliveryCharge = Math.ceil(deliveryCharge); 
     }
 
     subtotalEl.innerText = `₹${subtotal.toFixed(2)}`;
@@ -2618,7 +2623,11 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       loadShopNewOrders();
       loadCategoriesForDropdowns();
       
-      // 🚀 নতুন যোগ করা হলো: পেজ রিফ্রেশে বাল্ক ডিসকাউন্ট টগলের স্টেটাস সেট করা
+      // 🚀 নতুন যোগ করা হলো: পেজ রিফ্রেশে টগলের স্টেটাস লোড করা
+      const freeDelToggle = document.getElementById('toggle-shop-free-delivery');
+      if (freeDelToggle) freeDelToggle.checked = globalUserData.freeDelivery || false;
+      
+  // 🚀 নতুন যোগ করা হলো: পেজ রিফ্রেশে বাল্ক ডিসকাউন্ট টগলের স্টেটাস সেট করা
       const bulkToggle = document.getElementById('toggle-bulk-discount');
       if (bulkToggle) {
         bulkToggle.checked = globalUserData.isBulkDiscountActive || false;
@@ -3824,6 +3833,7 @@ document.addEventListener("DOMContentLoaded", () => {
         variants: variants, 
         tags: selectedTags,
         giftSlabs: giftSlabs,
+        freeDelivery: globalUserData.freeDelivery || false, // 🚀 এই লাইনটি যোগ করুন
         updatedAt: serverTimestamp()
       };
 
@@ -7042,13 +7052,25 @@ window.handleCSVUpload = function(event) {
 
   window.handleShopFreeDelivery = async function(isChecked) {
     try {
+      // ১. ইউজার প্রোফাইলে সেভ করা
       await updateDoc(doc(db, "users", currentUser.uid), { freeDelivery: isChecked });
       globalUserData.freeDelivery = isChecked;
+
+      // ২. দোকানদারের সব প্রোডাক্টে freeDelivery আপডেট করা
+      const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+      const snap = await getDocs(q);
+      const updates = [];
+      snap.forEach((pDoc) => {
+        updates.push(updateDoc(doc(db, "products", pDoc.id), { freeDelivery: isChecked }));
+      });
+      await Promise.all(updates);
+
       alert(isChecked ? "🎉 আপনার সব প্রোডাক্টে ফ্রি ডেলিভারি চালু হলো!" : "ফ্রি ডেলিভারি বন্ধ করা হলো।");
-    } catch(e) { alert("সমস্যা হয়েছে!"); }
-  };
-  // এবং setupUIForRole এর shopkeeper অংশে টগলটি লোড করে দিতে হবে:
-  // document.getElementById('toggle-shop-free-delivery').checked = userData.freeDelivery || false;     
+    } catch(e) { 
+      console.error(e);
+      alert("সমস্যা হয়েছে!"); 
+    }
+  };     
 
 </script>
 
