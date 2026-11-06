@@ -596,10 +596,16 @@
     </div>   
 
     <!-- ২. Free Delivery Toggle -->
+    <!-- ২. Free Delivery Toggle -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee;">
       <div style="flex: 1; padding-right: 15px;">
         <div style="font-size: 14px; font-weight: bold; color: #0f9d58;">🎁 সবসময় ফ্রি ডেলিভারি</div>
         <div style="font-size: 11px; color: #666; margin-top: 4px;">এটি অন করলে আপনার প্রোডাক্টে ডেলিভারি চার্জ ০ হবে (কাস্টমার খুশি হবে)।</div>
+        
+        <!-- 🚀 নতুন নোটিশ বক্স (শুধু অ্যাডমিন গ্লোবাল ফ্রি ডেলিভারি অন থাকলে দেখাবে) -->
+        <div id="global-free-notice" class="mp-hidden" style="margin-top: 6px; font-size: 10px; color: #d93025; background: #fce8e6; padding: 4px 8px; border-radius: 4px; display: inline-block;">
+          ⚠️ বর্তমানে অ্যাডমিন সবার জন্য ফ্রি ডেলিভারি চালু রেখেছেন।
+        </div>
       </div>
       <label class="dlv-switch" style="margin: 0;">
         <input type="checkbox" id="toggle-shop-free-delivery" onchange="handleShopFreeDelivery(this.checked)">
@@ -3009,6 +3015,16 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     if (standaloneToggle) standaloneToggle.checked = globalUserData.isStandalone || false;
     if (selfDeliveryToggle) selfDeliveryToggle.checked = globalUserData.selfDeliveryOnly || false;
 
+    // 🚀 অ্যাডমিনের গ্লোবাল ফ্রি ডেলিভারি চেক করে নোটিশ দেখানো (এখানেই বসানো হলো)
+    if (globalSettings && globalSettings.delivery && globalSettings.delivery.isGlobalFree) {
+      const notice = document.getElementById('global-free-notice');
+      if(notice) notice.classList.remove('mp-hidden');
+    } else {
+      const notice = document.getElementById('global-free-notice');
+      if(notice) notice.classList.add('mp-hidden');
+    }
+
+    // প্রোডাক্ট লিস্ট রেন্ডার করা
     const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
     onSnapshot(q, (snapshot) => {
       if (snapshot.empty) {
