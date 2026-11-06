@@ -1237,7 +1237,60 @@
   </div>
 </div>
 
-<!-- Shopkeeper Khata Modal -->
+<!-- 🚀 Smart Customer POS / Cart Modal -->
+<div id="dlv-smart-cart-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-smart-cart-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">🛒 আমার কার্ট</h3>
+    
+    <!-- ডেলিভারি টাইম সিলেকশন -->
+    <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+      <label style="font-size: 12px; font-weight: bold; color: #555; margin-bottom: 8px; display: block;">ডেলিভারি টাইম সিলেক্ট করুন:</label>
+      <select id="cart-delivery-time" class="dlv-input" style="padding: 8px; font-size: 13px;">
+        <option value="urgent">⚡ আর্জেন্ট (৩০-৪৫ মিনিট) [এক্সট্রা চার্জ]</option>
+        <option value="sameday" selected>☀️ সেম ডে (আজকের মধ্যে)</option>
+        <option value="nextday">📅 নেক্সট ডে (আগামীকাল সকাল)</option>
+      </select>
+    </div>
+
+    <!-- প্রোডাক্ট টেবিল -->
+    <div style="overflow-x: auto; margin-bottom: 15px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px;" id="smart-cart-table">
+        <thead>
+          <tr style="background: #e8f0fe; color: var(--mp-primary);">
+            <th style="padding: 8px; text-align: left;">প্রোডাক্ট</th>
+            <th style="padding: 8px; text-align: center;">পরিমাণ</th>
+            <th style="padding: 8px; text-align: right;">দাম</th>
+            <th style="padding: 8px; text-align: center;">❌</th>
+          </tr>
+        </thead>
+        <tbody id="smart-cart-body">
+          <!-- JS দিয়ে রো তৈরি হবে -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- বিল সামারি -->
+    <div style="background: #fff3e0; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffe082;">
+      <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px;">
+        <span>সাব-টোটাল:</span>
+        <b id="cart-subtotal">₹0.00</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px;">
+        <span>ডেলিভারি চার্জ (AI):</span>
+        <b id="cart-delivery-charge">₹10.00</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; color: var(--mp-danger); border-top: 1px dashed #ccc; padding-top: 5px; margin-top: 5px;">
+        <span>সর্বমোট:</span>
+        <span id="cart-grand-total">₹0.00</span>
+      </div>
+    </div>
+
+    <button class="mp-btn mp-btn-success" onclick="proceedToCartCheckout()">💳 চেকআউট করুন</button>
+  </div>
+</div>
+  
+  <!-- Shopkeeper Khata Modal -->
 <div id="dlv-shop-khata-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 80vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="closeShopKhataModal()">&times;</span>
@@ -2311,98 +2364,110 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       `;
     });
   };
-window.filterCustomerProducts = function() {
-  const grid = document.getElementById('cst-product-grid');
-  const searchInput = document.getElementById('cst-search-input');
-  const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
-  
-  let filteredBySearch = allRawProducts.filter(p => {
-    // 🚀 সার্চে ট্যাগ (যেমন: sale) দিয়েও খোঁজা যাবে
-    const matchesTag = p.tags && p.tags.some(t => t.toLowerCase().includes(searchQuery));
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery) || (p.category && p.category.toLowerCase().includes(searchQuery)) || matchesTag;
-    
-    const matchesCat = currentCategory === 'all' || (p.category && p.category === currentCategory);
-    return matchesSearch && matchesCat;
-  });
 
-  let validProducts = filteredBySearch.filter(p => {
-    let distance = 0;
-    
-    // 🚀 আসল বাগ ফিক্স: null চেক করা হচ্ছে
-    let hasShopLoc = (p.shopLat !== null && p.shopLat !== undefined && !isNaN(p.shopLat) && p.shopLat !== '');
-    let hasCustLoc = (customerLat !== null && customerLat !== undefined && !isNaN(customerLat) && customerLat !== '');
+  // ==================== SMART CART LOGIC ====================
+  let smartCart = []; // কার্টের ডেটা এখানে জমা হবে
 
-    if (hasShopLoc && hasCustLoc) {
-      const shopLoc = L.latLng(parseFloat(p.shopLat), parseFloat(p.shopLng));
-      const custLoc = L.latLng(parseFloat(customerLat), parseFloat(customerLng));
-      distance = shopLoc.distanceTo(custLoc) / 1000; // কিমি
-      
-      if (distance > maxDistance) return false; // দূরত্ব বেশি হলে বাদ
+  // ১. কার্টে প্রোডাক্ট অ্যাড করা
+  window.addToSmartCart = function(prodId, name, unit, price, shopId, shopName, stock, baseWeight, baseUnit) {
+    // চেক করা হচ্ছে প্রোডাক্টটি আগেই কার্টে আছে কি না
+    const existingItemIndex = smartCart.findIndex(item => item.prodId === prodId);
+
+    if (existingItemIndex > -1) {
+      // যদি থাকে তবে পরিমাণ ১ বাড়বে
+      smartCart[existingItemIndex].qty += 1;
+    } else {
+      // নতুন আইটেম হলে কার্টে যোগ হবে
+      smartCart.push({
+        prodId, name, unit, price, shopId, shopName, stock, 
+        baseWeight, baseUnit, 
+        qty: 1, 
+        displayShopName: "✅ ভেরিফাইড লোকাল স্টোর" // দোকানের আসল নাম হাইড করে AI নাম দেওয়া হলো
+      });
     }
-    return true;
-  });
 
-  let grouped = {};
-  validProducts.forEach(p => {
-    const key = p.name.toLowerCase() + '_' + (p.unit || '');
-    if (!grouped[key]) {
-      // 🚀 গ্রুপিং-এর সময় ট্যাগগুলোও সেভ করে রাখছি
-      grouped[key] = { name: p.name, category: p.category, unit: p.unit, grade: p.grade, image: p.image, shops: [], tags: p.tags || [] };
-    }
-    grouped[key].shops.push(p);
-  });
+    // কার্ট আপডেট ও মডাল ওপেন করা
+    updateSmartCartUI();
+    document.getElementById('dlv-smart-cart-modal').classList.add('active');
+  };
 
-  groupedProducts = Object.values(grouped);
-  groupedProducts.forEach(g => { g.shops.sort((a, b) => a.price - b.price); });
-
-  grid.innerHTML = '';
-  if(groupedProducts.length === 0) {
-    grid.innerHTML = '<div style="font-size:13px; color:#999; grid-column:1/-1; text-align:center; padding: 20px;">এই রেঞ্জে কোনো প্রোডাক্ট পাওয়া যায়নি। রেঞ্জ বাড়িয়ে দেখুন।</div>';
-    return;
-  }
-
-  groupedProducts.forEach(g => {
-    const lowestPriceShop = g.shops[0]; 
-    const totalShops = g.shops.length;
+  // ২. কার্টের UI আপডেট করা (টেবিল ও দাম)
+  window.updateSmartCartUI = function() {
+    const tbody = document.getElementById('smart-cart-body');
+    const subtotalEl = document.getElementById('cart-subtotal');
+    const grandTotalEl = document.getElementById('cart-grand-total');
     
-    // 🚀 ট্যাগ চেক করার লজিক
-    let tagHtml = '';
-    if (lowestPriceShop.tags && lowestPriceShop.tags.length > 0) {
-      let mainTag = lowestPriceShop.tags[0]; 
-      let tagBg = mainTag === '50% OFF' ? '#d93025' : '#0f9d58'; // লাল বা সবুজ
-      tagHtml = `
-        <div onclick="event.stopPropagation(); showTagPopup('${mainTag}', '${g.name.replace(/'/g, "\\'")}')" 
-             style="position:absolute; bottom:6px; left:6px; background:${tagBg}; color:white; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer; z-index:10; box-shadow:0 2px 4px rgba(0,0,0,0.2);">
-          🏷️ ${mainTag}
-        </div>
+    if (smartCart.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">কার্ট খালি আছে।</td></tr>';
+      subtotalEl.innerText = '₹0.00';
+      grandTotalEl.innerText = '₹0.00';
+      return;
+    }
+
+    let html = '';
+    let subtotal = 0;
+
+    smartCart.forEach((item, index) => {
+      const itemTotal = item.price * item.qty;
+      subtotal += itemTotal;
+
+      html += `
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 8px;">
+            <div style="font-weight: bold; color: #333;">${item.name}</div>
+            <div style="font-size: 10px; color: #666;">🏪 ${item.displayShopName}</div>
+          </td>
+          <td style="padding: 8px; text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+              <button onclick="changeCartQty(${index}, -1)" style="background: #f0f2f5; border: none; border-radius: 4px; padding: 2px 8px; font-weight: bold; cursor: pointer;">-</button>
+              <span style="font-weight: bold; font-size: 13px;">${item.qty}</span>
+              <button onclick="changeCartQty(${index}, 1)" style="background: #e8f0fe; color: var(--mp-primary); border: none; border-radius: 4px; padding: 2px 8px; font-weight: bold; cursor: pointer;">+</button>
+            </div>
+          </td>
+          <td style="padding: 8px; text-align: right; font-weight: bold; color: var(--mp-primary);">₹${itemTotal.toFixed(2)}</td>
+          <td style="padding: 8px; text-align: center;">
+            <button onclick="removeFromSmartCart(${index})" style="background: none; border: none; color: var(--mp-danger); font-size: 16px; cursor: pointer;">&times;</button>
+          </td>
+        </tr>
       `;
-    }
+    });
 
-    // 🚀 দোকানের নাম হাইড করে সরাসরি কার্টে অ্যাড করার ফাংশন কল
-    // এখানে lowestPriceShop থেকে প্রয়োজনীয় সব ডেটা পাঠানো হচ্ছে
-    grid.innerHTML += `
-      <div class="dlv-product-card" onclick="addToSmartCart('${lowestPriceShop.id}', '${g.name.replace(/'/g, "\\'")}', '${g.unit || 'pcs'}', ${lowestPriceShop.price}, '${lowestPriceShop.shopId}', '${lowestPriceShop.shopName.replace(/'/g, "\\'")}', ${lowestPriceShop.stock}, ${lowestPriceShop.baseWeight || 1}, '${lowestPriceShop.baseUnit || g.unit}')">
-        
-        <div class="dlv-product-img-wrap" style="position: relative;">
-          ${g.image ? `<img src="${g.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
-          
-          ${tagHtml}
-          
-          <span class="dlv-badge-grade">${g.grade || 'A'}</span>
-          <!-- 🚀 "1 Shops" এর বদলে "Best Price" দেখানো হলো কারণ দোকান হাইড করা হলো -->
-          <span class="dlv-badge-stock" style="background:var(--mp-success);">Best Price</span>
-        </div>
-        
-        <div class="dlv-product-name" title="${g.name}">${g.name}</div>
-        <div class="dlv-product-meta"><span>⚖️ ${g.unit || 'pcs'}</span></div>
-        <div class="dlv-product-price">₹${lowestPriceShop.price}</div>
-        
-        <!-- 🚀 বাটনের টেক্সট পরিবর্তন করা হলো -->
-        <button class="dlv-add-btn">🛒 অ্যাড করুন</button>
-      </div>
-    `;
-  });
-};
+    tbody.innerHTML = html;
+
+    // ডেলিভারি চার্জের হিসাব (আপাতত ফিক্সড ₹১০)
+    let deliveryCharge = 10.00; 
+    
+    subtotalEl.innerText = `₹${subtotal.toFixed(2)}`;
+    document.getElementById('cart-delivery-charge').innerText = `₹${deliveryCharge.toFixed(2)}`;
+    grandTotalEl.innerText = `₹${(subtotal + deliveryCharge).toFixed(2)}`;
+  };
+
+  // ৩. পরিমাণ (Qty) বাড়ানো বা কমানো
+  window.changeCartQty = function(index, change) {
+    smartCart[index].qty += change;
+    if (smartCart[index].qty <= 0) {
+      smartCart.splice(index, 1); // ০ হয়ে গেলে কার্ট থেকে বাদ যাবে
+    }
+    updateSmartCartUI();
+  };
+
+  // ৪. কার্ট থেকে ডিলিট করা
+  window.removeFromSmartCart = function(index) {
+    smartCart.splice(index, 1);
+    updateSmartCartUI();
+  };
+
+  // ৫. চেকআউটে যাওয়া (এখানে পরবর্তী ধাপে পেমেন্ট লজিক বসবে)
+  window.proceedToCartCheckout = function() {
+    if (smartCart.length === 0) return alert("কার্টে কোনো প্রোডাক্ট নেই!");
+    
+    // এখানে আমরা পরে পেমেন্ট মডাল বা অ্যাড্রেস সিলেকশন ওপেন করব
+    alert("চেকআউট সাকসেসফুল! পরবর্তী ধাপে পেমেন্ট সিস্টেম কানেক্ট করা হবে।");
+    
+    // আপাতত মডাল বন্ধ করে দিচ্ছি
+    document.getElementById('dlv-smart-cart-modal').classList.remove('active');
+  };
+      
    // ==================== SHOP SELECTOR MODAL ====================
   let currentGroupName = null;
 
