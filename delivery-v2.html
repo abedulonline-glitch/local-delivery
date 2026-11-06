@@ -847,7 +847,7 @@
 </div>
 <!-- ==================== MANAGER DASHBOARD END ==================== -->
     
-    <!-- ==================== ADMIN DASHBOARD ==================== -->
+<!-- ==================== ADMIN DASHBOARD ==================== -->
 <div id="dlv-view-admin" class="mp-hidden">
   <div class="dlv-dashboard-title">👑 অ্যাডমিন কন্ট্রোল প্যানেল</div>
   
@@ -959,7 +959,7 @@
     <button class="mp-btn mp-btn-primary" style="margin-top: 5px;" onclick="saveSystemSettings()" id="btn-save-settings">💾 সব সেটিংস সেভ করুন</button>
   </div>
 
-  <!-- লাইভ অর্ডার ফিড (নতুন স্মার্ট সেকশন) -->
+  <!-- লাইভ অর্ডার ফিড -->
   <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
     <h3>📊 সর্বশেষ অর্ডারসমূহ (লাইভ)</h3>
     <div id="admin-live-orders" style="max-height: 200px; overflow-y: auto;">
@@ -967,45 +967,38 @@
     </div>
   </div>
 
- 
   <!-- মাস্টার প্রোডাক্ট সেকশন -->
-<div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
-  <h3 style="justify-content: space-between;">
-    🏷️ মাস্টার প্রোডাক্ট
-    <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
-    <button class="mp-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px; background: #7b1fa2; color: white;" onclick="openBulkEditor()">📦 বাল্ক</button>
-  </h3>
-
-        <!-- 🚀 Category Management Section -->
-      <div class="mp-card" style="border-left: 4px solid #0f9d58;">
-        <h3>🗂️ ক্যাটাগরি ম্যানেজমেন্ট</h3>
-        
-        <!-- নতুন ক্যাটাগরি অ্যাড -->
-        <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-          <input type="text" id="new-category-name" class="dlv-input" placeholder="নতুন ক্যাটাগরির নাম" style="flex: 1;">
-          <button class="mp-btn mp-btn-success" style="width: auto; margin: 0; padding: 0 15px;" onclick="addNewCategoryAdmin()">➕ যোগ</button>
-        </div>
-
-        <!-- ক্যাটাগরি লিস্ট -->
-        <div id="admin-category-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
-          <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
-        </div>
-
-        <!-- নতুন ক্যাটাগরি রিকোয়েস্ট -->
-        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
-        <div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
-          <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
-        </div>
+  <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
+    <h3 style="justify-content: space-between; flex-wrap: wrap; gap: 5px;">
+      🏷️ মাস্টার প্রোডাক্ট
+      <div style="display: flex; gap: 5px;">
+        <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
+        <button class="mp-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px; background: #7b1fa2; color: white;" onclick="openBulkEditor()">📦 বাল্ক</button>
       </div>
-  
-  <!-- 🚀 সার্চ বার -->
-  <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
-  
-  <!-- 🚀 স্ক্রলেবল লিস্ট কন্টেইনার (ওয়ার্ডপ্রেস স্টাইল) -->
-  <div id="admin-master-product-list" style="max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 5px;">
-    <div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">লোড হচ্ছে...</div>
+    </h3>
+
+    <!-- ক্যাটাগরি ম্যানেজমেন্ট -->
+    <div class="mp-card" style="border-left: 4px solid #0f9d58;">
+      <h3>🗂️ ক্যাটাগরি ম্যানেজমেন্ট</h3>
+      <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+        <input type="text" id="new-category-name" class="dlv-input" placeholder="নতুন ক্যাটাগরির নাম" style="flex: 1;">
+        <button class="mp-btn mp-btn-success" style="width: auto; margin: 0; padding: 0 15px;" onclick="addNewCategoryAdmin()">➕ যোগ</button>
+      </div>
+      <div id="admin-category-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
+        <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
+      </div>
+      <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
+      <div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
+        <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
+      </div>
+    </div>
+
+    <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
+    
+    <div id="admin-master-product-list" style="max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 5px;">
+      <div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">লোড হচ্ছে...</div>
+    </div>
   </div>
-</div>
 
   <!-- অ্যাড ম্যানেজমেন্ট সেকশন -->
   <div class="mp-card" style="border-left: 4px solid #f9a825;">
@@ -1052,7 +1045,9 @@
     </div>
     <div id="admin-pin-user-list"></div>
   </div>
+
 </div>
+<!-- ==================== ADMIN DASHBOARD END ==================== -->
 
                   <!-- 🚀 Barcode & Print Section -->
       <div id="barcode-section-wrapper" class="mp-card mp-hidden" style="border-left: 4px solid #f9a825;">
