@@ -596,53 +596,48 @@
     </div>   
 
     <!-- Standalone Toggle -->
-  <!-- 🚀 SaaS Standalone Mode & Delivery Settings -->
-  <div class="mp-card" style="border-left: 4px solid #7b1fa2;">
-    <h3>⚙️ স্টোর সেটিংস</h3>
-    
-    <!-- ১. Standalone Toggle -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee;">
-      <div style="flex: 1; padding-right: 15px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">
+      <div>
         <div style="font-size: 14px; font-weight: bold; color: #7b1fa2;">নিজস্ব স্টোর মোড (SaaS)</div>
-        <div style="font-size: 11px; color: #666; margin-top: 4px;">এটি অন করলে আপনি নিজের প্রোডাক্ট অ্যাড করতে পারবেন।</div>
+        <div style="font-size: 11px; color: #666;">এটি অন করলে আপনি নিজের প্রোডাক্ট অ্যাড করতে পারবেন।</div>
       </div>
-      <label class="dlv-switch" style="margin: 0;">
+      <label class="dlv-switch">
         <input type="checkbox" id="toggle-standalone" onchange="handleStandaloneToggle(this.checked, this)">
         <span class="dlv-slider" style="--mp-primary: #7b1fa2;"></span>
       </label>
     </div>
 
-    <!-- ২. Free Delivery Toggle -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee;">
-      <div style="flex: 1; padding-right: 15px;">
-        <div style="font-size: 14px; font-weight: bold; color: #0f9d58;">🎁 সবসময় ফ্রি ডেলিভারি</div>
-        <div style="font-size: 11px; color: #666; margin-top: 4px;">এটি অন করলে আপনার প্রোডাক্টে ডেলিভারি চার্জ ০ হবে (কাস্টমার খুশি হবে)।</div>
-      </div>
-      <label class="dlv-switch" style="margin: 0;">
-        <input type="checkbox" id="toggle-shop-free-delivery" onchange="handleShopFreeDelivery(this.checked)">
-        <span class="dlv-slider"></span>
-      </label>
+     <!-- দোকানদারের ফ্রি ডেলিভারি টগল -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; border-top: 1px dashed #eee; padding-top: 10px;">
+    <div>
+      <div style="font-size: 14px; font-weight: bold; color: #0f9d58;">🎁 সবসময় ফ্রি ডেলিভারি</div>
+      <div style="font-size: 11px; color: #666;">এটি অন করলে আপনার প্রোডাক্টে ডেলিভারি চার্জ ০ হবে (কাস্টমার খুশি হবে)।</div>
     </div>
-
-    <!-- ৩. Self Delivery Toggle -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee;">
-      <div style="flex: 1; padding-right: 15px;">
-        <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">নিজস্ব ডেলিভারি বয়</div>
-        <div style="font-size: 11px; color: #666; margin-top: 4px;">এটি অন করলে অর্ডার ডেলিভারি বয়দের কাছে বিড হবে না, আপনি নিজেই ডেলিভারি দেবেন।</div>
+    <label class="dlv-switch">
+      <input type="checkbox" id="toggle-shop-free-delivery" onchange="handleShopFreeDelivery(this.checked)">
+      <span class="dlv-slider"></span>
+    </label>
+  </div>
+    
+    <!-- Delivery Mode Toggle -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">
+      <div>
+        <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">নিজস্ব ডেলিভারি বয়</div>
+        <div style="font-size: 11px; color: #666;">এটি অন করলে অর্ডার ডেলিভারি বয়দের কাছে বিড হবে না, আপনি নিজেই ডেলিভারি দেবেন।</div>
       </div>
-      <label class="dlv-switch" style="margin: 0;">
+      <label class="dlv-switch">
         <input type="checkbox" id="toggle-self-delivery" onchange="handleSelfDeliveryToggle(this.checked)">
         <span class="dlv-slider"></span>
       </label>
     </div>
 
-    <!-- ৪. Bulk Discount Toggle -->
+    <!-- 🚀 Bulk Discount Toggle (এখানে বসানো হলো) -->
     <div style="display: flex; justify-content: space-between; align-items: center;">
-      <div style="flex: 1; padding-right: 15px;">
+      <div>
         <div style="font-size: 14px; font-weight: bold; color: #d93025;">🎁 বাল্ক ডিসকাউন্ট</div>
-        <div style="font-size: 11px; color: #666; margin-top: 4px;">কাস্টমারকে বেশি কিনতে উদ্বুদ্ধ করতে ডিসকাউন্ট দিন।</div>
+        <div style="font-size: 11px; color: #666;">কাস্টমারকে বেশি কিনতে উদ্বুদ্ধ করতে ডিসকাউন্ট দিন।</div>
       </div>
-      <label class="dlv-switch" style="margin: 0;">
+      <label class="dlv-switch">
         <input type="checkbox" id="toggle-bulk-discount" onchange="handleBulkDiscountToggle(this.checked, this)">
         <span class="dlv-slider" style="--mp-success: #d93025;"></span>
       </label>
@@ -847,7 +842,7 @@
 </div>
 <!-- ==================== MANAGER DASHBOARD END ==================== -->
     
-<!-- ==================== ADMIN DASHBOARD ==================== -->
+    <!-- ==================== ADMIN DASHBOARD ==================== -->
 <div id="dlv-view-admin" class="mp-hidden">
   <div class="dlv-dashboard-title">👑 অ্যাডমিন কন্ট্রোল প্যানেল</div>
   
@@ -959,7 +954,7 @@
     <button class="mp-btn mp-btn-primary" style="margin-top: 5px;" onclick="saveSystemSettings()" id="btn-save-settings">💾 সব সেটিংস সেভ করুন</button>
   </div>
 
-  <!-- লাইভ অর্ডার ফিড -->
+  <!-- লাইভ অর্ডার ফিড (নতুন স্মার্ট সেকশন) -->
   <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
     <h3>📊 সর্বশেষ অর্ডারসমূহ (লাইভ)</h3>
     <div id="admin-live-orders" style="max-height: 200px; overflow-y: auto;">
@@ -967,38 +962,45 @@
     </div>
   </div>
 
+ 
   <!-- মাস্টার প্রোডাক্ট সেকশন -->
-  <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
-    <h3 style="justify-content: space-between; flex-wrap: wrap; gap: 5px;">
-      🏷️ মাস্টার প্রোডাক্ট
-      <div style="display: flex; gap: 5px;">
-        <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
-        <button class="mp-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px; background: #7b1fa2; color: white;" onclick="openBulkEditor()">📦 বাল্ক</button>
-      </div>
-    </h3>
+<div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
+  <h3 style="justify-content: space-between;">
+    🏷️ মাস্টার প্রোডাক্ট
+    <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
+    <button class="mp-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px; background: #7b1fa2; color: white;" onclick="openBulkEditor()">📦 বাল্ক</button>
+  </h3>
 
-    <!-- ক্যাটাগরি ম্যানেজমেন্ট -->
-    <div class="mp-card" style="border-left: 4px solid #0f9d58;">
-      <h3>🗂️ ক্যাটাগরি ম্যানেজমেন্ট</h3>
-      <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-        <input type="text" id="new-category-name" class="dlv-input" placeholder="নতুন ক্যাটাগরির নাম" style="flex: 1;">
-        <button class="mp-btn mp-btn-success" style="width: auto; margin: 0; padding: 0 15px;" onclick="addNewCategoryAdmin()">➕ যোগ</button>
-      </div>
-      <div id="admin-category-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
-        <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
-      </div>
-      <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
-      <div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
-        <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
-      </div>
-    </div>
+        <!-- 🚀 Category Management Section -->
+      <div class="mp-card" style="border-left: 4px solid #0f9d58;">
+        <h3>🗂️ ক্যাটাগরি ম্যানেজমেন্ট</h3>
+        
+        <!-- নতুন ক্যাটাগরি অ্যাড -->
+        <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+          <input type="text" id="new-category-name" class="dlv-input" placeholder="নতুন ক্যাটাগরির নাম" style="flex: 1;">
+          <button class="mp-btn mp-btn-success" style="width: auto; margin: 0; padding: 0 15px;" onclick="addNewCategoryAdmin()">➕ যোগ</button>
+        </div>
 
-    <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
-    
-    <div id="admin-master-product-list" style="max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 5px;">
-      <div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">লোড হচ্ছে...</div>
-    </div>
+        <!-- ক্যাটাগরি লিস্ট -->
+        <div id="admin-category-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
+          <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
+        </div>
+
+        <!-- নতুন ক্যাটাগরি রিকোয়েস্ট -->
+        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
+        <div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
+          <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
+        </div>
+      </div>
+  
+  <!-- 🚀 সার্চ বার -->
+  <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
+  
+  <!-- 🚀 স্ক্রলেবল লিস্ট কন্টেইনার (ওয়ার্ডপ্রেস স্টাইল) -->
+  <div id="admin-master-product-list" style="max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 5px;">
+    <div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">লোড হচ্ছে...</div>
   </div>
+</div>
 
   <!-- অ্যাড ম্যানেজমেন্ট সেকশন -->
   <div class="mp-card" style="border-left: 4px solid #f9a825;">
@@ -1045,9 +1047,7 @@
     </div>
     <div id="admin-pin-user-list"></div>
   </div>
-
 </div>
-<!-- ==================== ADMIN DASHBOARD END ==================== -->
 
                   <!-- 🚀 Barcode & Print Section -->
       <div id="barcode-section-wrapper" class="mp-card mp-hidden" style="border-left: 4px solid #f9a825;">
