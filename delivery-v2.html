@@ -2385,6 +2385,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     tbody.innerHTML = html;
 
     // 🚀 নতুন স্মার্ট ডেলিভারি চার্জ ক্যালকুলেশন লজিক
+    // 🚀 নতুন স্মার্ট ডেলিভারি চার্জ ক্যালকুলেশন লজিক (Fixed)
     const deliveryMode = document.getElementById('cart-delivery-time').value;
     
     // অ্যাডমিনের সেট করা কনফিগ
@@ -2402,17 +2403,21 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     let isFreeActive = (conf.isGlobalFree || isAnyShopFree);
     let finalDeliveryCharge = 0;
 
-    // ৩. আপনার দেওয়া শর্ত অনুযায়ী লজিক
+    // ৩. আপনার দেওয়া নতুন শর্ত অনুযায়ী লজিক
     if (deliveryMode === 'urgent') {
-        // আর্জেন্ট: সবসময় বেস + বাড়তি চার্জ (ফ্রি টগল থাকলেও আর্জেন্টে চার্জ লাগবে)
+        // আর্জেন্ট: সবসময় বেস চার্জ + বাড়তি চার্জ (ফ্রি টগল থাকলেও আর্জেন্টে চার্জ লাগবে)
         finalDeliveryCharge = normalCharge + conf.urgentCharge;
     } 
     else if (deliveryMode === 'sameday') {
-        // সেম ডে: সবসময় অর্ধেক চার্জ
-        finalDeliveryCharge = normalCharge / 2;
+        // সেম ডে: টগল অফ থাকলে ফুল চার্জ, অন থাকলে হাফ চার্জ
+        if (isFreeActive) {
+            finalDeliveryCharge = normalCharge / 2;
+        } else {
+            finalDeliveryCharge = normalCharge;
+        }
     } 
     else if (deliveryMode === 'nextday') {
-        // নেক্সট ডে: টগল অন থাকলে ফ্রি, অফ থাকলে অর্ধেক চার্জ
+        // নেক্সট ডে: টগল অন থাকলে ফ্রি, অফ থাকলে হাফ চার্জ
         if (isFreeActive) {
             finalDeliveryCharge = 0;
         } else {
@@ -2420,7 +2425,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
         }
     }
 
-    // দশমিক সংখ্যা বাদ দেওয়া (যেমন: ২৫.৫০ কে ২৬ করা)
+    // দশমিক সংখ্যা বাদ দেওয়া (Math.ceil ব্যবহার করায় ৮.৫ হলে ৯ হয়ে যাবে)
     finalDeliveryCharge = Math.ceil(finalDeliveryCharge);
     if (finalDeliveryCharge < 0) finalDeliveryCharge = 0;
 
@@ -2428,7 +2433,6 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     subtotalEl.innerText = `₹${subtotal.toFixed(2)}`;
     document.getElementById('cart-delivery-charge').innerText = `₹${finalDeliveryCharge.toFixed(2)}`;
     grandTotalEl.innerText = `₹${(subtotal + finalDeliveryCharge).toFixed(2)}`;
-  };
 
   // ৩. পরিমাণ (Qty) বাড়ানো বা কমানো
   window.changeCartQty = function(index, change) {
