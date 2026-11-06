@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
@@ -1076,70 +1075,8 @@
           <!-- বারকোডগুলো এখানে জেনারেট হবে -->
         </div>
       </div>
-<!-- 🚀 Smart Custom Calculator Modal (With AI Message) -->
-<div id="dlv-custom-calc-modal" class="dlv-modal-overlay">
-  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
-    <span class="dlv-modal-close" onclick="document.getElementById('dlv-custom-calc-modal').classList.remove('active')">&times;</span>
-    
-    <h3 style="margin-bottom: 5px; color: var(--mp-primary);" id="calc-prod-name">প্রোডাক্টের নাম</h3>
-    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">স্ট্যান্ডার্ড রেট: <b id="calc-base-info">₹0 / 0gm</b></p>
 
-    <!-- 🚀 AI বার্গেনিং মেসেজ বক্স (এটি এখানে বসবে) -->
-    <div id="ai-bargain-msg" style="display:none; background:#e6f4ea; color:#0f9d58; padding:8px; border-radius:6px; font-size:11px; font-weight:bold; text-align:center; margin-bottom:10px; border:1px solid #0f9d58;">
-      ✨ আমাদের AI আপনার এলাকার ৫টি দোকান স্ক্যান করে সবচেয়ে কম রেট বের করেছে!
-    </div>
-
-    <!-- 🚀 স্মার্ট স্লাইডার সেকশন -->
-    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee;">
-      
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <label style="font-size: 13px; font-weight: bold; color: #333;">পরিমাণ:</label>
-        <!-- ম্যানুয়াল ইনপুট -->
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <input type="number" id="calc-manual-input" class="dlv-input" style="width: 80px; padding: 5px; text-align: center; font-weight: bold; color: var(--mp-primary);" oninput="updateFromManualInput(this.value)">
-          <span id="calc-unit-label" style="font-size: 12px; font-weight: bold;">gm</span>
-        </div>
-      </div>
-      
-      <!-- স্লাইডার -->
-      <input type="range" id="calc-weight-slider" min="100" max="5000" step="50" value="100" 
-        style="width: 100%; cursor: pointer; accent-color: var(--mp-primary);" 
-        oninput="updateSliderCalculation(this.value)">
-        
-      <div style="display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-top: 5px;">
-        <span id="calc-min-label">Min: 100gm</span>
-        <span id="calc-max-label">Max: 5000gm</span>
-      </div>
-
-      <!-- ওয়েট চিপস (Quick Select) -->
-      <div id="calc-chips-container" style="display: flex; gap: 8px; overflow-x: auto; margin-top: 15px; padding-bottom: 5px; scrollbar-width: none;">
-        <!-- JS দিয়ে চিপস তৈরি হবে -->
-      </div>
-    </div>
-
-    <!-- রেজাল্ট সেকশন -->
-    <div id="calc-error" style="color: var(--mp-danger); font-size: 12px; font-weight: bold; margin-bottom: 10px; display: none;"></div>
-    
-    <div id="calc-result-box" style="background: #e8f0fe; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
-        <span>মালের দাম:</span>
-        <b id="calc-res-prod-price">₹0</b>
-      </div>
-      <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
-        <span id="calc-res-prod-weight-label">আপনি পাচ্ছেন:</span>
-        <b id="calc-res-weight">0 gm</b>
-      </div>
-      <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: var(--mp-primary); border-top: 1px solid #ccc; padding-top: 5px; margin-top: 5px;">
-        <span>সর্বমোট:</span>
-        <span id="calc-res-total">₹0</span>
-      </div>
-    </div>
-
-    <button class="mp-btn mp-btn-success" id="btn-calc-confirm" onclick="confirmCustomOrder()">🛒 অর্ডার কনফার্ম করুন</button>
-  </div>
-</div>
-   
-    <!-- ==================== MODALS ==================== -->
+     <!-- ==================== MODALS ==================== -->
 <!-- Recharge Modal -->
 <div id="dlv-recharge-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content">
