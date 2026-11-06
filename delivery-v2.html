@@ -608,6 +608,18 @@
       </label>
     </div>
 
+     <!-- দোকানদারের ফ্রি ডেলিভারি টগল -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; border-top: 1px dashed #eee; padding-top: 10px;">
+    <div>
+      <div style="font-size: 14px; font-weight: bold; color: #0f9d58;">🎁 সবসময় ফ্রি ডেলিভারি</div>
+      <div style="font-size: 11px; color: #666;">এটি অন করলে আপনার প্রোডাক্টে ডেলিভারি চার্জ ০ হবে (কাস্টমার খুশি হবে)।</div>
+    </div>
+    <label class="dlv-switch">
+      <input type="checkbox" id="toggle-shop-free-delivery" onchange="handleShopFreeDelivery(this.checked)">
+      <span class="dlv-slider"></span>
+    </label>
+  </div>
+    
     <!-- Delivery Mode Toggle -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">
       <div>
@@ -871,35 +883,72 @@
     </div>
   </div>
 
-  <!-- সিস্টেম সেটিংস (ফুল উইডথ) -->
+  <!-- ⚙️ সিস্টেম সেটিংস (রেভিনিউ + ডেলিভারি চার্জ) -->
   <div class="mp-card" style="border-left: 4px solid #5f6368;">
-    <h3>⚙️ সিস্টেম সেটিংস (চার্জ ও ফি)</h3>
-    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">এখানে পরিবর্তন করলে পুরো অ্যাপে সাথে সাথে প্রভাব পড়বে।</p>
+    <h3>⚙️ সিস্টেম সেটিংস</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">এখানে পরিবর্তন করলে পুরো অ্যাপে সাথে সাথে প্রভাব পড়বে।</p>
     
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-      <div class="dlv-form-group">
+    <!-- কমিশন ও ফি সেকশন -->
+    <h4 style="font-size: 13px; margin-bottom: 10px; color: var(--mp-primary);">💳 চার্জ ও ফি</h4>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+      <div class="dlv-form-group" style="margin-bottom: 0;">
         <label style="font-size: 11px;">গ্লোবাল কমিশন (%)</label>
         <input type="number" id="sys-commission" class="dlv-input" placeholder="যেমন: 1" step="0.1">
       </div>
-      <div class="dlv-form-group">
+      <div class="dlv-form-group" style="margin-bottom: 0;">
         <label style="font-size: 11px;">খাতা ফিচার ফি (₹/মাস)</label>
         <input type="number" id="sys-khata-fee" class="dlv-input" placeholder="যেমন: 200">
       </div>
-      <div class="dlv-form-group">
+      <div class="dlv-form-group" style="margin-bottom: 0;">
         <label style="font-size: 11px;">প্রিমিয়াম ব্যাজ ফি (₹)</label>
         <input type="number" id="sys-premium-fee" class="dlv-input" placeholder="যেমন: 500">
       </div>
-      <div class="dlv-form-group">
+      <div class="dlv-form-group" style="margin-bottom: 0;">
         <label style="font-size: 11px;">ভেরিফাইড ব্যাজ ফি (₹)</label>
         <input type="number" id="sys-verified-fee" class="dlv-input" placeholder="যেমন: 200">
       </div>
-      <div class="dlv-form-group" style="grid-column: 1 / -1;">
+      <div class="dlv-form-group" style="grid-column: 1 / -1; margin-bottom: 0;">
         <label style="font-size: 11px;">নিজস্ব স্টোর (SaaS) মোড ফি (₹/মাস)</label>
         <input type="number" id="sys-standalone-fee" class="dlv-input" placeholder="যেমন: 300">
       </div>
     </div>
 
-    <button class="mp-btn mp-btn-primary" style="margin-top: 10px;" onclick="saveSystemSettings()" id="btn-save-settings">💾 সেটিংস সেভ করুন</button>
+    <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
+
+    <!-- ডেলিভারি চার্জ সেকশন -->
+    <h4 style="font-size: 13px; margin-bottom: 10px; color: #0f9d58;">🚚 ডেলিভারি চার্জ সেটিংস</h4>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+      <div class="dlv-form-group" style="margin-bottom: 0;">
+        <label style="font-size: 11px;">বেস ডেলিভারি চার্জ (₹)</label>
+        <input type="number" id="sys-base-delivery" class="dlv-input" placeholder="15">
+      </div>
+      <div class="dlv-form-group" style="margin-bottom: 0;">
+        <label style="font-size: 11px;">আর্জেন্ট এক্সট্রা চার্জ (₹)</label>
+        <input type="number" id="sys-urgent-extra" class="dlv-input" placeholder="15">
+      </div>
+      <div class="dlv-form-group" style="margin-bottom: 0;">
+        <label style="font-size: 11px;">প্রতি কিমি চার্জ (₹)</label>
+        <input type="number" id="sys-per-km" class="dlv-input" placeholder="2">
+      </div>
+      <div class="dlv-form-group" style="margin-bottom: 0;">
+        <label style="font-size: 11px;">প্রতি কেজি চার্জ (₹)</label>
+        <input type="number" id="sys-per-kg" class="dlv-input" placeholder="2">
+      </div>
+    </div>
+
+    <!-- গ্লোবাল ফ্রি ডেলিভারি টগল -->
+    <div style="display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee;">
+      <div>
+        <div style="font-size: 13px; font-weight: bold; color: var(--mp-danger);">🎉 গ্লোবাল ফ্রি ডেলিভারি</div>
+        <div style="font-size: 11px; color: #666;">এটি অন করলে সবার জন্য ডেলিভারি চার্জ ০ হবে (যেমন: বৃষ্টির দিনে)।</div>
+      </div>
+      <label class="dlv-switch">
+        <input type="checkbox" id="sys-global-free-delivery">
+        <span class="dlv-slider" style="--mp-success: #d93025;"></span>
+      </label>
+    </div>
+
+    <button class="mp-btn mp-btn-primary" style="margin-top: 5px;" onclick="saveSystemSettings()" id="btn-save-settings">💾 সব সেটিংস সেভ করুন</button>
   </div>
 
   <!-- লাইভ অর্ডার ফিড (নতুন স্মার্ট সেকশন) -->
@@ -2290,7 +2339,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
   };
 
   // সার্চ, ফিল্টার এবং গ্রুপিং লজিক
-   window.filterCustomerProducts = function() {
+  window.filterCustomerProducts = function() {
     const grid = document.getElementById('cst-product-grid');
     const searchInput = document.getElementById('cst-search-input');
     const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
@@ -2349,8 +2398,9 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
         `;
       }
 
+      // 🚀 এখানে onclick লাইনটি আপডেট করা হয়েছে (shopLat, shopLng এবং freeDelivery যোগ করা হয়েছে)
       grid.innerHTML += `
-        <div class="dlv-product-card" onclick="addToSmartCart('${lowestPriceShop.id}', '${g.name.replace(/'/g, "\\'")}', '${g.unit || 'pcs'}', ${lowestPriceShop.price}, '${lowestPriceShop.shopId}', '${lowestPriceShop.shopName.replace(/'/g, "\\'")}', ${lowestPriceShop.stock}, ${lowestPriceShop.baseWeight || 1}, '${lowestPriceShop.baseUnit || g.unit}')">
+        <div class="dlv-product-card" onclick="addToSmartCart('${lowestPriceShop.id}', '${g.name.replace(/'/g, "\\'")}', '${g.unit || 'pcs'}', ${lowestPriceShop.price}, '${lowestPriceShop.shopId}', '${lowestPriceShop.shopName.replace(/'/g, "\\'")}', ${lowestPriceShop.stock}, ${lowestPriceShop.baseWeight || 1}, '${lowestPriceShop.baseUnit || g.unit}', ${lowestPriceShop.shopLat || 0}, ${lowestPriceShop.shopLng || 0}, ${lowestPriceShop.freeDelivery || false})">
           <div class="dlv-product-img-wrap" style="position: relative;">
             ${g.image ? `<img src="${g.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
             ${tagHtml}
@@ -2370,31 +2420,23 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
   let smartCart = []; // কার্টের ডেটা এখানে জমা হবে
 
   // ১. কার্টে প্রোডাক্ট অ্যাড করা
-  window.addToSmartCart = function(prodId, name, unit, price, shopId, shopName, stock, baseWeight, baseUnit) {
-    // চেক করা হচ্ছে প্রোডাক্টটি আগেই কার্টে আছে কি না
+  window.addToSmartCart = function(prodId, name, unit, price, shopId, shopName, stock, baseWeight, baseUnit, shopLat, shopLng, isShopFree) {
     const existingItemIndex = smartCart.findIndex(item => item.prodId === prodId);
-
     if (existingItemIndex > -1) {
-      // যদি থাকে তবে পরিমাণ ১ বাড়বে
       smartCart[existingItemIndex].qty += 1;
     } else {
-      // নতুন আইটেম হলে কার্টে যোগ হবে
       smartCart.push({
         prodId, name, unit, price, shopId, shopName, stock, 
-        baseWeight, baseUnit, 
+        baseWeight, baseUnit, shopLat, shopLng, isShopFree,
         qty: 1, 
-        displayShopName: "✅ ভেরিফাইড লোকাল স্টোর" // দোকানের আসল নাম হাইড করে AI নাম দেওয়া হলো
+        displayShopName: "✅ ভেরিফাইড লোকাল স্টোর" 
       });
     }
-
-    // কার্ট আপডেট ও মডাল ওপেন করা
     updateSmartCartUI();
     document.getElementById('dlv-smart-cart-modal').classList.add('active');
   };
-
   // ২. কার্টের UI আপডেট করা (টেবিল ও দাম)
-  // ২. কার্টের UI আপডেট করা (টেবিল ও দাম)
-  window.updateSmartCartUI = function() {
+   window.updateSmartCartUI = function() {
     const tbody = document.getElementById('smart-cart-body');
     const subtotalEl = document.getElementById('cart-subtotal');
     const grandTotalEl = document.getElementById('cart-grand-total');
@@ -2409,23 +2451,36 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
 
     let html = '';
     let subtotal = 0;
-    let totalWeight = 0; // ভবিষ্যতে ওজনের ভিত্তিতে চার্জ করতে কাজে লাগবে
+    let totalWeightGrams = 0; 
+    let maxDistanceKm = 0; 
+    let isAnyShopFree = false; // কোনো দোকান ফ্রি ডেলিভারি দিলে সেটি ট্র্যাক করার জন্য
 
     smartCart.forEach((item, index) => {
       const itemTotal = item.price * item.qty;
       subtotal += itemTotal;
-      totalWeight += (item.baseWeight || 1) * item.qty;
+      
+      // ওজন হিসাব (গ্রামে কনভার্ট করে)
+      let w = item.baseWeight || 1;
+      if (item.baseUnit === 'kg' || item.baseUnit === 'ltr') w = w * 1000;
+      totalWeightGrams += w * item.qty;
 
-      // আইটেমের নাম এবং ব্র্যান্ড/সাইজ দেখানোর লজিক
-      let itemDetails = item.name;
-      if (item.brand || item.size) {
-         itemDetails += ` <span style="font-size:10px; color:#666;">(${item.brand || ''} ${item.size || ''}${item.unit || ''})</span>`;
+      // দোকানের সাথে কাস্টমারের দূরত্ব হিসাব (Haversine Formula)
+      if (item.shopLat && item.shopLng && customerLat && customerLng) {
+         const R = 6371; // Earth radius in km
+         const dLat = (item.shopLat - customerLat) * Math.PI / 180;
+         const dLon = (item.shopLng - customerLng) * Math.PI / 180;
+         const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(customerLat * Math.PI / 180) * Math.cos(item.shopLat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+         const distance = R * c;
+         if (distance > maxDistanceKm) maxDistanceKm = distance;
       }
+
+      if (item.isShopFree) isAnyShopFree = true;
 
       html += `
         <tr style="border-bottom: 1px solid #eee;">
           <td style="padding: 10px 8px;">
-            <div style="font-weight: bold; color: #333; font-size: 13px;">${itemDetails}</div>
+            <div style="font-weight: bold; color: #333; font-size: 13px;">${item.name}</div>
             <div style="font-size: 10px; color: #0f9d58; margin-top: 2px;">🏪 ${item.displayShopName}</div>
           </td>
           <td style="padding: 10px 8px; text-align: center;">
@@ -2445,18 +2500,38 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
 
     tbody.innerHTML = html;
 
-    // 🚀 ডেলিভারি চার্জ ডাইনামিক ক্যালকুলেশন
+    // 🚀 ডাইনামিক ডেলিভারি চার্জ ক্যালকুলেশন
     const deliveryMode = document.getElementById('cart-delivery-time').value;
-    let deliveryCharge = 10; // ডিফল্ট (সেম ডে)
+    let deliveryCharge = 0;
 
-    if (deliveryMode === 'urgent') {
-      deliveryCharge = 25; // আর্জেন্টের জন্য এক্সট্রা চার্জ
-    } else if (deliveryMode === 'nextday') {
-      deliveryCharge = 5; // নেক্সট ডের জন্য কম চার্জ
-    } 
-    
-    // (ভবিষ্যতে এখানে দূরত্ব ও ওজনের ভিত্তিতে চার্জ বাড়ানোর লজিক বসানো যাবে)
-    
+    // অ্যাডমিনের সেট করা কনফিগ (যদি না থাকে তবে ডিফল্ট মান)
+    const conf = globalSettings.delivery || { baseCharge: 15, perKmCharge: 2, perKgCharge: 2, urgentCharge: 15, isGlobalFree: false };
+
+    if (conf.isGlobalFree || isAnyShopFree) {
+      deliveryCharge = 0; // অ্যাডমিন বা দোকানদার ফ্রি করে দিলে
+    } else {
+      // ১. বেস চার্জ
+      let calculatedCharge = conf.baseCharge;
+      
+      // ২. দূরত্বের চার্জ (প্রথম ২ কিমি ফ্রি, এরপর প্রতি কিমি)
+      if (maxDistanceKm > 2) {
+        calculatedCharge += (maxDistanceKm - 2) * conf.perKmCharge;
+      }
+      
+      // ৩. ওজনের চার্জ (প্রতি কেজিতে)
+      let weightKg = totalWeightGrams / 1000;
+      calculatedCharge += weightKg * conf.perKgCharge;
+
+      // ৪. আর্জেন্ট চার্জ
+      if (deliveryMode === 'urgent') {
+        calculatedCharge += conf.urgentCharge;
+      } else if (deliveryMode === 'nextday') {
+        calculatedCharge = calculatedCharge * 0.8; // নেক্সট ডে-তে ২০% ছাড়
+      }
+
+      deliveryCharge = Math.ceil(calculatedCharge); // পাইসা বাদ দেওয়ার জন্য
+    }
+
     subtotalEl.innerText = `₹${subtotal.toFixed(2)}`;
     document.getElementById('cart-delivery-charge').innerText = `₹${deliveryCharge.toFixed(2)}`;
     grandTotalEl.innerText = `₹${(subtotal + deliveryCharge).toFixed(2)}`;
@@ -4386,24 +4461,31 @@ window.toggleDeliveryStatus = function(checkbox) {
       if (snap.exists()) {
         globalSettings = snap.data();
       } else {
-        // যদি আগে থেকে সেট করা না থাকে, তবে ডিফল্ট ভ্যালু দিয়ে তৈরি করা হবে
+        // ডিফল্ট ভ্যালু
         globalSettings = {
-          commission: 1,
-          khataFee: 200,
-          premiumFee: 500,
-          verifiedFee: 200,
-          standaloneFee: 300
+          commission: 1, khataFee: 200, premiumFee: 500, verifiedFee: 200, standaloneFee: 300,
+          delivery: { baseCharge: 15, perKmCharge: 2, perKgCharge: 2, urgentCharge: 15, isGlobalFree: false }
         };
         await setDoc(settingsRef, globalSettings);
       }
 
-      // অ্যাডমিন প্যানেলে ইনপুট ফিল্ডগুলোতে ভ্যালু বসানো
+      // অ্যাডমিন প্যানেলে ফি-এর ভ্যালু বসানো
       if (document.getElementById('sys-commission')) {
-        document.getElementById('sys-commission').value = globalSettings.commission;
-        document.getElementById('sys-khata-fee').value = globalSettings.khataFee;
-        document.getElementById('sys-premium-fee').value = globalSettings.premiumFee;
-        document.getElementById('sys-verified-fee').value = globalSettings.verifiedFee;
-        document.getElementById('sys-standalone-fee').value = globalSettings.standaloneFee;
+        document.getElementById('sys-commission').value = globalSettings.commission || 1;
+        document.getElementById('sys-khata-fee').value = globalSettings.khataFee || 200;
+        document.getElementById('sys-premium-fee').value = globalSettings.premiumFee || 500;
+        document.getElementById('sys-verified-fee').value = globalSettings.verifiedFee || 200;
+        document.getElementById('sys-standalone-fee').value = globalSettings.standaloneFee || 300;
+      }
+
+      // 🚀 ডেলিভারি সেটিংস ভ্যালু বসানো
+      if (document.getElementById('sys-base-delivery')) {
+        const d = globalSettings.delivery || { baseCharge: 15, perKmCharge: 2, perKgCharge: 2, urgentCharge: 15, isGlobalFree: false };
+        document.getElementById('sys-base-delivery').value = d.baseCharge;
+        document.getElementById('sys-per-km').value = d.perKmCharge;
+        document.getElementById('sys-per-kg').value = d.perKgCharge;
+        document.getElementById('sys-urgent-extra').value = d.urgentCharge;
+        document.getElementById('sys-global-free-delivery').checked = d.isGlobalFree;
       }
 
     } catch (e) {
@@ -4424,20 +4506,47 @@ window.toggleDeliveryStatus = function(checkbox) {
         premiumFee: parseFloat(document.getElementById('sys-premium-fee').value) || 500,
         verifiedFee: parseFloat(document.getElementById('sys-verified-fee').value) || 200,
         standaloneFee: parseFloat(document.getElementById('sys-standalone-fee').value) || 300,
+        
+        // 🚀 ডেলিভারি সেটিংস ডেটা
+        delivery: {
+          baseCharge: parseFloat(document.getElementById('sys-base-delivery').value) || 15,
+          perKmCharge: parseFloat(document.getElementById('sys-per-km').value) || 2,
+          perKgCharge: parseFloat(document.getElementById('sys-per-kg').value) || 2,
+          urgentCharge: parseFloat(document.getElementById('sys-urgent-extra').value) || 15,
+          isGlobalFree: document.getElementById('sys-global-free-delivery').checked
+        },
         updatedAt: serverTimestamp()
       };
 
       await setDoc(doc(db, "system_settings", "global_config"), newSettings);
       globalSettings = newSettings; // লোকাল ভেরিয়েবল আপডেট
 
-      alert("✅ সিস্টেম সেটিংস সফলভাবে সেভ হয়েছে!");
+      alert("✅ সিস্টেম ও ডেলিভারি সেটিংস সফলভাবে সেভ হয়েছে!");
     } catch (e) {
       console.error(e);
       alert("❌ সেটিংস সেভ করতে সমস্যা হয়েছে!");
     } finally {
-      btn.innerText = "💾 সেটিংস সেভ করুন";
+      btn.innerText = "💾 সব সেটিংস সেভ করুন";
       btn.disabled = false;
     }
+  };
+  
+  // নতুন ফাংশন: saveDeliverySettings()
+  window.saveDeliverySettings = async function() {
+    try {
+      const deliveryConfig = {
+        baseCharge: parseFloat(document.getElementById('sys-base-delivery').value) || 15,
+        perKmCharge: parseFloat(document.getElementById('sys-per-km').value) || 2,
+        perKgCharge: parseFloat(document.getElementById('sys-per-kg').value) || 2,
+        urgentCharge: parseFloat(document.getElementById('sys-urgent-extra').value) || 15,
+        isGlobalFree: document.getElementById('sys-global-free-delivery').checked
+      };
+      
+      const settingsRef = doc(db, "system_settings", "global_config");
+      await updateDoc(settingsRef, { delivery: deliveryConfig });
+      globalSettings.delivery = deliveryConfig; // লোকাল ভেরিয়েবল আপডেট
+      alert("ডেলিভারি সেটিংস সেভ হয়েছে!");
+    } catch(e) { alert("সেভ করতে সমস্যা হয়েছে!"); }
   };
   
   // ==================== PREMIUM BADGES LOGIC (PART 3) ====================
@@ -7133,7 +7242,17 @@ window.handleCSVUpload = function(event) {
     `);
   };
 
-      </script>
+  window.handleShopFreeDelivery = async function(isChecked) {
+    try {
+      await updateDoc(doc(db, "users", currentUser.uid), { freeDelivery: isChecked });
+      globalUserData.freeDelivery = isChecked;
+      alert(isChecked ? "🎉 আপনার সব প্রোডাক্টে ফ্রি ডেলিভারি চালু হলো!" : "ফ্রি ডেলিভারি বন্ধ করা হলো।");
+    } catch(e) { alert("সমস্যা হয়েছে!"); }
+  };
+  // এবং setupUIForRole এর shopkeeper অংশে টগলটি লোড করে দিতে হবে:
+  // document.getElementById('toggle-shop-free-delivery').checked = userData.freeDelivery || false;     
+
+</script>
 
 <!-- Live Tracking Modal (Customer) -->
 <div id="dlv-track-modal" class="dlv-modal-overlay">
