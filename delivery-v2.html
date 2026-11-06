@@ -758,11 +758,14 @@
       </div>
     </div>
 
-       <!-- ==================== MANAGER DASHBOARD ==================== -->
+<!-- ==================== MANAGER DASHBOARD ==================== -->
 <div id="dlv-view-manager" class="mp-hidden">
   <!-- 🚀 নতুন অর্ডারের জন্য সাউন্ড ফাইল -->
-  <audio id="mgr-notify-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>   <span>👨‍💼 ম্যানেজার ড্যাশবোর্ড</span>
-    <!-- 🚀 নতুন অর্ডার অ্যালার্ট ব্যাজ -->
+  <audio id="mgr-notify-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+  
+  <!-- 🚀 ম্যানেজার টাইটেল এবং অ্যালার্ট ব্যাজ -->
+  <div class="dlv-dashboard-title" style="display: flex; justify-content: space-between; align-items: center;">
+    <span>👨‍💼 ম্যানেজার ড্যাশবোর্ড</span>
     <span id="mgr-alert-badge" class="mp-hidden" style="background: var(--mp-danger); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; animation: pulse 1s infinite;">🔔 নতুন অর্ডার</span>
   </div>
   
@@ -795,16 +798,16 @@
   </div>
 
   <!-- 🚀 Auto Dispatch Toggle -->
-<div class="mp-card" style="display: flex; justify-content: space-between; align-items: center; background: #e8f0fe; border-left: 4px solid var(--mp-primary);">
-  <div>
-    <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">⚡ অটো-ডিসপ্যাচ (Auto-Assign)</div>
-    <div style="font-size: 11px; color: #555;">অন থাকলে অর্ডার রেডি হওয়া মাত্রই কাছের ডেলিভারি বয়কে অটো অ্যাসাইন হবে।</div>
+  <div class="mp-card" style="display: flex; justify-content: space-between; align-items: center; background: #e8f0fe; border-left: 4px solid var(--mp-primary);">
+    <div>
+      <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">⚡ অটো-ডিসপ্যাচ (Auto-Assign)</div>
+      <div style="font-size: 11px; color: #555;">অন থাকলে অর্ডার রেডি হওয়া মাত্রই কাছের ডেলিভারি বয়কে অটো অ্যাসাইন হবে।</div>
+    </div>
+    <label class="dlv-switch">
+      <input type="checkbox" id="auto-dispatch-toggle" onchange="toggleAutoDispatch(this.checked)">
+      <span class="dlv-slider"></span>
+    </label>
   </div>
-  <label class="dlv-switch">
-    <input type="checkbox" id="auto-dispatch-toggle" onchange="toggleAutoDispatch(this.checked)">
-    <span class="dlv-slider"></span>
-  </label>
-</div>
   
   <!-- 🚀 ডেলিভারি বয় ফ্লিট লিস্ট -->
   <div class="mp-card" style="border-left: 4px solid var(--mp-success);">
@@ -828,7 +831,7 @@
       🗺️ লাইভ ট্র্যাকিং
       <span style="font-size: 10px; background: #e8f0fe; color: var(--mp-primary); padding: 4px 8px; border-radius: 4px;">🏪 দোকান | 🛵 ডেলিভারি</span>
     </h3>
-           <!-- 🚀 ম্যাপ কন্ট্রোল বাটন -->
+    <!-- 🚀 ম্যাপ কন্ট্রোল বাটন -->
     <div style="display: flex; gap: 8px; margin-bottom: 10px;">
       <button type="button" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #e8f0fe; color: var(--mp-primary); flex: 1;" onclick="setManagerMapView('street')">🗺️ স্ট্রিট ভিউ</button>
       <button type="button" class="mp-btn" style="margin: 0; padding: 6px; font-size: 12px; background: #f0f2f5; color: #333; flex: 1;" onclick="setManagerMapView('satellite')">🛰️ স্যাটেলাইট ভিউ</button>
@@ -837,6 +840,7 @@
     <div id="manager-live-map" style="height: 300px; width: 100%; border-radius: 8px; border: 1px solid #ccc; z-index: 1;"></div>
   </div>
 </div>
+<!-- ==================== MANAGER DASHBOARD END ==================== -->
     
     <!-- ==================== ADMIN DASHBOARD ==================== -->
 <div id="dlv-view-admin" class="mp-hidden">
