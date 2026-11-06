@@ -1161,33 +1161,9 @@
   </div>
 </div>
 
-    <!-- 🚀 স্মার্ট স্লাইডার সেকশন -->
-    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee;">
-      
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <label style="font-size: 13px; font-weight: bold; color: #333;">পরিমাণ:</label>
-        <!-- ম্যানুয়াল ইনপুট -->
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <input type="number" id="calc-manual-input" class="dlv-input" style="width: 80px; padding: 5px; text-align: center; font-weight: bold; color: var(--mp-primary);" oninput="updateFromManualInput(this.value)">
-          <span id="calc-unit-label" style="font-size: 12px; font-weight: bold;">gm</span>
-        </div>
-      </div>
-      
-      <!-- স্লাইডার -->
-      <input type="range" id="calc-weight-slider" min="100" max="5000" step="50" value="100" 
-        style="width: 100%; cursor: pointer; accent-color: var(--mp-primary);" 
-        oninput="updateSliderCalculation(this.value)">
-        
-      <div style="display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-top: 5px;">
-        <span id="calc-min-label">Min: 100gm</span>
-        <span id="calc-max-label">Max: 5000gm</span>
-      </div>
 
-      <!-- ওয়েট চিপস (Quick Select) -->
-      <div id="calc-chips-container" style="display: flex; gap: 8px; overflow-x: auto; margin-top: 15px; padding-bottom: 5px; scrollbar-width: none;">
-        <!-- JS দিয়ে চিপস তৈরি হবে -->
-      </div>
-    </div>
+
+
 
    
     
