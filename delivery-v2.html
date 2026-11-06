@@ -1029,7 +1029,69 @@
           <!-- বারকোডগুলো এখানে জেনারেট হবে -->
         </div>
       </div>
+<!-- 🚀 Smart Custom Calculator Modal (With AI Message) -->
+<div id="dlv-custom-calc-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-custom-calc-modal').classList.remove('active')">&times;</span>
+    
+    <h3 style="margin-bottom: 5px; color: var(--mp-primary);" id="calc-prod-name">প্রোডাক্টের নাম</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">স্ট্যান্ডার্ড রেট: <b id="calc-base-info">₹0 / 0gm</b></p>
 
+    <!-- 🚀 AI বার্গেনিং মেসেজ বক্স (এটি এখানে বসবে) -->
+    <div id="ai-bargain-msg" style="display:none; background:#e6f4ea; color:#0f9d58; padding:8px; border-radius:6px; font-size:11px; font-weight:bold; text-align:center; margin-bottom:10px; border:1px solid #0f9d58;">
+      ✨ আমাদের AI আপনার এলাকার ৫টি দোকান স্ক্যান করে সবচেয়ে কম রেট বের করেছে!
+    </div>
+
+    <!-- 🚀 স্মার্ট স্লাইডার সেকশন -->
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <label style="font-size: 13px; font-weight: bold; color: #333;">পরিমাণ:</label>
+        <!-- ম্যানুয়াল ইনপুট -->
+        <div style="display: flex; align-items: center; gap: 5px;">
+          <input type="number" id="calc-manual-input" class="dlv-input" style="width: 80px; padding: 5px; text-align: center; font-weight: bold; color: var(--mp-primary);" oninput="updateFromManualInput(this.value)">
+          <span id="calc-unit-label" style="font-size: 12px; font-weight: bold;">gm</span>
+        </div>
+      </div>
+      
+      <!-- স্লাইডার -->
+      <input type="range" id="calc-weight-slider" min="100" max="5000" step="50" value="100" 
+        style="width: 100%; cursor: pointer; accent-color: var(--mp-primary);" 
+        oninput="updateSliderCalculation(this.value)">
+        
+      <div style="display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-top: 5px;">
+        <span id="calc-min-label">Min: 100gm</span>
+        <span id="calc-max-label">Max: 5000gm</span>
+      </div>
+
+      <!-- ওয়েট চিপস (Quick Select) -->
+      <div id="calc-chips-container" style="display: flex; gap: 8px; overflow-x: auto; margin-top: 15px; padding-bottom: 5px; scrollbar-width: none;">
+        <!-- JS দিয়ে চিপস তৈরি হবে -->
+      </div>
+    </div>
+
+    <!-- রেজাল্ট সেকশন -->
+    <div id="calc-error" style="color: var(--mp-danger); font-size: 12px; font-weight: bold; margin-bottom: 10px; display: none;"></div>
+    
+    <div id="calc-result-box" style="background: #e8f0fe; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
+        <span>মালের দাম:</span>
+        <b id="calc-res-prod-price">₹0</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
+        <span id="calc-res-prod-weight-label">আপনি পাচ্ছেন:</span>
+        <b id="calc-res-weight">0 gm</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: var(--mp-primary); border-top: 1px solid #ccc; padding-top: 5px; margin-top: 5px;">
+        <span>সর্বমোট:</span>
+        <span id="calc-res-total">₹0</span>
+      </div>
+    </div>
+
+    <button class="mp-btn mp-btn-success" id="btn-calc-confirm" onclick="confirmCustomOrder()">🛒 অর্ডার কনফার্ম করুন</button>
+  </div>
+</div>
+   
     <!-- ==================== MODALS ==================== -->
 <!-- Recharge Modal -->
 <div id="dlv-recharge-modal" class="dlv-modal-overlay">
@@ -1386,7 +1448,20 @@
   </table>
 </div>
 
-
+    <!-- ৪. সারপ্রাইজ গিফট সেটআপ (বাধ্যতামূলক) -->
+    <div style="background:#fff3e0; padding:12px; border-radius:8px; margin-bottom:15px; border: 1px solid #ffe082;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div style="font-size:12px; font-weight:bold; color:#e65100;">🎁 কাস্টমার সারপ্রাইজ গিফট (বাধ্যতামূলক)</div>
+        <button type="button" onclick="addGiftRow()" style="background:#e65100; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">+ নতুন গিফট</button>
+      </div>
+      <p style="font-size:10px; color:#666; margin-bottom:10px;">বিলের ১% এর সমমানের গিফট সিলেক্ট করুন (যেমন: ৩০০ টাকায় ললিপপ, ৫০০ টাকায় চকলেট)।</p>
+      
+      <div id="sp-gift-container">
+        <!-- ডাইনামিক গিফট রো এখানে আসবে -->
+      </div>
+    </div>
+  
+    
     <button class="mp-btn mp-btn-success" onclick="saveShopProduct()">💾 সেভ করুন</button>
   </div>
 </div>
@@ -2509,6 +2584,7 @@ window.filterCustomerProducts = function() {
         paymentStatus = "cod_pending"; 
       }
 
+      // ১. ডেটাবেসে অর্ডার সেভ করা
       await addDoc(collection(db, "orders"), {
         customerId: currentUser.uid,
         customerName: document.getElementById('dlv-topbar-title').innerText.replace('🛵 ', ''),
@@ -2521,7 +2597,7 @@ window.filterCustomerProducts = function() {
         landmark: tempOrderData.address ? tempOrderData.address.landmark : '',
         lat: tempOrderData.address ? tempOrderData.address.lat : null,
         lng: tempOrderData.address ? tempOrderData.address.lng : null,
-        customerPhone: globalUserData.phone || 'নম্বর নেই', // Fixed userData error
+        customerPhone: globalUserData.phone || 'নম্বর নেই',
         otp: otp,
         paymentMethod: method,
         paymentStatus: paymentStatus,
@@ -2531,10 +2607,28 @@ window.filterCustomerProducts = function() {
       
       document.getElementById('dlv-payment-modal').classList.remove('active');
       
+      // 🚀 ২. সারপ্রাইজ গিফট লজিক (এখানেই বসানো হলো)
+      let giftMessage = "";
+      if (calcProduct && calcProduct.giftSlabs && calcProduct.giftSlabs.length > 0) {
+        let applicableGift = null;
+        // কাস্টমারের বিলের চেয়ে ছোট বা সমান সবচেয়ে বড় স্ল্যাব খোঁজা
+        for (let i = calcProduct.giftSlabs.length - 1; i >= 0; i--) {
+          if (tempOrderData.price >= calcProduct.giftSlabs[i].slab) {
+            applicableGift = calcProduct.giftSlabs[i];
+            break;
+          }
+        }
+        
+        if (applicableGift) {
+          giftMessage = `\n\n🎁 সারপ্রাইজ! আমাদের AI আপনার বিলের ওপর ভিত্তি করে একটি ফ্রি গিফট বেছে নিয়েছে: ${applicableGift.name}`;
+        }
+      }
+
+      // ৩. ফাইনাল মেসেজ দেখানো
       if(method === 'credit') {
-         alert(`অর্ডার প্লেস হয়েছে! এটি আপনার খাতায় যোগ হলো।\n\n⚠️ OTP: ${otp}`);
+         alert(`অর্ডার প্লেস হয়েছে! এটি আপনার খাতায় যোগ হলো।\n\n⚠️ OTP: ${otp} ${giftMessage}`);
       } else {
-         alert(`অর্ডার প্লেস হয়েছে!\n\n⚠️ ডেলিভারির জন্য OTP: ${otp}`);
+         alert(`অর্ডার প্লেস হয়েছে!\n\n⚠️ ডেলিভারির জন্য OTP: ${otp} ${giftMessage}`);
       }
 
     } catch (e) {
@@ -3340,6 +3434,14 @@ window.editShopProduct = function(myData, masterId) {
        const thead = document.getElementById('matrix-thead');
        const tbody = document.getElementById('matrix-tbody');
        
+         const giftContainer = document.getElementById('sp-gift-container');
+    if(giftContainer) giftContainer.innerHTML = '';
+    if (myData.giftSlabs && myData.giftSlabs.length > 0) {
+      myData.giftSlabs.forEach(g => addGiftRow(g.slab, g.name, g.val));
+    } else {
+      addGiftRow(); // ডিফল্ট ১টি খালি রো
+    }
+       
        // সাইজ বসানো
        let ths = thead.rows[0].querySelectorAll('th');
        for(let i=0; i<uniqueSizes.length; i++) {
@@ -3545,6 +3647,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ৪. ভ্যারিয়েন্ট ম্যাট্রিক্স ডেটা সংগ্রহ
     let variants = [];
+    // 🎁 গিফট ডেটা সংগ্রহ
+    let giftSlabs = [];
+    document.querySelectorAll('#sp-gift-container > div').forEach(row => {
+      const slab = parseFloat(row.querySelector('.gift-slab').value);
+      const name = row.querySelector('.gift-name').value.trim();
+      const val = parseFloat(row.querySelector('.gift-val').value);
+      if (!isNaN(slab) && name && !isNaN(val)) {
+        giftSlabs.push({ slab: slab, name: name, val: val });
+      }
+    });
+    giftSlabs.sort((a, b) => a.slab - b.slab);
+    
     const thead = document.getElementById('matrix-thead');
     const tbody = document.getElementById('matrix-tbody');
     
@@ -3605,6 +3719,7 @@ document.addEventListener("DOMContentLoaded", () => {
         packagingCharge: packagingCharge,
         stock: stock,
         stockUnit: stockUnit,
+        giftSlabs: giftSlabs,
         grade: grade,
         
         // স্মার্ট ফিল্ডসমূহ
@@ -6871,7 +6986,21 @@ window.handleCSVUpload = function(event) {
     }
   };
 
-</script>
+  window.addGiftRow = function(slab = '', name = '', val = '') {
+    const container = document.getElementById('sp-gift-container');
+    if(!container) return;
+    const rowId = 'gift-' + Date.now() + Math.floor(Math.random() * 100);
+    container.insertAdjacentHTML('beforeend', `
+      <div id="${rowId}" style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
+        <input type="number" placeholder="বিল (₹)" class="gift-slab" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; min-width:0;" value="${slab}">
+        <input type="text" placeholder="গিফটের নাম" class="gift-name" style="flex:1.5; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; min-width:0;" value="${name}">
+        <input type="number" placeholder="দাম" class="gift-val" style="flex:0.8; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px; min-width:0;" value="${val}">
+        <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">&times;</button>
+      </div>
+    `);
+  };
+
+      </script>
 
 <!-- Live Tracking Modal (Customer) -->
 <div id="dlv-track-modal" class="dlv-modal-overlay">
