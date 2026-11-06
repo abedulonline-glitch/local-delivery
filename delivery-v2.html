@@ -595,29 +595,29 @@
       <p style="font-size: 12px; opacity: 0.9; margin-top: 5px;">প্রোডাক্ট স্ক্যান করে সাথে সাথে বিল তৈরি করুন</p>
     </div>   
 
-    <!-- Standalone Toggle -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">
-      <div>
-        <div style="font-size: 14px; font-weight: bold; color: #7b1fa2;">নিজস্ব স্টোর মোড (SaaS)</div>
-        <div style="font-size: 11px; color: #666;">এটি অন করলে আপনি নিজের প্রোডাক্ট অ্যাড করতে পারবেন।</div>
+    <!-- ২. Free Delivery Toggle -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee;">
+      <div style="flex: 1; padding-right: 15px;">
+        <div style="font-size: 14px; font-weight: bold; color: #0f9d58;">🎁 সবসময় ফ্রি ডেলিভারি</div>
+        <div style="font-size: 11px; color: #666; margin-top: 4px;">এটি অন করলে আপনার প্রোডাক্টে ডেলিভারি চার্জ ০ হবে (কাস্টমার খুশি হবে)।</div>
       </div>
-      <label class="dlv-switch">
-        <input type="checkbox" id="toggle-standalone" onchange="handleStandaloneToggle(this.checked, this)">
-        <span class="dlv-slider" style="--mp-primary: #7b1fa2;"></span>
+      <label class="dlv-switch" style="margin: 0;">
+        <input type="checkbox" id="toggle-shop-free-delivery" onchange="handleShopFreeDelivery(this.checked)">
+        <span class="dlv-slider"></span>
       </label>
     </div>
 
-     <!-- দোকানদারের ফ্রি ডেলিভারি টগল -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; border-top: 1px dashed #eee; padding-top: 10px;">
-    <div>
-      <div style="font-size: 14px; font-weight: bold; color: #0f9d58;">🎁 সবসময় ফ্রি ডেলিভারি</div>
-      <div style="font-size: 11px; color: #666;">এটি অন করলে আপনার প্রোডাক্টে ডেলিভারি চার্জ ০ হবে (কাস্টমার খুশি হবে)।</div>
+    <!-- ৩. Self Delivery Toggle -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee;">
+      <div style="flex: 1; padding-right: 15px;">
+        <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">নিজস্ব ডেলিভারি বয়</div>
+        <div style="font-size: 11px; color: #666; margin-top: 4px;">এটি অন করলে অর্ডার ডেলিভারি বয়দের কাছে বিড হবে না, আপনি নিজেই ডেলিভারি দেবেন।</div>
+      </div>
+      <label class="dlv-switch" style="margin: 0;">
+        <input type="checkbox" id="toggle-self-delivery" onchange="handleSelfDeliveryToggle(this.checked)">
+        <span class="dlv-slider"></span>
+      </label>
     </div>
-    <label class="dlv-switch">
-      <input type="checkbox" id="toggle-shop-free-delivery" onchange="handleShopFreeDelivery(this.checked)">
-      <span class="dlv-slider"></span>
-    </label>
-  </div>
     
     <!-- Delivery Mode Toggle -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">
