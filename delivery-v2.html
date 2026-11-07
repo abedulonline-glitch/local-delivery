@@ -2568,15 +2568,6 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     // Show active view
     const activeView = document.getElementById(`dlv-view-${role}`);
     if (activeView) activeView.classList.remove('mp-hidden');
-
-        // 🚀 অ্যাডমিনের গ্লোবাল ফ্রি ডেলিভারি চেক করে নোটিশ দেখানো
-      if (globalSettings && globalSettings.delivery && globalSettings.delivery.isGlobalFree) {
-        const notice = document.getElementById('global-free-notice');
-        if(notice) notice.classList.remove('mp-hidden');
-      } else {
-        const notice = document.getElementById('global-free-notice');
-        if(notice) notice.classList.add('mp-hidden');
-      }
      
   // Load role-specific data
     if (role === 'customer') {
@@ -3017,44 +3008,48 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     const list = document.getElementById('shop-product-list');
     if (!list) return;
     
-    // ১. টগল বাটনগুলোর স্টেট সেট করা
+    // টগল বাটনগুলোর স্টেট সেট করা
     const standaloneToggle = document.getElementById('toggle-standalone');
     const selfDeliveryToggle = document.getElementById('toggle-self-delivery');
     
     if (standaloneToggle) standaloneToggle.checked = globalUserData.isStandalone || false;
     if (selfDeliveryToggle) selfDeliveryToggle.checked = globalUserData.selfDeliveryOnly || false;
 
-    // ৩. প্রোডাক্ট লিস্ট রেন্ডার করা (ফায়ারবেস থেকে রিয়েল-টাইম ডেটা)
+    // 🚀 অ্যাডমিনের গ্লোবাল ফ্রি ডেলিভারি চেক করে নোটিশ দেখানো (এখানেই বসানো হলো)
+    if (globalSettings && globalSettings.delivery && globalSettings.delivery.isGlobalFree) {
+      const notice = document.getElementById('global-free-notice');
+      if(notice) notice.classList.remove('mp-hidden');
+    } else {
+      const notice = document.getElementById('global-free-notice');
+      if(notice) notice.classList.add('mp-hidden');
+    }
+
+    // প্রোডাক্ট লিস্ট রেন্ডার করা
     const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
-    
     onSnapshot(q, (snapshot) => {
       if (snapshot.empty) {
         list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">কোনো প্রোডাক্ট নেই। নতুন যোগ করুন।</div>';
         return;
       }
-      
       list.innerHTML = '';
       snapshot.forEach((docSnap) => {
         const prod = docSnap.data();
         
-        // 🚀 ডেটা ফ্যালব্যাক: ইউনিট এবং বেস ওজন না থাকলে ডিফল্ট মান বসানো
+        // 🚀 FIX: ইউনিট এবং বেস ওজনের স্মার্ট ফলব্যাক (undefined দূর করার জন্য)
         const displayUnit = prod.unit || prod.baseUnit || 'pcs';
+        // যদি দামের পাশে দেখানোর জন্য বেস ওজন দরকার হয়:
         const displayBaseWeight = prod.baseWeight || 1; 
         
         // স্টক ডিসপ্লে টেক্সট
         const stockUnit = prod.stockUnit || displayUnit;
         const stockDisplay = `${prod.stock} ${stockUnit}`;
 
-        // প্রোডাক্ট কার্ড তৈরি
         list.innerHTML += `
           <div class="shop-prod-item">
-            <div class="prod-img-thumb">
-              ${prod.image ? `<img src="${prod.image}" style="width:100%; height:100%; border-radius:8px; object-fit:cover;">` : '📦'}
-            </div>
+            <div class="prod-img-thumb">${prod.image ? `<img src="${prod.image}" style="width:100%; height:100%; border-radius:8px; object-fit:cover;">` : '📦'}</div>
             <div class="prod-details">
-              <div class="prod-title">
-                ${prod.name} ${prod.isStandalone ? '<span style="font-size:10px; color:#7b1fa2;">(নিজস্ব)</span>' : ''}
-              </div>
+              <div class="prod-title">${prod.name} ${prod.isStandalone ? '<span style="font-size:10px; color:#7b1fa2;">(নিজস্ব)</span>' : ''}</div>
+              <!-- 🚀 এখানে undefined এর বদলে আসল ইউনিট ও ওজন দেখাবে -->
               <div class="prod-price">₹${prod.price} / ${displayBaseWeight}${displayUnit}</div>
               <div class="prod-stock">স্টক: ${stockDisplay}</div>
             </div>
