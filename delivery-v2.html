@@ -1167,14 +1167,37 @@
    
     
     <!-- Payment Method Modal -->
+<!-- 🚀 Smart Checkout & Payment Modal -->
 <div id="dlv-payment-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content">
-    <h3 style="margin-bottom: 15px; color: var(--mp-primary); text-align: center;">পেমেন্ট মেথড</h3>
-    <p style="text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 15px;" id="pay-modal-amount">₹0</p>
-    <button class="mp-btn mp-btn-primary" onclick="processOrderPayment('wallet')" style="background: #0f9d58;">💳 ওয়ালেট</button>
-    <button class="mp-btn" onclick="processOrderPayment('cod')" style="background: #f0f2f5; color: #333;">💵 ক্যাশ অন ডেলিভারি</button>
-    <button class="mp-btn" onclick="processOrderPayment('credit')" style="background: #fef7e0; color: #b06000;">📒 বাকি (খাতা)</button>
-    <button class="mp-btn" onclick="document.getElementById('dlv-payment-modal').classList.remove('active')" style="background: transparent; color: #999;">বাতিল</button>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary); text-align: center;">অর্ডার কনফার্ম করুন</h3>
+    
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; border: 1px dashed #ccc;">
+      <div style="font-size: 12px; color: #666; margin-bottom: 5px;">মোট বিল (ডেলিভারি চার্জসহ)</div>
+      <div style="font-size: 24px; font-weight: bold; color: var(--mp-danger);" id="pay-modal-amount">₹0.00</div>
+    </div>
+
+    <!-- এখানে অ্যাড্রেস ও ডেলিভারি টাইম দেখানো হবে -->
+    <div id="checkout-summary" style="font-size: 12px; color: #555; margin-bottom: 15px;">
+      <!-- JS দিয়ে বসবে -->
+    </div>
+
+    <p style="font-size: 13px; font-weight: bold; margin-bottom: 10px;">পেমেন্ট মেথড সিলেক্ট করুন:</p>
+    
+    <button class="mp-btn mp-btn-success" onclick="finalizeSmartCartOrder('wallet')" style="background: #0f9d58; display: flex; justify-content: space-between; align-items: center;">
+      <span>💳 ওয়ালেট</span>
+      <span style="font-size: 11px; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">ব্যালেন্স: <span id="pay-wallet-bal">₹0</span></span>
+    </button>
+    <button class="mp-btn" onclick="finalizeSmartCartOrder('cod')" style="background: #f0f2f5; color: #333; display: flex; justify-content: space-between; align-items: center;">
+      <span>💵 ক্যাশ অন ডেলিভারি</span>
+      <span style="font-size: 11px; color: #666;">হাতে পেয়ে দিবেন</span>
+    </button>
+    <button class="mp-btn" onclick="finalizeSmartCartOrder('credit')" style="background: #fef7e0; color: #b06000; display: flex; justify-content: space-between; align-items: center;">
+      <span>📒 বাকি (খাতা)</span>
+      <span style="font-size: 11px; color: #666;">দোকানের খাতায় যোগ হবে</span>
+    </button>
+    
+    <button class="mp-btn" onclick="document.getElementById('dlv-payment-modal').classList.remove('active')" style="background: transparent; color: #999; margin-top: 5px;">বাতিল করুন</button>
   </div>
 </div>
 
@@ -2528,15 +2551,116 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     updateSmartCartUI();
   };
 
-  // ৫. চেকআউটে যাওয়া (এখানে পরবর্তী ধাপে পেমেন্ট লজিক বসবে)
+  
+  // ১. চেকআউট বাটনে ক্লিক করলে
   window.proceedToCartCheckout = function() {
     if (smartCart.length === 0) return alert("কার্টে কোনো প্রোডাক্ট নেই!");
+
+    // ডেলিভারি চার্জ ও টোটাল বের করা
+    const totalText = document.getElementById('cart-grand-total').innerText.replace('₹', '');
+    const finalTotal = parseFloat(totalText);
     
-    // এখানে আমরা পরে পেমেন্ট মডাল বা অ্যাড্রেস সিলেকশন ওপেন করব
-    alert("চেকআউট সাকসেসফুল! পরবর্তী ধাপে পেমেন্ট সিস্টেম কানেক্ট করা হবে।");
+    // অ্যাড্রেস চেক
+    if (!customerAddresses || customerAddresses.length === 0) {
+      alert("অর্ডার করতে অনুগ্রহ করে একটি ডেলিভারি অ্যাড্রেস সেভ করুন!");
+      openAddressModal();
+      return;
+    }
+
+    const deliveryModeText = document.getElementById('cart-delivery-time').options[document.getElementById('cart-delivery-time').selectedIndex].text;
+
+    // পেমেন্ট মডাল আপডেট
+    document.getElementById('pay-modal-amount').innerText = `₹${finalTotal.toFixed(2)}`;
+    document.getElementById('pay-wallet-bal').innerText = `₹${(globalUserData.walletBalance || 0).toFixed(2)}`;
+    document.getElementById('checkout-summary').innerHTML = `
+      <div style="background:#e8f0fe; padding:10px; border-radius:6px;">
+        <b>📍 ডেলিভারি:</b> ${customerAddresses[customerAddresses.length - 1].text.substring(0, 30)}...<br>
+        <b>⏱️ টাইম:</b> ${deliveryModeText}
+      </div>
+    `;
     
-    // আপাতত মডাল বন্ধ করে দিচ্ছি
     document.getElementById('dlv-smart-cart-modal').classList.remove('active');
+    document.getElementById('dlv-payment-modal').classList.add('active');
+  };
+
+  // ২. পেমেন্ট সিলেক্ট করার পর অর্ডার সেভ করা
+  window.finalizeSmartCartOrder = async function(paymentMethod) {
+    const btn = document.querySelector(`#dlv-payment-modal .mp-btn-success`);
+    btn.innerText = "⏳ প্রসেস হচ্ছে...";
+    btn.disabled = true;
+
+    const totalText = document.getElementById('cart-grand-total').innerText.replace('₹', '');
+    const finalTotal = parseFloat(totalText);
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const deliveryMode = document.getElementById('cart-delivery-time').value;
+
+    // ওয়ালেট চেক
+    if (paymentMethod === 'wallet') {
+      if ((globalUserData.walletBalance || 0) < finalTotal) {
+        alert("দুঃখিত, ওয়ালেটে পর্যাপ্ত ব্যালেন্স নেই!");
+        btn.innerText = "💳 ওয়ালেট"; btn.disabled = false;
+        return;
+      }
+    }
+
+    try {
+      // 🚀 ৩. স্মার্ট স্প্লিটিং (দোকান অনুযায়ী আলাদা অর্ডার তৈরি)
+      let ordersByShop = {};
+      smartCart.forEach(item => {
+        if (!ordersByShop[item.shopId]) ordersByShop[item.shopId] = [];
+        ordersByShop[item.shopId].push(item);
+      });
+
+      const masterOrderId = "ORD-" + Date.now();
+
+      // প্রতিটি দোকানের জন্য আলাদা অর্ডার তৈরি
+      for (const shopId in ordersByShop) {
+        const shopItems = ordersByShop[shopId];
+        const shopTotal = shopItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+        await addDoc(collection(db, "orders"), {
+          masterOrderId: masterOrderId,
+          customerId: currentUser.uid,
+          customerName: globalUserData.name, // (দোকানদার শুধু এই নামটা দেখবে, ফোন/ঠিকানা দেখবে না)
+          shopId: shopId,
+          items: shopItems,
+          price: shopTotal,
+          totalPaidByCustomer: finalTotal, 
+          otp: otp,
+          deliveryMode: deliveryMode,
+          paymentMethod: paymentMethod,
+          status: "pending_shop_accept", // দোকানদার অ্যাকসেপ্ট করার অপেক্ষায়
+          createdAt: serverTimestamp(),
+          
+          // 🚀 প্রাইভেসি লজিক: কাস্টমারের গোপন তথ্য আলাদা রাখা
+          customerAddress: customerAddresses[customerAddresses.length - 1].text,
+          customerPhone: globalUserData.phone,
+          lat: customerAddresses[customerAddresses.length - 1].lat,
+          lng: customerAddresses[customerAddresses.length - 1].lng
+        });
+      }
+
+      // ওয়ালেট থেকে টাকা কাটা (যদি ওয়ালেট পেমেন্ট হয়)
+      if (paymentMethod === 'wallet') {
+        const newBal = globalUserData.walletBalance - finalTotal;
+        await updateDoc(doc(db, "users", currentUser.uid), { walletBalance: newBal });
+        globalUserData.walletBalance = newBal;
+        document.getElementById('topbar-wallet-bal').innerText = `₹${newBal.toFixed(2)}`;
+      }
+
+      // সফল হলে কার্ট খালি করা
+      document.getElementById('dlv-payment-modal').classList.remove('active');
+      smartCart = [];
+      updateSmartCartUI();
+
+      alert(`✅ অর্ডার সফলভাবে প্লেস হয়েছে!\n\n🔑 ডেলিভারির জন্য OTP: ${otp}\n\n(দোকানদারকে আপনার নাম ছাড়া অন্য কোনো তথ্য দেখানো হয়নি)`);
+
+    } catch (e) {
+      console.error(e);
+      alert("অর্ডার প্রসেস করতে সমস্যা হয়েছে!");
+    } finally {
+      btn.innerText = "💳 ওয়ালেট"; btn.disabled = false;
+    }
   };
       
    // ==================== SHOP SELECTOR MODAL ====================
