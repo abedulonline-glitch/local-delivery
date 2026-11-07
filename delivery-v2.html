@@ -3270,7 +3270,8 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
 
   function loadShopNewOrders() {
     const list = document.getElementById('shop-new-orders-list');
-    // 🚀 FIX: 'pending' এর জায়গায় 'pending_shop_accept' হবে
+    
+    // 🚀 নতুন স্ট্যাটাস 'pending_shop_accept' খোঁজা হচ্ছে
     const q = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("status", "==", "pending_shop_accept"));
     
     onSnapshot(q, (snap) => {
@@ -3282,15 +3283,56 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       let html = '';
       snap.forEach(docSnap => {
         const order = docSnap.data();
+        
+        // 🚀 আইটেমগুলো লুপ করে লিস্ট তৈরি করা (যাতে দোকানদার বুঝতে পারে কী প্যাক করতে হবে)
+        let itemsListHtml = '';
+        let calculatedPrice = 0;
+
+        if (order.items && order.items.length > 0) {
+            order.items.forEach(item => {
+                // দাম হিসাব (যদি ডেটাবেসে সেভ করা না থাকে)
+                let itemPrice = item.price * item.qty;
+                calculatedPrice += itemPrice;
+                
+                // আইটেমের নাম, ব্র্যান্ড, সাইজ দেখানো
+                let variantText = '';
+                if(item.selectedBrand && item.selectedBrand !== 'Default') variantText += `${item.selectedBrand} `;
+                if(item.selectedSize) variantText += `(${item.selectedSize}${item.selectedUnit})`;
+
+                itemsListHtml += `
+                  <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; border-bottom:1px dashed #eee; padding-bottom:2px;">
+                    <span>🔸 ${item.name} ${variantText} x ${item.qty}</span>
+                    <span>₹${itemPrice}</span>
+                  </div>
+                `;
+            });
+        } else {
+             // পুরোনো অর্ডারের জন্য ফলব্যাক
+             itemsListHtml = `<div style="font-size:12px;">${order.productName || 'Unknown Item'} x 1</div>`;
+             calculatedPrice = order.price || 0;
+        }
+
+        // যদি ডেটাবেসের price ফিল্ড NaN বা 0 হয়, তবে calculatedPrice ব্যবহার করব
+        let finalDisplayPrice = (order.price && !isNaN(order.price)) ? order.price : calculatedPrice;
+
         html += `
-          <div style="border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #fff;">
-            <div style="display:flex; justify-content:space-between; font-weight:bold;">
-              <span>অর্ডার #${docSnap.id.slice(-4)}</span><span>₹${order.price}</span>
+          <div style="border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fff;">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 8px;">
+              <span style="color: var(--mp-primary);">অর্ডার #${docSnap.id.slice(-4).toUpperCase()}</span>
+              <span style="color: var(--mp-danger);">₹${finalDisplayPrice.toFixed(2)}</span>
             </div>
-            <!-- 🚀 দোকানদার কাস্টমারের ডিটেইলস দেখবে না, শুধু আইটেম দেখবে -->
-            <div style="font-size:12px; color:#666; margin-top:5px;">আইটেম সংখ্যা: ${order.items.length} টি</div>
-            <div style="font-size:12px; color:#666; margin-bottom:10px;">পেমেন্ট: ${order.paymentMethod.toUpperCase()}</div>
-            <button class="mp-btn mp-btn-success" style="margin: 0; padding: 8px;" onclick="markOrderReady('${docSnap.id}')">✅ রেডি করুন</button>
+            
+            <!-- আইটেম লিস্ট -->
+            <div style="margin-bottom: 10px;">
+                ${itemsListHtml}
+            </div>
+
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:#666; margin-bottom:10px;">
+                <span>পেমেন্ট: ${order.paymentMethod ? order.paymentMethod.toUpperCase() : 'COD'}</span>
+                <span>ডেলিভারি: ${order.deliveryMode ? order.deliveryMode.toUpperCase() : 'SAME DAY'}</span>
+            </div>
+
+            <button class="mp-btn mp-btn-success" style="margin: 0; padding: 8px;" onclick="markOrderReady('${docSnap.id}')">✅ প্যাকিং সম্পন্ন ও রেডি করুন</button>
           </div>
         `;
       });
