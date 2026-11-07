@@ -2569,7 +2569,16 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     const activeView = document.getElementById(`dlv-view-${role}`);
     if (activeView) activeView.classList.remove('mp-hidden');
 
-    // Load role-specific data
+        // 🚀 অ্যাডমিনের গ্লোবাল ফ্রি ডেলিভারি চেক করে নোটিশ দেখানো
+      if (globalSettings && globalSettings.delivery && globalSettings.delivery.isGlobalFree) {
+        const notice = document.getElementById('global-free-notice');
+        if(notice) notice.classList.remove('mp-hidden');
+      } else {
+        const notice = document.getElementById('global-free-notice');
+        if(notice) notice.classList.add('mp-hidden');
+      }
+     
+  // Load role-specific data
     if (role === 'customer') {
       // ১. ফায়ারবেস থেকে সেভ করা অ্যাড্রেস লোড করা
       if (userData.addresses && Array.isArray(userData.addresses)) {
@@ -3014,15 +3023,6 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     
     if (standaloneToggle) standaloneToggle.checked = globalUserData.isStandalone || false;
     if (selfDeliveryToggle) selfDeliveryToggle.checked = globalUserData.selfDeliveryOnly || false;
-
-    // ২. অ্যাডমিনের গ্লোবাল ফ্রি ডেলিভারি চেক করে নোটিশ দেখানো
-    if (globalSettings && globalSettings.delivery && globalSettings.delivery.isGlobalFree) {
-      const notice = document.getElementById('global-free-notice');
-      if(notice) notice.classList.remove('mp-hidden');
-    } else {
-      const notice = document.getElementById('global-free-notice');
-      if(notice) notice.classList.add('mp-hidden');
-    }
 
     // ৩. প্রোডাক্ট লিস্ট রেন্ডার করা (ফায়ারবেস থেকে রিয়েল-টাইম ডেটা)
     const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
