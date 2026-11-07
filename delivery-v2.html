@@ -3269,9 +3269,11 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
   }
 
   function loadShopNewOrders() {
-    const q = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("status", "==", "pending"));
+    const list = document.getElementById('shop-new-orders-list');
+    // 🚀 FIX: 'pending' এর জায়গায় 'pending_shop_accept' হবে
+    const q = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("status", "==", "pending_shop_accept"));
+    
     onSnapshot(q, (snap) => {
-      const list = document.getElementById('shop-new-orders-list');
       if (!list) return;
       if (snap.empty) {
         list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">বর্তমানে কোনো নতুন অর্ডার নেই।</div>';
@@ -3283,9 +3285,10 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
         html += `
           <div style="border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #fff;">
             <div style="display:flex; justify-content:space-between; font-weight:bold;">
-              <span>${order.productName}</span><span>₹${order.price}</span>
+              <span>অর্ডার #${docSnap.id.slice(-4)}</span><span>₹${order.price}</span>
             </div>
-            <div style="font-size:12px; color:#666; margin-top:5px;">কাস্টমার: ${order.customerName}</div>
+            <!-- 🚀 দোকানদার কাস্টমারের ডিটেইলস দেখবে না, শুধু আইটেম দেখবে -->
+            <div style="font-size:12px; color:#666; margin-top:5px;">আইটেম সংখ্যা: ${order.items.length} টি</div>
             <div style="font-size:12px; color:#666; margin-bottom:10px;">পেমেন্ট: ${order.paymentMethod.toUpperCase()}</div>
             <button class="mp-btn mp-btn-success" style="margin: 0; padding: 8px;" onclick="markOrderReady('${docSnap.id}')">✅ রেডি করুন</button>
           </div>
@@ -5378,7 +5381,13 @@ window.searchPinUsers = async function() {
         if (!currentPins.includes(pin)) {
           currentPins.push(pin);
           if(!confirm(`${name}-কে পিন ${pin} দিন?`)) return;
-          await updateDoc(userRef, { managerPins: currentPins, isManager: true });
+          
+          // 🚀 FIX: managerPins এর সাথে সাথে pinCode-ও আপডেট করা হচ্ছে
+          await updateDoc(userRef, { 
+            managerPins: currentPins, 
+            isManager: true,
+            pinCode: pin // ডেলিভারি বয়ের ক্ষেত্রে কুয়েরি সহজ করতে
+          });
           alert("সফলভাবে যুক্ত হয়েছে!");
         } else { alert("আগেই আছে!"); }
       }
@@ -5800,7 +5809,7 @@ window.clearImageSearch = function() {
 };
  
   
-   // ==================== MANAGER DASHBOARD LOGIC (SMART & BUG FIXED) ====================
+     // ==================== MANAGER DASHBOARD LOGIC (SMART & BUG FIXED v2) ====================
   let managerMap = null;
   let managerMarkers = [];
   let managerStreetLayer = null;
@@ -5836,7 +5845,9 @@ window.clearImageSearch = function() {
     let myShopIds = [];
     let deliveryBoysData = [];
 
-    const usersQ = query(collection(db, "users"), where("pinCode", "in", pins.slice(0, 10))); 
+    // 🚀 FIX ১: ডেলিভারি বয় এবং দোকানদার খোঁজার লজিক আপডেট করা হলো
+    // (এখন pinCode অথবা managerPins যেকোনো একটি মিললেই ইউজারটি খুঁজে পাবে)
+    const usersQ = query(collection(db, "users")); 
     
     onSnapshot(usersQ, (snap) => {
       let shops = 0, delivery = 0, customers = 0;
@@ -5847,17 +5858,24 @@ window.clearImageSearch = function() {
 
       snap.forEach(docSnap => {
         const u = docSnap.data();
-        if (u.role === 'shopkeeper') {
-          shops++;
-          myShopIds.push(docSnap.id); 
-          if(u.lat && u.lng) shopLocations.push(u);
+        
+        let isInMyPin = false;
+        if (u.pinCode && pins.includes(u.pinCode)) isInMyPin = true;
+        if (u.managerPins && u.managerPins.some(p => pins.includes(p))) isInMyPin = true;
+
+        if (isInMyPin) {
+          if (u.role === 'shopkeeper') {
+            shops++;
+            myShopIds.push(docSnap.id); 
+            if(u.lat && u.lng) shopLocations.push(u);
+          }
+          if (u.role === 'delivery') {
+            delivery++;
+            deliveryBoysData.push({id: docSnap.id, ...u});
+            if(u.lat && u.lng) deliveryLocations.push(u);
+          }
+          if (u.role === 'customer') customers++;
         }
-        if (u.role === 'delivery') {
-          delivery++;
-          deliveryBoysData.push({id: docSnap.id, ...u});
-          if(u.lat && u.lng) deliveryLocations.push(u);
-        }
-        if (u.role === 'customer') customers++;
       });
 
       document.getElementById('mgr-total-shops').innerText = shops;
@@ -5885,6 +5903,7 @@ window.clearImageSearch = function() {
         fleetList.innerHTML = fleetHtml;
       }
 
+      // ম্যাপ মার্কার আপডেট
       managerMarkers.forEach(m => managerMap.removeLayer(m));
       managerMarkers = [];
 
@@ -5908,7 +5927,8 @@ window.clearImageSearch = function() {
       }
     });
 
-    const ordersQ = query(collection(db, "orders"), where("status", "in", ["pending", "bidding", "assigned"]));
+    // 🚀 FIX ২: ম্যানেজারের অর্ডার লিসেনার (নতুন স্ট্যাটাস pending_shop_accept যোগ করা হলো)
+    const ordersQ = query(collection(db, "orders"), where("status", "in", ["pending_shop_accept", "ready", "bidding", "assigned"]));
     
     onSnapshot(ordersQ, (snap) => {
       const liveOrderList = document.getElementById('manager-live-orders');
@@ -5917,6 +5937,7 @@ window.clearImageSearch = function() {
       
       snap.forEach(docSnap => {
         const o = docSnap.data();
+        // চেক করা হচ্ছে অর্ডারটি আমার এলাকার দোকানের কি না
         if (myShopIds.includes(o.shopId)) {
           ordersArray.push({ id: docSnap.id, ...o });
           if (!alertedOrderIds.has(docSnap.id)) {
@@ -5944,12 +5965,17 @@ window.clearImageSearch = function() {
         let orderHtml = '';
         ordersArray.forEach(o => {
           let statusColor = o.status === 'bidding' ? 'var(--mp-warning)' : 'var(--mp-primary)';
+          
+          // 🚀 FIX ৩: নতুন অর্ডার ফরম্যাট অনুযায়ী ডেটা দেখানো (items.length)
+          let itemCount = o.items ? o.items.length : 0;
+          let orderIdShort = o.masterOrderId ? o.masterOrderId.slice(-4) : o.id.slice(-4);
+          
           orderHtml += `
             <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
               <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px;">
-                <span>${o.productName}</span><span>₹${o.price}</span>
+                <span>অর্ডার #${orderIdShort}</span><span>₹${o.price}</span>
               </div>
-              <div style="font-size:11px; color:#666; margin-top:4px;">🏪 ${o.shopName} | কাস্টমার: ${o.customerName}</div>
+              <div style="font-size:11px; color:#666; margin-top:4px;">📦 আইটেম: ${itemCount} টি | পেমেন্ট: ${o.paymentMethod.toUpperCase()}</div>
               <div style="font-size:11px; color:${statusColor}; font-weight:bold; margin-top:4px;">স্ট্যাটাস: ${o.status.toUpperCase()}</div>
             </div>
           `;
@@ -5960,7 +5986,6 @@ window.clearImageSearch = function() {
       document.getElementById('mgr-pending-orders').innerText = ordersArray.length;
     });
   }
-
   window.setManagerMapView = function(type) {
     if (!managerMap) return;
     if (type === 'satellite') {
