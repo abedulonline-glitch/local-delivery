@@ -2290,9 +2290,9 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
         `;
       }
 
-      // 🚀 এখানে onclick লাইনটি আপডেট করা হয়েছে (shopLat, shopLng এবং freeDelivery যোগ করা হয়েছে)
+      // 🚀 পুরোনো লম্বা onclick মুছে শুধু lowestPriceShop.id পাঠান
       grid.innerHTML += `
-        <div class="dlv-product-card" onclick="addToSmartCart('${lowestPriceShop.id}', '${g.name.replace(/'/g, "\\'")}', '${g.unit || 'pcs'}', ${lowestPriceShop.price}, '${lowestPriceShop.shopId}', '${lowestPriceShop.shopName.replace(/'/g, "\\'")}', ${lowestPriceShop.stock}, ${lowestPriceShop.baseWeight || 1}, '${lowestPriceShop.baseUnit || g.unit}', ${lowestPriceShop.shopLat || 0}, ${lowestPriceShop.shopLng || 0}, ${lowestPriceShop.freeDelivery || false})">
+        <div class="dlv-product-card" onclick="addToSmartCart('${lowestPriceShop.id}')">
           <div class="dlv-product-img-wrap" style="position: relative;">
             ${g.image ? `<img src="${g.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
             ${tagHtml}
@@ -2312,23 +2312,60 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
   let smartCart = []; // কার্টের ডেটা এখানে জমা হবে
 
   // ১. কার্টে প্রোডাক্ট অ্যাড করা
-  window.addToSmartCart = function(prodId, name, unit, price, shopId, shopName, stock, baseWeight, baseUnit, shopLat, shopLng, isShopFree) {
-    const existingItemIndex = smartCart.findIndex(item => item.prodId === prodId);
-    if (existingItemIndex > -1) {
-      smartCart[existingItemIndex].qty += 1;
+  window.addToSmartCart = function(prodId) {
+    const product = allRawProducts.find(p => p.id === prodId);
+    if(!product) return;
+
+    // ডিফল্ট ব্র্যান্ড ও সাইজ সেট করা (যদি ভ্যারিয়েন্ট থাকে)
+    let defaultBrand = 'Default';
+    let defaultSize = product.baseWeight || 1;
+    let defaultUnit = product.baseUnit || 'pcs';
+
+    if (product.variants && product.variants.length > 0) {
+        defaultBrand = product.variants[0].brand;
+        defaultSize = product.variants[0].size;
+        defaultUnit = product.variants[0].unit;
+    }
+
+    // চেক করা: এই প্রোডাক্টের একই ব্র্যান্ড ও সাইজ আগে থেকেই কার্টে আছে কি না
+    const existingIndex = smartCart.findIndex(item => 
+        item.prodId === prodId && 
+        item.selectedBrand === defaultBrand && 
+        item.selectedSize === defaultSize && 
+        item.selectedUnit === defaultUnit
+    );
+
+    if (existingIndex > -1) {
+      smartCart[existingIndex].qty += 1;
     } else {
       smartCart.push({
-        prodId, name, unit, price, shopId, shopName, stock, 
-        baseWeight, baseUnit, shopLat, shopLng, isShopFree,
-        qty: 1, 
-        displayShopName: "✅ ভেরিফাইড লোকাল স্টোর" 
+        cartItemId: 'cart-' + Date.now() + Math.floor(Math.random()*1000),
+        prodId: prodId,
+        name: product.name,
+        image: product.image,
+        qty: 1,
+        selectedBrand: defaultBrand,
+        selectedSize: defaultSize,
+        selectedUnit: defaultUnit,
+        variants: product.variants || [],
+        discountTiers: product.discountTiers || [],
+        extraChargeTiers: product.extraChargeTiers || [],
+        basePrice: product.price,
+        baseWeight: product.baseWeight || 1,
+        baseUnit: product.baseUnit || 'pcs',
+        shopId: product.shopId,
+        shopName: product.shopName,
+        shopLat: product.shopLat,
+        shopLng: product.shopLng,
+        isShopFree: product.freeDelivery || false,
+        displayShopName: "✅ ভেরিফাইড লোকাল স্টোর"
       });
     }
     updateSmartCartUI();
     document.getElementById('dlv-smart-cart-modal').classList.add('active');
   };
   // ২. কার্টের UI আপডেট করা (টেবিল ও দাম)
-   window.updateSmartCartUI = function() {
+  window.updateSmartCartUI = function() {
     const tbody = document.getElementById('smart-cart-body');
     const subtotalEl = document.getElementById('cart-subtotal');
     const grandTotalEl = document.getElementById('cart-grand-total');
@@ -2347,19 +2384,65 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     let maxDistanceKm = 0; 
     let isAnyShopFree = false;
 
-    // ১. কার্টের প্রোডাক্ট লুপ ও ডেটা কালেকশন
     smartCart.forEach((item, index) => {
-      const itemTotal = item.price * item.qty;
-      subtotal += itemTotal;
-      
-      // ওজন হিসাব (গ্রামে কনভার্ট করে)
-      let w = item.baseWeight || 1;
-      if (item.baseUnit === 'kg' || item.baseUnit === 'ltr') w = w * 1000;
-      totalWeightGrams += w * item.qty;
+      // ১. ব্র্যান্ড ও সাইজের ড্রপডাউন তৈরি
+      let brandOptions = `<option value="${item.selectedBrand}">${item.selectedBrand}</option>`;
+      let sizeOptions = `<option value="${item.selectedSize}_${item.selectedUnit}">${item.selectedSize}${item.selectedUnit}</option>`;
 
-      // দোকানের সাথে কাস্টমারের দূরত্ব হিসাব (Haversine Formula)
+      if (item.variants && item.variants.length > 0) {
+          let uniqueBrands = [...new Set(item.variants.map(v => v.brand))];
+          brandOptions = uniqueBrands.map(b => `<option value="${b}" ${b === item.selectedBrand ? 'selected' : ''}>${b}</option>`).join('');
+
+          let uniqueSizes = [...new Set(item.variants.map(v => v.size + '_' + v.unit))];
+          sizeOptions = uniqueSizes.map(s => {
+              let [size, unit] = s.split('_');
+              let isSelected = (size == item.selectedSize && unit === item.selectedUnit) ? 'selected' : '';
+              return `<option value="${s}" ${isSelected}>${size}${unit}</option>`;
+          }).join('');
+      }
+
+      // ২. বর্তমান ভ্যারিয়েন্টের দাম বের করা
+      let unitPrice = item.basePrice; // ডিফল্ট
+      let currentVariant = item.variants.find(v => v.brand === item.selectedBrand && v.size == item.selectedSize && v.unit === item.selectedUnit);
+      if (currentVariant) {
+          unitPrice = currentVariant.price;
+      }
+
+      // ৩. বাড়তি চার্জ (Small Packaging) হিসাব
+      let extraPct = 0;
+      if (item.extraChargeTiers && item.extraChargeTiers.length > 0) {
+          // বড় সাইজ থেকে ছোট সাইজে সর্ট করে চেক করা
+          let sortedExtra = [...item.extraChargeTiers].sort((a, b) => b.qty - a.qty);
+          for (let t of sortedExtra) {
+              if (item.selectedSize < t.qty) {
+                  extraPct = t.pct;
+              }
+          }
+      }
+      unitPrice = unitPrice * (1 + extraPct / 100);
+
+      // ৪. ডিসকাউন্ট (Bulk) হিসাব - শুধুমাত্র এই নির্দিষ্ট ব্র্যান্ড+সাইজের ওপর
+      let discPct = 0;
+      if (item.discountTiers && item.discountTiers.length > 0) {
+          let sortedDisc = [...item.discountTiers].sort((a, b) => a.qty - b.qty);
+          for (let t of sortedDisc) {
+              if (item.qty >= t.qty) {
+                  discPct = t.pct;
+              }
+          }
+      }
+      unitPrice = unitPrice * (1 - discPct / 100);
+
+      const itemTotal = unitPrice * item.qty;
+      subtotal += itemTotal;
+
+      // ৫. ওজন ও দূরত্ব হিসাব (ডেলিভারি চার্জের জন্য)
+      let weightMultiplier = (item.selectedUnit === 'kg' || item.selectedUnit === 'ltr') ? 1000 : 1;
+      let itemWeightGrams = item.selectedSize * weightMultiplier * item.qty;
+      totalWeightGrams += itemWeightGrams;
+
       if (item.shopLat && item.shopLng && customerLat && customerLng) {
-         const R = 6371; // Earth radius in km
+         const R = 6371;
          const dLat = (item.shopLat - customerLat) * Math.PI / 180;
          const dLon = (item.shopLng - customerLng) * Math.PI / 180;
          const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(customerLat * Math.PI / 180) * Math.cos(item.shopLat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
@@ -2367,25 +2450,39 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
          const distance = R * c;
          if (distance > maxDistanceKm) maxDistanceKm = distance;
       }
-
       if (item.isShopFree) isAnyShopFree = true;
 
+      // UI রো তৈরি
       html += `
         <tr style="border-bottom: 1px solid #eee;">
           <td style="padding: 10px 8px;">
             <div style="font-weight: bold; color: #333; font-size: 13px;">${item.name}</div>
             <div style="font-size: 10px; color: #0f9d58; margin-top: 2px;">🏪 ${item.displayShopName}</div>
+            
+            <!-- 🚀 ব্র্যান্ড ও সাইজ ড্রপডাউন -->
+            <div style="display: flex; gap: 5px; margin-top: 6px;">
+              <select onchange="changeCartVariant(${index}, 'brand', this.value)" style="font-size: 11px; padding: 3px; border-radius: 4px; border: 1px solid #ccc;">
+                ${brandOptions}
+              </select>
+              <select onchange="changeCartVariant(${index}, 'size', this.value)" style="font-size: 11px; padding: 3px; border-radius: 4px; border: 1px solid #ccc;">
+                ${sizeOptions}
+              </select>
+            </div>
+            ${discPct > 0 ? `<div style="font-size:9px; color:#0f9d58; margin-top:3px;">🎉 ${discPct}% ডিসকাউন্ট প্রযোজ্য</div>` : ''}
+            ${extraPct > 0 ? `<div style="font-size:9px; color:#d93025; margin-top:3px;">⚠️ ছোট প্যাকিং চার্জ যুক্ত</div>` : ''}
           </td>
-          <td style="padding: 10px 8px; text-align: center;">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <td style="padding: 10px 8px; text-align: center; vertical-align: top;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 15px;">
               <button onclick="changeCartQty(${index}, -1)" style="background: #f0f2f5; border: 1px solid #ccc; border-radius: 4px; width: 24px; height: 24px; font-weight: bold; cursor: pointer; line-height: 1;">-</button>
               <span style="font-weight: bold; font-size: 14px; min-width: 15px;">${item.qty}</span>
               <button onclick="changeCartQty(${index}, 1)" style="background: #e8f0fe; color: var(--mp-primary); border: 1px solid #1a73e8; border-radius: 4px; width: 24px; height: 24px; font-weight: bold; cursor: pointer; line-height: 1;">+</button>
             </div>
           </td>
-          <td style="padding: 10px 8px; text-align: right; font-weight: bold; color: var(--mp-primary);">₹${itemTotal.toFixed(2)}</td>
-          <td style="padding: 10px 8px; text-align: center;">
-            <button onclick="removeFromSmartCart(${index})" style="background: none; border: none; color: var(--mp-danger); font-size: 18px; cursor: pointer;">&times;</button>
+          <td style="padding: 10px 8px; text-align: right; font-weight: bold; color: var(--mp-primary); vertical-align: top;">
+            <div style="margin-top: 15px;">₹${itemTotal.toFixed(2)}</div>
+          </td>
+          <td style="padding: 10px 8px; text-align: center; vertical-align: top;">
+            <button onclick="removeFromSmartCart(${index})" style="background: none; border: none; color: var(--mp-danger); font-size: 18px; cursor: pointer; margin-top: 10px;">&times;</button>
           </td>
         </tr>
       `;
@@ -2393,51 +2490,24 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
 
     tbody.innerHTML = html;
 
-    // 🚀 ২. নতুন স্মার্ট ডেলিভারি চার্জ ক্যালকুলেশন লজিক (Fixed)
+    // ৬. ডেলিভারি চার্জ ক্যালকুলেশন (আগের মতোই)
     const deliveryMode = document.getElementById('cart-delivery-time').value;
-    
-    // অ্যাডমিনের সেট করা কনফিগ
     const conf = globalSettings.delivery || { baseCharge: 15, perKmCharge: 2, perKgCharge: 2, urgentCharge: 15, isGlobalFree: false };
 
-    // ১. স্বাভাবিক বেস চার্জ হিসাব (বেস + দূরত্ব + ওজন)
     let normalCharge = conf.baseCharge;
-    if (maxDistanceKm > 2) {
-      normalCharge += (maxDistanceKm - 2) * conf.perKmCharge;
-    }
-    let weightKg = totalWeightGrams / 1000;
-    normalCharge += weightKg * conf.perKgCharge;
+    if (maxDistanceKm > 2) normalCharge += (maxDistanceKm - 2) * conf.perKmCharge;
+    normalCharge += (totalWeightGrams / 1000) * conf.perKgCharge;
 
-    // ২. ফ্রি ডেলিভারি চেক (দোকানদার অথবা অ্যাডমিন)
     let isFreeActive = (conf.isGlobalFree || isAnyShopFree);
     let finalDeliveryCharge = 0;
 
-    // ৩. আপনার দেওয়া নতুন শর্ত অনুযায়ী লজিক
-    if (deliveryMode === 'urgent') {
-        // আর্জেন্ট: সবসময় বেস চার্জ + বাড়তি চার্জ (ফ্রি টগল থাকলেও আর্জেন্টে চার্জ লাগবে)
-        finalDeliveryCharge = normalCharge + conf.urgentCharge;
-    } 
-    else if (deliveryMode === 'sameday') {
-        // সেম ডে: টগল অফ থাকলে ফুল চার্জ, অন থাকলে হাফ চার্জ
-        if (isFreeActive) {
-            finalDeliveryCharge = normalCharge / 2;
-        } else {
-            finalDeliveryCharge = normalCharge;
-        }
-    } 
-    else if (deliveryMode === 'nextday') {
-        // নেক্সট ডে: টগল অন থাকলে ফ্রি, অফ থাকলে হাফ চার্জ
-        if (isFreeActive) {
-            finalDeliveryCharge = 0;
-        } else {
-            finalDeliveryCharge = normalCharge / 2;
-        }
-    }
+    if (deliveryMode === 'urgent') finalDeliveryCharge = normalCharge + conf.urgentCharge;
+    else if (deliveryMode === 'sameday') finalDeliveryCharge = isFreeActive ? normalCharge / 2 : normalCharge;
+    else if (deliveryMode === 'nextday') finalDeliveryCharge = isFreeActive ? 0 : normalCharge / 2;
 
-    // দশমিক সংখ্যা বাদ দেওয়া (Math.ceil ব্যবহার করায় ৮.৫ হলে ৯ হয়ে যাবে)
     finalDeliveryCharge = Math.ceil(finalDeliveryCharge);
     if (finalDeliveryCharge < 0) finalDeliveryCharge = 0;
 
-    // UI আপডেট
     subtotalEl.innerText = `₹${subtotal.toFixed(2)}`;
     document.getElementById('cart-delivery-charge').innerText = `₹${finalDeliveryCharge.toFixed(2)}`;
     grandTotalEl.innerText = `₹${(subtotal + finalDeliveryCharge).toFixed(2)}`;
@@ -7149,6 +7219,17 @@ window.handleCSVUpload = function(event) {
       alert("সমস্যা হয়েছে!"); 
     }
   };     
+
+  window.changeCartVariant = function(index, type, value) {
+    if(type === 'brand') {
+        smartCart[index].selectedBrand = value;
+    } else if (type === 'size') {
+        let [size, unit] = value.split('_');
+        smartCart[index].selectedSize = parseFloat(size);
+        smartCart[index].selectedUnit = unit;
+    }
+    updateSmartCartUI(); // UI রিফ্রেশ করবে এবং নতুন দাম দেখাবে
+  };
 
 </script>
 
