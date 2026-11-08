@@ -720,6 +720,25 @@
   </div>
 </div>
    
+  <!-- 🚀 Shopkeeper Prep Time Modal -->
+<div id="dlv-prep-time-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="text-align: center;">
+    <h3 style="color: var(--mp-primary); margin-bottom: 10px;">⏱️ প্রস্তুতির সময়</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">মাল রেডি করতে কত মিনিট লাগবে?</p>
+    
+    <input type="hidden" id="prep-order-id">
+    
+    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+      <button class="mp-btn" style="width: 60px; padding: 10px 0; background: #e8f0fe; color: var(--mp-primary);" onclick="setPrepTime(10)">১০</button>
+      <button class="mp-btn" style="width: 60px; padding: 10px 0; background: #e8f0fe; color: var(--mp-primary);" onclick="setPrepTime(15)">১৫</button>
+      <button class="mp-btn" style="width: 60px; padding: 10px 0; background: #e8f0fe; color: var(--mp-primary);" onclick="setPrepTime(20)">২০</button>
+      <button class="mp-btn" style="width: 60px; padding: 10px 0; background: #e8f0fe; color: var(--mp-primary);" onclick="setPrepTime(30)">৩০</button>
+    </div>
+    
+    <button class="mp-btn" onclick="document.getElementById('dlv-prep-time-modal').classList.remove('active')" style="background: #f0f2f5; color: #333;">বাতিল</button>
+  </div>
+</div>
+    
     <!-- ==================== DELIVERY BOY DASHBOARD ==================== -->
     <div id="dlv-view-delivery" class="mp-hidden">
       <div class="dlv-dashboard-title">ডেলিভারি বয় ড্যাশবোর্ড</div>
@@ -3268,14 +3287,14 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     } catch(e) { console.error(e); }
   }
 
-  function loadShopNewOrders() {
+    window.loadShopNewOrders = function() {
     const list = document.getElementById('shop-new-orders-list');
-    
-    // 🚀 নতুন স্ট্যাটাস 'pending_shop_accept' খোঁজা হচ্ছে
+    if (!list) return;
+
+    // নতুন অর্ডার ফিল্টার (শুধুমাত্র pending_shop_accept)
     const q = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("status", "==", "pending_shop_accept"));
     
     onSnapshot(q, (snap) => {
-      if (!list) return;
       if (snap.empty) {
         list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">বর্তমানে কোনো নতুন অর্ডার নেই।</div>';
         return;
@@ -3284,62 +3303,79 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       snap.forEach(docSnap => {
         const order = docSnap.data();
         
-        // 🚀 আইটেমগুলো লুপ করে লিস্ট তৈরি করা (যাতে দোকানদার বুঝতে পারে কী প্যাক করতে হবে)
         let itemsListHtml = '';
-        let calculatedPrice = 0;
-
+        let total = 0;
         if (order.items && order.items.length > 0) {
             order.items.forEach(item => {
-                // দাম হিসাব (যদি ডেটাবেসে সেভ করা না থাকে)
-                let itemPrice = item.price * item.qty;
-                calculatedPrice += itemPrice;
-                
-                // আইটেমের নাম, ব্র্যান্ড, সাইজ দেখানো
-                let variantText = '';
-                if(item.selectedBrand && item.selectedBrand !== 'Default') variantText += `${item.selectedBrand} `;
-                if(item.selectedSize) variantText += `(${item.selectedSize}${item.selectedUnit})`;
-
-                itemsListHtml += `
-                  <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; border-bottom:1px dashed #eee; padding-bottom:2px;">
-                    <span>🔸 ${item.name} ${variantText} x ${item.qty}</span>
-                    <span>₹${itemPrice}</span>
-                  </div>
-                `;
+                total += (item.price * item.qty);
+                let variantText = (item.selectedBrand !== 'Default' ? item.selectedBrand + ' ' : '') + `(${item.selectedSize}${item.selectedUnit})`;
+                itemsListHtml += `<div style="font-size:12px; margin-bottom:4px; border-bottom:1px dashed #eee; padding-bottom:2px;">🔸 ${item.name} ${variantText} x ${item.qty}</div>`;
             });
-        } else {
-             // পুরোনো অর্ডারের জন্য ফলব্যাক
-             itemsListHtml = `<div style="font-size:12px;">${order.productName || 'Unknown Item'} x 1</div>`;
-             calculatedPrice = order.price || 0;
         }
 
-        // যদি ডেটাবেসের price ফিল্ড NaN বা 0 হয়, তবে calculatedPrice ব্যবহার করব
-        let finalDisplayPrice = (order.price && !isNaN(order.price)) ? order.price : calculatedPrice;
+        let displayPrice = (order.price && !isNaN(order.price)) ? order.price : total;
 
         html += `
           <div style="border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fff;">
             <div style="display:flex; justify-content:space-between; font-weight:bold; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 8px;">
               <span style="color: var(--mp-primary);">অর্ডার #${docSnap.id.slice(-4).toUpperCase()}</span>
-              <span style="color: var(--mp-danger);">₹${finalDisplayPrice.toFixed(2)}</span>
+              <span style="color: var(--mp-danger);">₹${displayPrice.toFixed(2)}</span>
             </div>
             
-            <!-- আইটেম লিস্ট -->
-            <div style="margin-bottom: 10px;">
-                ${itemsListHtml}
-            </div>
+            <div style="margin-bottom: 10px;">${itemsListHtml}</div>
 
             <div style="display:flex; justify-content:space-between; font-size:11px; color:#666; margin-bottom:10px;">
                 <span>পেমেন্ট: ${order.paymentMethod ? order.paymentMethod.toUpperCase() : 'COD'}</span>
                 <span>ডেলিভারি: ${order.deliveryMode ? order.deliveryMode.toUpperCase() : 'SAME DAY'}</span>
             </div>
 
-            <button class="mp-btn mp-btn-success" style="margin: 0; padding: 8px;" onclick="markOrderReady('${docSnap.id}')">✅ প্যাকিং সম্পন্ন ও রেডি করুন</button>
+            <div style="display: flex; gap: 5px;">
+              <button class="mp-btn mp-btn-success" style="margin: 0; padding: 8px; flex: 2;" onclick="openPrepTimeModal('${docSnap.id}')">✅ অ্যাকসেপ্ট করুন</button>
+              <button class="mp-btn mp-btn-danger" style="margin: 0; padding: 8px; flex: 1;" onclick="rejectShopOrder('${docSnap.id}')">❌ রিজেক্ট</button>
+            </div>
           </div>
         `;
       });
       list.innerHTML = html;
     });
-  }
+  };
 
+  // টাইমার মডাল ওপেন করা
+  window.openPrepTimeModal = function(orderId) {
+    document.getElementById('prep-order-id').value = orderId;
+    document.getElementById('dlv-prep-time-modal').classList.add('active');
+  };
+
+  // টাইমার সেট করা এবং ডেটাবেসে অর্ডার আপডেট করা
+  window.setPrepTime = async function(minutes) {
+    const orderId = document.getElementById('prep-order-id').value;
+    if(!orderId) return;
+
+    try {
+      await updateDoc(doc(db, "orders", orderId), {
+        status: "preparing",
+        prepTimeMinutes: minutes,
+        acceptedAt: serverTimestamp()
+      });
+      document.getElementById('dlv-prep-time-modal').classList.remove('active');
+      alert(`অর্ডার অ্যাকসেপ্ট করা হয়েছে! ${minutes} মিনিটের টাইমার চালু হলো।`);
+    } catch(e) {
+      console.error(e);
+      alert("সমস্যা হয়েছে!");
+    }
+  };
+
+  // অর্ডার রিজেক্ট করা
+  window.rejectShopOrder = async function(orderId) {
+    if(!confirm("আপনি কি সত্যিই এই অর্ডারটি রিজেক্ট করতে চান?")) return;
+    try {
+      await updateDoc(doc(db, "orders", orderId), {
+        status: "rejected_by_shop",
+        rejectedAt: serverTimestamp()
+      });
+      alert("অর্ডারটি রিজেক্ট করা হয়েছে এবং সিস্টেম পরবর্তী দোকান খুঁজবে।");
+    } catch(e) { alert("সমস্যা হয়েছে!"); }
+  };
   window.markOrderReady = async function(orderId) {
     if(!confirm("প্রোডাক্টটি রেডি করেছেন?")) return;
     try {
