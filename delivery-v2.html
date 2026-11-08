@@ -2639,7 +2639,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     }
 
     try {
-      // 🚀 ৩. স্মার্ট স্প্লিটিং (দোকান অনুযায়ী আলাদা অর্ডার তৈরি)
+      // 🚀 ১. স্মার্ট স্প্লিটিং (দোকান অনুযায়ী আলাদা অর্ডার তৈরি)
       let ordersByShop = {};
       smartCart.forEach(item => {
         if (!ordersByShop[item.shopId]) ordersByShop[item.shopId] = [];
@@ -2648,16 +2648,33 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
 
       const masterOrderId = "ORD-" + Date.now();
 
-      // প্রতিটি দোকানের জন্য আলাদা অর্ডার তৈরি
+      // ২. প্রতিটি দোকানের জন্য আলাদা অর্ডার তৈরি
       for (const shopId in ordersByShop) {
         const shopItems = ordersByShop[shopId];
         const shopTotal = shopItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
+        // 🚀 ৩. দোকানের নাম ও লোকেশন বের করা (যাতে ডেলিভারি বয় ও ম্যানেজার জানতে পারে)
+        let currentShopName = 'Unknown Shop';
+        let currentShopLat = 0;
+        let currentShopLng = 0;
+        
+        if (shopItems.length > 0) {
+            currentShopName = shopItems[0].shopName || 'Unknown Shop';
+            currentShopLat = shopItems[0].shopLat || 0;
+            currentShopLng = shopItems[0].shopLng || 0;
+        }
+
         await addDoc(collection(db, "orders"), {
           masterOrderId: masterOrderId,
           customerId: currentUser.uid,
-          customerName: globalUserData.name, // (দোকানদার শুধু এই নামটা দেখবে, ফোন/ঠিকানা দেখবে না)
+          customerName: globalUserData.name || 'Customer', 
+          
+          // 🚀 ৪. দোকানের তথ্য যোগ করা হলো
           shopId: shopId,
+          shopName: currentShopName,
+          shopLat: currentShopLat,
+          shopLng: currentShopLng,
+
           items: shopItems,
           price: shopTotal,
           totalPaidByCustomer: finalTotal, 
@@ -2667,15 +2684,16 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
           status: "pending_shop_accept", // দোকানদার অ্যাকসেপ্ট করার অপেক্ষায়
           createdAt: serverTimestamp(),
           
-          // 🚀 প্রাইভেসি লজিক: কাস্টমারের গোপন তথ্য আলাদা রাখা
+          // কাস্টমারের গোপন তথ্য (ডেলিভারি বয় ছাড়া কেউ দেখবে না)
           customerAddress: customerAddresses[customerAddresses.length - 1].text,
           customerPhone: globalUserData.phone,
           lat: customerAddresses[customerAddresses.length - 1].lat,
-          lng: customerAddresses[customerAddresses.length - 1].lng
+          lng: customerAddresses[customerAddresses.length - 1].lng,
+          deliveryCharge: finalTotal - shopTotal // ডেলিভারি বয়ের জন্য আলাদা করে চার্জ সেভ করা
         });
       }
 
-      // ওয়ালেট থেকে টাকা কাটা (যদি ওয়ালেট পেমেন্ট হয়)
+      // ৫. ওয়ালেট থেকে টাকা কাটা (যদি ওয়ালেট পেমেন্ট হয়)
       if (paymentMethod === 'wallet') {
         const newBal = globalUserData.walletBalance - finalTotal;
         await updateDoc(doc(db, "users", currentUser.uid), { walletBalance: newBal });
@@ -2683,7 +2701,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
         document.getElementById('topbar-wallet-bal').innerText = `₹${newBal.toFixed(2)}`;
       }
 
-      // সফল হলে কার্ট খালি করা
+      // ৬. সফল হলে কার্ট খালি করা
       document.getElementById('dlv-payment-modal').classList.remove('active');
       smartCart = [];
       updateSmartCartUI();
@@ -4431,88 +4449,85 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================================================
 // 🚀 গ্লোবাল ভেরিয়েবল (যাতে একই অর্ডারের জন্য বারবার অ্যালার্ট না আসে)
 
-window.toggleDeliveryStatus = function(checkbox) {
-  isOnline = checkbox.checked;
-  const statusText = document.getElementById('dlv-online-status');
-  const ordersContainer = document.getElementById('dlv-live-orders-container');
-  const offlineMsg = document.getElementById('dlv-offline-msg');
-  const activeOrderContainer = document.getElementById('dlv-active-order-container');
+  window.toggleDeliveryStatus = function(checkbox) {
+    isOnline = checkbox.checked;
+    const statusText = document.getElementById('dlv-online-status');
+    const ordersContainer = document.getElementById('dlv-live-orders-container');
+    const offlineMsg = document.getElementById('dlv-offline-msg');
+    const activeOrderContainer = document.getElementById('dlv-active-order-container');
 
-  if (isOnline) {
-    statusText.innerHTML = '🟢 অনলাইন'; statusText.style.color = 'var(--mp-success)';
-    ordersContainer.style.display = 'block'; offlineMsg.style.display = 'none';
-    
-    const q = query(collection(db, "orders"), where("status", "in", ["ready", "bidding", "assigned"]));
-    unsubscribeOrders = onSnapshot(q, (snapshot) => {
+    if (isOnline) {
+      statusText.innerHTML = '🟢 অনলাইন'; 
+      statusText.style.color = 'var(--mp-success)';
+      ordersContainer.style.display = 'block'; 
+      offlineMsg.style.display = 'none';
       
-      // নতুন অর্ডার এলে সাউন্ড বাজবে (লিস্ট সাইজ বাড়লে)
-      if(snapshot.size > previousOrderCount && previousOrderCount !== 0) {
-        const audio = document.getElementById('dlv-notify-sound');
-        if(audio) audio.play().catch(e => console.log("Audio blocked by browser"));
-      }
-      previousOrderCount = snapshot.size;
-
-      const ordersList = document.getElementById('dlv-live-orders');
-      const activeDetails = document.getElementById('dlv-active-order-details');
-      let liveOrdersHtml = '', activeOrderHtml = '', hasActiveOrder = false;
+      // 🚀 অর্ডার লিসেনার (ready, bidding, assigned)
+      const q = query(collection(db, "orders"), where("status", "in", ["ready", "bidding", "assigned"]));
       
-      snapshot.forEach(docSnap => {
-        const order = docSnap.data();
-        const orderId = docSnap.id;
-
-        if (order.status === 'ready') {
-          liveOrdersHtml += `
-            <div class="dlv-live-card" id="live-card-${orderId}">
-              <h4>📦 ${order.productName}</h4>
-              <div class="dlv-live-info"><span>🏪 পিকআপ: ${order.shopName}</span></div>
-              <div class="dlv-bidding-area">
-                <div style="font-size:12px; font-weight:bold; margin-bottom:5px;">দাম: ₹${order.price}</div>
-                <div class="dlv-bid-input-group">
-                  <input type="number" id="bid-input-${orderId}" placeholder="চার্জ ₹" min="10">
-                  <button onclick="placeBid('${orderId}')">বিড করুন</button>
-                </div>
-              </div>
-            </div>`;
-        } else if ((order.status === 'bidding' || order.status === 'assigned') && order.deliveryBoyId === currentUser.uid) {
-          
-          // 🚀 নতুন যোগ করা হলো: ম্যানেজার ফোর্স অ্যাসাইন করলে অ্যালার্ট
-          if (order.status === 'assigned' && !alertedOrderIds.has(orderId)) {
-            alertedOrderIds.add(orderId);
-            
-            const audio = document.getElementById('dlv-notify-sound');
-            if (audio) audio.play().catch(e => {});
-            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-            
-            alert(`🚨 ম্যানেজার আপনাকে একটি অর্ডার অ্যাসাইন করেছেন!\n\nপণ্য: ${order.productName}\nদোকান: ${order.shopName}\nডেলিভারি চার্জ: ₹${order.deliveryCharge}\n\nঅনুগ্রহ করে 'চলমান ডেলিভারি' সেকশন চেক করুন।`);
-          }
-
-          hasActiveOrder = true;
-          activeOrderHtml += `
-            <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--mp-success);">
-              <h4>📦 ${order.productName} (${order.shopName})</h4>
-              <p style="font-size: 12px; margin: 5px 0;">কাস্টমার: ${order.customerName}</p>
-              <p style="font-size: 12px; font-weight: bold; color: var(--mp-primary);">📞 ফোন: ${order.customerPhone || 'নেই'}</p>
-              <p style="font-size: 12px;">📍 ঠিকানা: ${order.deliveryAddress || 'নেই'} ${order.landmark ? `(${order.landmark})` : ''}</p>
-              <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">চার্জ: ₹${order.deliveryCharge}</p>
-              <div style="display:flex; gap:10px; margin-top:10px;">
-                <button class="mp-btn mp-btn-primary" style="flex:1; margin:0;" onclick="openGoogleMap(${order.lat}, ${order.lng})">📍 ম্যাপ</button>
-                <button class="mp-btn mp-btn-success" style="flex:1; margin:0;" onclick="promptOTP('${orderId}')">✅ Delivered</button>
-              </div>
-            </div>`;
+      unsubscribeOrders = onSnapshot(q, (snapshot) => {
+        const ordersList = document.getElementById('dlv-live-orders');
+        const activeDetails = document.getElementById('dlv-active-order-details');
+        let liveOrdersHtml = '', activeOrderHtml = '', hasActiveOrder = false;
+        
+        if (snapshot.empty) {
+            ordersList.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">এই মুহূর্তে কোনো অর্ডার নেই।</div>';
+            return;
         }
+
+        snapshot.forEach(docSnap => {
+          const order = docSnap.data();
+          const orderId = docSnap.id;
+
+          if (order.status === 'ready') {
+            // 🚀 নতুন অর্ডার স্ট্রাকচার অনুযায়ী ডেটা দেখানো (items, shopName)
+            let itemsCount = order.items ? order.items.length : 0;
+            let deliveryModeText = order.deliveryMode === 'urgent' ? '⚡ আর্জেন্ট' : (order.deliveryMode === 'nextday' ? '📅 নেক্সট ডে' : '☀️ সেম ডে');
+            
+            liveOrdersHtml += `
+              <div class="dlv-live-card" id="live-card-${orderId}" style="border-left: 4px solid var(--mp-warning);">
+                <h4 style="color:var(--mp-primary);">অর্ডার #${orderId.slice(-4).toUpperCase()} (${deliveryModeText})</h4>
+                <div class="dlv-live-info" style="font-size: 12px; margin-bottom: 5px;">
+                  <span>🏪 পিকআপ: ${order.shopName || 'Unknown Shop'}</span><br>
+                  <span>📦 আইটেম: ${itemsCount} টি</span>
+                </div>
+                <div class="dlv-bidding-area" style="background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px dashed #ccc;">
+                  <div style="font-size:12px; font-weight:bold; margin-bottom:5px;">মোট বিল: ₹${order.price}</div>
+                  <div class="dlv-bid-input-group" style="display:flex; gap:5px;">
+                    <input type="number" id="bid-input-${orderId}" placeholder="আপনার চার্জ ₹" min="10" style="flex:1; padding:5px; border:1px solid #ccc; border-radius:4px;">
+                    <button onclick="placeBid('${orderId}')" style="background:var(--mp-warning); color:#000; border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">বিড করুন</button>
+                  </div>
+                </div>
+              </div>`;
+          } else if ((order.status === 'bidding' || order.status === 'assigned') && order.deliveryBoyId === currentUser.uid) {
+            hasActiveOrder = true;
+            activeOrderHtml += `
+              <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--mp-success);">
+                <h4 style="color:var(--mp-primary);">অর্ডার #${orderId.slice(-4).toUpperCase()}</h4>
+                <p style="font-size: 12px; margin: 5px 0;"><b>🏪 পিকআপ:</b> ${order.shopName}</p>
+                <p style="font-size: 12px; margin: 5px 0;"><b>📍 ডেলিভারি:</b> ${order.customerAddress || 'ঠিকানা নেই'}</p>
+                <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">চার্জ: ₹${order.deliveryCharge}</p>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                  <button class="mp-btn mp-btn-primary" style="flex:1; margin:0;" onclick="openGoogleMap(${order.lat}, ${order.lng})">📍 ম্যাপ</button>
+                  <button class="mp-btn mp-btn-success" style="flex:1; margin:0;" onclick="promptOTP('${orderId}')">✅ Delivered</button>
+                </div>
+              </div>`;
+          }
+        });
+        
+        ordersList.innerHTML = liveOrdersHtml || '<div style="text-align: center; padding: 20px; color: #999;">এই মুহূর্তে কোনো নতুন অর্ডার নেই।</div>';
+        activeOrderContainer.style.display = hasActiveOrder ? 'block' : 'none';
+        activeDetails.innerHTML = activeOrderHtml;
       });
-      
-      ordersList.innerHTML = liveOrdersHtml || '<div style="text-align: center; padding: 20px; color: #999;">কোনো অর্ডার নেই।</div>';
-      activeOrderContainer.style.display = hasActiveOrder ? 'block' : 'none';
-      activeDetails.innerHTML = activeOrderHtml;
-    });
-  } else {
-    statusText.innerHTML = '🔴 অফলাইন'; statusText.style.color = 'var(--mp-danger)';
-    ordersContainer.style.display = 'none'; offlineMsg.style.display = 'block';
-    activeOrderContainer.style.display = 'none';
-    if (unsubscribeOrders) unsubscribeOrders();
-  }
-};
+    } else {
+      statusText.innerHTML = '🔴 অফলাইন'; 
+      statusText.style.color = 'var(--mp-danger)';
+      ordersContainer.style.display = 'none'; 
+      offlineMsg.style.display = 'block';
+      activeOrderContainer.style.display = 'none';
+      if (unsubscribeOrders) unsubscribeOrders();
+    }
+  };
 
   window.placeBid = async function(orderId) {
     const bidAmount = parseFloat(document.getElementById(`bid-input-${orderId}`).value);
