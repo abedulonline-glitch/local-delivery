@@ -1179,13 +1179,7 @@
   </div>
 </div>
 
-
-
-
-
    
-    
-    <!-- Payment Method Modal -->
 <!-- 🚀 Smart Checkout & Payment Modal -->
 <div id="dlv-payment-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content">
@@ -2576,8 +2570,9 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     if (smartCart.length === 0) return alert("কার্টে কোনো প্রোডাক্ট নেই!");
 
     // ডেলিভারি চার্জ ও টোটাল বের করা
-    const totalText = document.getElementById('cart-grand-total').innerText.replace('₹', '');
-    const finalTotal = parseFloat(totalText);
+    const totalEl = document.getElementById('cart-grand-total');
+    if (!totalEl) return console.error("Cart total not found");
+    const finalTotal = parseFloat(totalEl.innerText.replace('₹', ''));
     
     // অ্যাড্রেস চেক
     if (!customerAddresses || customerAddresses.length === 0) {
@@ -2586,18 +2581,27 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       return;
     }
 
-    const deliveryModeText = document.getElementById('cart-delivery-time').options[document.getElementById('cart-delivery-time').selectedIndex].text;
+    const deliverySelect = document.getElementById('cart-delivery-time');
+    const deliveryModeText = deliverySelect ? deliverySelect.options[deliverySelect.selectedIndex].text : 'Same Day';
 
-    // পেমেন্ট মডাল আপডেট
-    document.getElementById('pay-modal-amount').innerText = `₹${finalTotal.toFixed(2)}`;
-    document.getElementById('pay-wallet-bal').innerText = `₹${(globalUserData.walletBalance || 0).toFixed(2)}`;
-    document.getElementById('checkout-summary').innerHTML = `
-      <div style="background:#e8f0fe; padding:10px; border-radius:6px;">
-        <b>📍 ডেলিভারি:</b> ${customerAddresses[customerAddresses.length - 1].text.substring(0, 30)}...<br>
-        <b>⏱️ টাইম:</b> ${deliveryModeText}
-      </div>
-    `;
+    // 🚀 সেফটি চেক: এলিমেন্টগুলো আগে খুঁজে নেওয়া হচ্ছে
+    const payAmountEl = document.getElementById('pay-modal-amount');
+    const payWalletEl = document.getElementById('pay-wallet-bal');
+    const checkoutSummaryEl = document.getElementById('checkout-summary');
+
+    if (payAmountEl) payAmountEl.innerText = `₹${finalTotal.toFixed(2)}`;
+    if (payWalletEl) payWalletEl.innerText = `₹${(globalUserData.walletBalance || 0).toFixed(2)}`;
     
+    if (checkoutSummaryEl) {
+      checkoutSummaryEl.innerHTML = `
+        <div style="background:#e8f0fe; padding:10px; border-radius:6px;">
+          <b>📍 ডেলিভারি:</b> ${customerAddresses[customerAddresses.length - 1].text.substring(0, 30)}...<br>
+          <b>⏱️ টাইম:</b> ${deliveryModeText}
+        </div>
+      `;
+    }
+    
+    // মডাল হাইড/শো
     document.getElementById('dlv-smart-cart-modal').classList.remove('active');
     document.getElementById('dlv-payment-modal').classList.add('active');
   };
