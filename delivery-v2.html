@@ -2364,7 +2364,6 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     const product = allRawProducts.find(p => p.id === prodId);
     if(!product) return;
 
-    // ডিফল্ট ব্র্যান্ড ও সাইজ সেট করা (যদি ভ্যারিয়েন্ট থাকে)
     let defaultBrand = 'Default';
     let defaultSize = product.baseWeight || 1;
     let defaultUnit = product.baseUnit || 'pcs';
@@ -2375,7 +2374,6 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
         defaultUnit = product.variants[0].unit;
     }
 
-    // চেক করা: এই প্রোডাক্টের একই ব্র্যান্ড ও সাইজ আগে থেকেই কার্টে আছে কি না
     const existingIndex = smartCart.findIndex(item => 
         item.prodId === prodId && 
         item.selectedBrand === defaultBrand && 
@@ -2398,13 +2396,16 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
         variants: product.variants || [],
         discountTiers: product.discountTiers || [],
         extraChargeTiers: product.extraChargeTiers || [],
-        basePrice: product.price,
-        baseWeight: product.baseWeight || 1,
+        
+        // 🚀 এখানে দাম এবং দোকানের তথ্য সঠিকভাবে সেভ করা হচ্ছে
+        basePrice: parseFloat(product.price) || 0, 
+        baseWeight: parseFloat(product.baseWeight) || 1,
         baseUnit: product.baseUnit || 'pcs',
+        
         shopId: product.shopId,
-        shopName: product.shopName,
-        shopLat: product.shopLat,
-        shopLng: product.shopLng,
+        shopName: product.shopName || 'Unknown Shop',
+        shopLat: product.shopLat || 0,
+        shopLng: product.shopLng || 0,
         isShopFree: product.freeDelivery || false,
         displayShopName: "✅ ভেরিফাইড লোকাল স্টোর"
       });
@@ -2621,25 +2622,21 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
   // ২. পেমেন্ট সিলেক্ট করার পর অর্ডার সেভ করা
   window.finalizeSmartCartOrder = async function(paymentMethod) {
     const btn = document.querySelector(`#dlv-payment-modal .mp-btn-success`);
-    btn.innerText = "⏳ প্রসেস হচ্ছে...";
-    btn.disabled = true;
+    btn.innerText = "⏳ প্রসেস হচ্ছে..."; btn.disabled = true;
 
     const totalText = document.getElementById('cart-grand-total').innerText.replace('₹', '');
     const finalTotal = parseFloat(totalText);
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     const deliveryMode = document.getElementById('cart-delivery-time').value;
 
-    // ওয়ালেট চেক
     if (paymentMethod === 'wallet') {
       if ((globalUserData.walletBalance || 0) < finalTotal) {
         alert("দুঃখিত, ওয়ালেটে পর্যাপ্ত ব্যালেন্স নেই!");
-        btn.innerText = "💳 ওয়ালেট"; btn.disabled = false;
-        return;
+        btn.innerText = "💳 ওয়ালেট"; btn.disabled = false; return;
       }
     }
 
     try {
-      // 🚀 ১. স্মার্ট স্প্লিটিং (দোকান অনুযায়ী আলাদা অর্ডার তৈরি)
       let ordersByShop = {};
       smartCart.forEach(item => {
         if (!ordersByShop[item.shopId]) ordersByShop[item.shopId] = [];
@@ -2648,52 +2645,45 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
 
       const masterOrderId = "ORD-" + Date.now();
 
-      // ২. প্রতিটি দোকানের জন্য আলাদা অর্ডার তৈরি
       for (const shopId in ordersByShop) {
         const shopItems = ordersByShop[shopId];
-        const shopTotal = shopItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        // 🚀 NaN ফিক্স: প্রতিটি আইটেমের দাম সংখ্যা (Number) বানিয়ে যোগ করা হচ্ছে
+        const shopTotal = shopItems.reduce((sum, item) => {
+            let p = parseFloat(item.price);
+            let q = parseFloat(item.qty);
+            if(isNaN(p)) p = 0;
+            if(isNaN(q)) q = 1;
+            return sum + (p * q);
+        }, 0);
 
-        // 🚀 ৩. দোকানের নাম ও লোকেশন বের করা (যাতে ডেলিভারি বয় ও ম্যানেজার জানতে পারে)
-        let currentShopName = 'Unknown Shop';
-        let currentShopLat = 0;
-        let currentShopLng = 0;
-        
-        if (shopItems.length > 0) {
-            currentShopName = shopItems[0].shopName || 'Unknown Shop';
-            currentShopLat = shopItems[0].shopLat || 0;
-            currentShopLng = shopItems[0].shopLng || 0;
-        }
+        let currentShopName = shopItems[0].shopName || 'Unknown Shop';
+        let currentShopLat = shopItems[0].shopLat || 0;
+        let currentShopLng = shopItems[0].shopLng || 0;
 
         await addDoc(collection(db, "orders"), {
           masterOrderId: masterOrderId,
           customerId: currentUser.uid,
           customerName: globalUserData.name || 'Customer', 
-          
-          // 🚀 ৪. দোকানের তথ্য যোগ করা হলো
           shopId: shopId,
           shopName: currentShopName,
           shopLat: currentShopLat,
           shopLng: currentShopLng,
-
           items: shopItems,
           price: shopTotal,
+          deliveryCharge: finalTotal - shopTotal,
           totalPaidByCustomer: finalTotal, 
           otp: otp,
           deliveryMode: deliveryMode,
           paymentMethod: paymentMethod,
-          status: "pending_shop_accept", // দোকানদার অ্যাকসেপ্ট করার অপেক্ষায়
+          status: "pending_shop_accept", 
           createdAt: serverTimestamp(),
-          
-          // কাস্টমারের গোপন তথ্য (ডেলিভারি বয় ছাড়া কেউ দেখবে না)
           customerAddress: customerAddresses[customerAddresses.length - 1].text,
           customerPhone: globalUserData.phone,
           lat: customerAddresses[customerAddresses.length - 1].lat,
-          lng: customerAddresses[customerAddresses.length - 1].lng,
-          deliveryCharge: finalTotal - shopTotal // ডেলিভারি বয়ের জন্য আলাদা করে চার্জ সেভ করা
+          lng: customerAddresses[customerAddresses.length - 1].lng
         });
       }
 
-      // ৫. ওয়ালেট থেকে টাকা কাটা (যদি ওয়ালেট পেমেন্ট হয়)
       if (paymentMethod === 'wallet') {
         const newBal = globalUserData.walletBalance - finalTotal;
         await updateDoc(doc(db, "users", currentUser.uid), { walletBalance: newBal });
@@ -2701,12 +2691,10 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
         document.getElementById('topbar-wallet-bal').innerText = `₹${newBal.toFixed(2)}`;
       }
 
-      // ৬. সফল হলে কার্ট খালি করা
       document.getElementById('dlv-payment-modal').classList.remove('active');
       smartCart = [];
       updateSmartCartUI();
-
-      alert(`✅ অর্ডার সফলভাবে প্লেস হয়েছে!\n\n🔑 ডেলিভারির জন্য OTP: ${otp}\n\n(দোকানদারকে আপনার নাম ছাড়া অন্য কোনো তথ্য দেখানো হয়নি)`);
+      alert(`✅ অর্ডার সফলভাবে প্লেস হয়েছে!\n\n🔑 ডেলিভারির জন্য OTP: ${otp}`);
 
     } catch (e) {
       console.error(e);
@@ -4457,12 +4445,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const activeOrderContainer = document.getElementById('dlv-active-order-container');
 
     if (isOnline) {
-      statusText.innerHTML = '🟢 অনলাইন'; 
-      statusText.style.color = 'var(--mp-success)';
-      ordersContainer.style.display = 'block'; 
-      offlineMsg.style.display = 'none';
+      statusText.innerHTML = '🟢 অনলাইন'; statusText.style.color = 'var(--mp-success)';
+      ordersContainer.style.display = 'block'; offlineMsg.style.display = 'none';
       
-      // 🚀 অর্ডার লিসেনার (ready, bidding, assigned)
       const q = query(collection(db, "orders"), where("status", "in", ["ready", "bidding", "assigned"]));
       
       unsubscribeOrders = onSnapshot(q, (snapshot) => {
@@ -4478,9 +4463,12 @@ document.addEventListener("DOMContentLoaded", () => {
         snapshot.forEach(docSnap => {
           const order = docSnap.data();
           const orderId = docSnap.id;
+          
+          // 🚀 NaN ফিক্স
+          let displayPrice = isNaN(order.price) ? 0 : order.price;
+          let shopNameDisplay = order.shopName || 'Unknown Shop';
 
           if (order.status === 'ready') {
-            // 🚀 নতুন অর্ডার স্ট্রাকচার অনুযায়ী ডেটা দেখানো (items, shopName)
             let itemsCount = order.items ? order.items.length : 0;
             let deliveryModeText = order.deliveryMode === 'urgent' ? '⚡ আর্জেন্ট' : (order.deliveryMode === 'nextday' ? '📅 নেক্সট ডে' : '☀️ সেম ডে');
             
@@ -4488,11 +4476,11 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="dlv-live-card" id="live-card-${orderId}" style="border-left: 4px solid var(--mp-warning);">
                 <h4 style="color:var(--mp-primary);">অর্ডার #${orderId.slice(-4).toUpperCase()} (${deliveryModeText})</h4>
                 <div class="dlv-live-info" style="font-size: 12px; margin-bottom: 5px;">
-                  <span>🏪 পিকআপ: ${order.shopName || 'Unknown Shop'}</span><br>
+                  <span>🏪 পিকআপ: <b>${shopNameDisplay}</b></span><br>
                   <span>📦 আইটেম: ${itemsCount} টি</span>
                 </div>
                 <div class="dlv-bidding-area" style="background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px dashed #ccc;">
-                  <div style="font-size:12px; font-weight:bold; margin-bottom:5px;">মোট বিল: ₹${order.price}</div>
+                  <div style="font-size:12px; font-weight:bold; margin-bottom:5px;">মোট বিল: ₹${displayPrice}</div>
                   <div class="dlv-bid-input-group" style="display:flex; gap:5px;">
                     <input type="number" id="bid-input-${orderId}" placeholder="আপনার চার্জ ₹" min="10" style="flex:1; padding:5px; border:1px solid #ccc; border-radius:4px;">
                     <button onclick="placeBid('${orderId}')" style="background:var(--mp-warning); color:#000; border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">বিড করুন</button>
@@ -4501,14 +4489,20 @@ document.addEventListener("DOMContentLoaded", () => {
               </div>`;
           } else if ((order.status === 'bidding' || order.status === 'assigned') && order.deliveryBoyId === currentUser.uid) {
             hasActiveOrder = true;
+            
+            // 🚀 ম্যাপের জন্য পিকআপ এবং ড্রপ লোকেশন তৈরি
+            let mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${order.shopLat || 0},${order.shopLng || 0}&destination=${order.lat || 0},${order.lng || 0}`;
+
             activeOrderHtml += `
               <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--mp-success);">
                 <h4 style="color:var(--mp-primary);">অর্ডার #${orderId.slice(-4).toUpperCase()}</h4>
-                <p style="font-size: 12px; margin: 5px 0;"><b>🏪 পিকআপ:</b> ${order.shopName}</p>
+                <p style="font-size: 12px; margin: 5px 0;"><b>🏪 পিকআপ (দোকান):</b> ${shopNameDisplay}</p>
                 <p style="font-size: 12px; margin: 5px 0;"><b>📍 ডেলিভারি:</b> ${order.customerAddress || 'ঠিকানা নেই'}</p>
-                <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">চার্জ: ₹${order.deliveryCharge}</p>
+                <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">চার্জ: ₹${order.deliveryCharge || 0}</p>
+                
                 <div style="display:flex; gap:10px; margin-top:10px;">
-                  <button class="mp-btn mp-btn-primary" style="flex:1; margin:0;" onclick="openGoogleMap(${order.lat}, ${order.lng})">📍 ম্যাপ</button>
+                  <!-- 🚀 নতুন ম্যাপ বাটন (দোকান থেকে কাস্টমারের বাড়ি) -->
+                  <button class="mp-btn mp-btn-primary" style="flex:1; margin:0;" onclick="window.open('${mapUrl}', '_blank')">📍 রাস্তা দেখুন</button>
                   <button class="mp-btn mp-btn-success" style="flex:1; margin:0;" onclick="promptOTP('${orderId}')">✅ Delivered</button>
                 </div>
               </div>`;
@@ -4520,10 +4514,8 @@ document.addEventListener("DOMContentLoaded", () => {
         activeDetails.innerHTML = activeOrderHtml;
       });
     } else {
-      statusText.innerHTML = '🔴 অফলাইন'; 
-      statusText.style.color = 'var(--mp-danger)';
-      ordersContainer.style.display = 'none'; 
-      offlineMsg.style.display = 'block';
+      statusText.innerHTML = '🔴 অফলাইন'; statusText.style.color = 'var(--mp-danger)';
+      ordersContainer.style.display = 'none'; offlineMsg.style.display = 'block';
       activeOrderContainer.style.display = 'none';
       if (unsubscribeOrders) unsubscribeOrders();
     }
