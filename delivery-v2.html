@@ -3325,7 +3325,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     const preparingList = document.getElementById('shop-preparing-orders-list'); 
     if (!list) return;
 
-    // ১. নতুন অর্ডার
+    // ১. নতুন অর্ডার লিসেনার
     const qNew = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("status", "==", "pending_shop_accept"));
     onSnapshot(qNew, (snap) => {
       if (snap.empty) {
@@ -3335,14 +3335,26 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       let html = '';
       snap.forEach(docSnap => {
         const order = docSnap.data();
-        let displayPrice = (order.price && !isNaN(order.price)) ? order.price : 0;
+        let itemsListHtml = '';
+        let calculatedTotal = 0;
+        
+        if (order.items && order.items.length > 0) {
+            order.items.forEach(item => {
+                calculatedTotal += (item.price * item.qty);
+                let variantText = (item.selectedBrand !== 'Default' ? item.selectedBrand + ' ' : '') + `(${item.selectedSize}${item.selectedUnit})`;
+                itemsListHtml += `<div style="font-size:12px; margin-bottom:4px; border-bottom:1px dashed #eee; padding-bottom:2px;">🔸 ${item.name} ${variantText} x ${item.qty}</div>`;
+            });
+        }
+
+        let displayPrice = (order.price && !isNaN(order.price)) ? order.price : calculatedTotal;
+
         html += `
           <div style="border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fff;">
             <div style="display:flex; justify-content:space-between; font-weight:bold; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 8px;">
               <span style="color: var(--mp-primary);">অর্ডার #${docSnap.id.slice(-4).toUpperCase()}</span>
               <span style="color: var(--mp-danger);">₹${displayPrice.toFixed(2)}</span>
             </div>
-            <div style="margin-bottom: 10px;">আইটেম: ${order.items ? order.items.length : 0} টি</div>
+            <div style="margin-bottom: 10px;">${itemsListHtml}</div>
             <div style="display:flex; justify-content:space-between; font-size:11px; color:#666; margin-bottom:10px;">
                 <span>পেমেন্ট: ${order.paymentMethod ? order.paymentMethod.toUpperCase() : 'COD'}</span>
                 <span>টাইপ: ${order.deliveryMode ? order.deliveryMode.toUpperCase() : 'SAME DAY'}</span>
@@ -3357,9 +3369,8 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       list.innerHTML = html;
     });
 
-    // ২. চলমান অর্ডার (preparing, bidding, assigned)
+    // ২. চলমান অর্ডার লিসেনার (preparing, bidding, assigned)
     if(preparingList) {
-        // 🚀 OTP দিয়ে picked_up না হওয়া পর্যন্ত অর্ডারটি দোকানদার দেখতে পাবে
         const qPreparing = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("status", "in", ["preparing", "bidding", "assigned"]));
         
         onSnapshot(qPreparing, (snap) => {
@@ -3370,7 +3381,18 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
           let html = '';
           snap.forEach(docSnap => {
             const order = docSnap.data();
-            let displayPrice = (order.price && !isNaN(order.price)) ? order.price : 0;
+            
+            // 🚀 FIX: এখানে আইটেম ও দামের হিসাব যোগ করা হলো
+            let itemsListHtml = '';
+            let calculatedTotal = 0;
+            if (order.items && order.items.length > 0) {
+                order.items.forEach(item => {
+                    calculatedTotal += (item.price * item.qty);
+                    let variantText = (item.selectedBrand !== 'Default' ? item.selectedBrand + ' ' : '') + `(${item.selectedSize}${item.selectedUnit})`;
+                    itemsListHtml += `<div style="font-size:12px; margin-bottom:4px; border-bottom:1px dashed #eee; padding-bottom:2px;">🔸 ${item.name} ${variantText} x ${item.qty}</div>`;
+                });
+            }
+            let displayPrice = (order.price && !isNaN(order.price)) ? order.price : calculatedTotal;
 
             let actionHtml = '';
             let statusText = '';
@@ -3394,14 +3416,18 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
                   <span style="color: #b06000;">অর্ডার #${docSnap.id.slice(-4).toUpperCase()}</span>
                   <span style="color: var(--mp-danger);">₹${displayPrice.toFixed(2)}</span>
                 </div>
-                <div style="font-size: 12px; margin-bottom: 10px;">আইটেম: ${order.items ? order.items.length : 0} টি</div>
+                
+                <!-- 🚀 এখানে আইটেম লিস্ট দেখানো হচ্ছে -->
+                <div style="margin-bottom: 10px;">${itemsListHtml}</div>
+                
                 <div style="display: flex; justify-content: space-between; align-items: center;">${statusText}</div>
                 ${actionHtml}
               </div>
             `;
           });
           preparingList.innerHTML = html;
-          // টাইমার লজিক (preparing স্টেটাসের জন্য)
+          
+          // টাইমার লজিক
           if(window.shopTimerInterval) clearInterval(window.shopTimerInterval);
           window.shopTimerInterval = setInterval(() => {
             snap.forEach(docSnap => {
@@ -4572,7 +4598,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if(now > currentEndTime) return alert("দুঃখিত, বিডিংয়ের সময় শেষ!");
 
-      // 🚀 অ্যান্টি-স্নাইপিং লজিক (শেষ ১০ সেকেন্ডে বিড করলে ১৫ সেকেন্ড বাড়বে)
+      // অ্যান্টি-স্নাইপিং লজিক
       let newEndTime = currentEndTime;
       if(currentEndTime - now <= 10000) {
           newEndTime = now + 15000; 
@@ -4584,13 +4610,10 @@ document.addEventListener("DOMContentLoaded", () => {
         lowestBidderName: globalUserData.name || 'Delivery Boy',
         bidEndTime: newEndTime
       });
-
-      // 💡 বি.দ্র: বিড শেষ হলে অটোমেটিক অ্যাসাইন করার জন্য একটি ক্লাউড ফাংশন বা ক্রোন জব লাগে। 
-      // আপাতত আমরা ডেলিভারি বয়ের স্ক্রিনে টাইমার শেষ হলে তাকে "Claim" করার সুযোগ দিতে পারি, অথবা ম্যানেজার ম্যানুয়ালি অ্যাসাইন করবে।
       
     } catch (e) {
       console.error(e);
-      alert("বিড করতে সমস্যা হয়েছে!");
+      alert("বিড করতে সমস্যা হয়েছে! এরর: " + e.message);
     }
   };
 
