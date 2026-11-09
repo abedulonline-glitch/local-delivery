@@ -693,10 +693,18 @@
         <div id="shop-new-orders-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
       </div>
 
-      <!-- 🚀 নতুন: প্রস্তুত হচ্ছে (Preparing) -->
+      <!-- চলমান অর্ডার (Preparing) -->
       <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
-        <h3>⏳ প্রস্তুত হচ্ছে (Preparing)</h3>
+        <h3>⏳ প্রস্তুত হচ্ছে / চলমান অর্ডার</h3>
         <div id="shop-preparing-orders-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
+      </div>
+
+      <!-- 🚀 নতুন: অর্ডার হিস্ট্রি -->
+      <div class="mp-card" style="border-left: 4px solid #5f6368; margin-top: 15px;">
+        <h3 style="color: #5f6368;">📜 অর্ডার হিস্ট্রি</h3>
+        <div id="shop-history-orders-list" style="max-height: 200px; overflow-y: auto;">
+            <div style="text-align: center; color: #999; font-size: 13px;">কোনো হিস্ট্রি নেই।</div>
+        </div>
       </div>
   
   <!-- প্রোডাক্ট লিস্ট -->
@@ -3323,6 +3331,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
   window.loadShopNewOrders = function() {
     const list = document.getElementById('shop-new-orders-list');
     const preparingList = document.getElementById('shop-preparing-orders-list'); 
+    const historyList = document.getElementById('shop-history-orders-list'); // 🚀 নতুন হিস্ট্রি সেকশন
     if (!list) return;
 
     // ১. নতুন অর্ডার লিসেনার
@@ -3369,8 +3378,9 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       list.innerHTML = html;
     });
 
-    // ২. চলমান অর্ডার লিসেনার (preparing, bidding, assigned)
+    // ২. চলমান অর্ডার লিসেনার
     if(preparingList) {
+        // 🚀 এখানে শুধু preparing, bidding, assigned থাকবে
         const qPreparing = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("status", "in", ["preparing", "bidding", "assigned"]));
         
         onSnapshot(qPreparing, (snap) => {
@@ -3382,7 +3392,6 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
           snap.forEach(docSnap => {
             const order = docSnap.data();
             
-            // 🚀 FIX: এখানে আইটেম ও দামের হিসাব যোগ করা হলো
             let itemsListHtml = '';
             let calculatedTotal = 0;
             if (order.items && order.items.length > 0) {
@@ -3416,10 +3425,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
                   <span style="color: #b06000;">অর্ডার #${docSnap.id.slice(-4).toUpperCase()}</span>
                   <span style="color: var(--mp-danger);">₹${displayPrice.toFixed(2)}</span>
                 </div>
-                
-                <!-- 🚀 এখানে আইটেম লিস্ট দেখানো হচ্ছে -->
                 <div style="margin-bottom: 10px;">${itemsListHtml}</div>
-                
                 <div style="display: flex; justify-content: space-between; align-items: center;">${statusText}</div>
                 ${actionHtml}
               </div>
@@ -3451,13 +3457,41 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
           }, 1000);
         });
     }
+
+    // 🚀 ৩. নতুন যোগ করা হলো: হিস্ট্রি লিসেনার (picked_up বা delivered)
+    if(historyList) {
+        const qHistory = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("status", "in", ["picked_up", "delivered"]));
+        onSnapshot(qHistory, (snap) => {
+          if (snap.empty) {
+            historyList.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো হিস্ট্রি নেই।</div>';
+            return;
+          }
+          let html = '';
+          snap.forEach(docSnap => {
+            const order = docSnap.data();
+            let displayPrice = (order.price && !isNaN(order.price)) ? order.price : 0;
+            let statusBadge = order.status === 'picked_up' ? '<span style="color:#0f9d58; font-weight:bold;">✅ ডেলিভারি বয়কে দেওয়া হয়েছে</span>' : '<span style="color:#1a73e8; font-weight:bold;">📦 ডেলিভারি সম্পন্ন</span>';
+            
+            html += `
+              <div style="border: 1px solid #ccc; border-radius: 8px; padding: 10px; margin-bottom: 8px; background: #f8f9fa;">
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size: 12px;">
+                  <span>#${docSnap.id.slice(-4).toUpperCase()}</span>
+                  <span>₹${displayPrice.toFixed(2)}</span>
+                </div>
+                <div style="font-size: 11px; margin-top: 5px;">${statusBadge}</div>
+              </div>
+            `;
+          });
+          historyList.innerHTML = html;
+        });
+    }
   };
 
+  // প্যাকিং সম্পন্ন বাটনে ক্লিক করলে
   // প্যাকিং সম্পন্ন বাটনে ক্লিক করলে
   window.markOrderReady = async function(orderId) {
     if(!confirm("মাল প্যাকিং সম্পন্ন হয়েছে? ডেলিভারি বয়ের কাছে বিডিং-এর জন্য পাঠানো হবে।")) return;
     try {
-      // অর্ডারের ডেলিভারি মোড চেক করা
       const orderSnap = await getDoc(doc(db, "orders", orderId));
       const orderData = orderSnap.data();
       
@@ -4468,122 +4502,142 @@ document.addEventListener("DOMContentLoaded", () => {
 // 🚀 গ্লোবাল ভেরিয়েবল (যাতে একই অর্ডারের জন্য বারবার অ্যালার্ট না আসে)
 
   window.toggleDeliveryStatus = function(checkbox) {
-  isOnline = checkbox.checked;
-  const statusText = document.getElementById('dlv-online-status');
-  const ordersContainer = document.getElementById('dlv-live-orders-container');
-  const offlineMsg = document.getElementById('dlv-offline-msg');
-  const activeOrderContainer = document.getElementById('dlv-active-order-container');
+    isOnline = checkbox.checked;
+    const statusText = document.getElementById('dlv-online-status');
+    const ordersContainer = document.getElementById('dlv-live-orders-container');
+    const offlineMsg = document.getElementById('dlv-offline-msg');
+    const activeOrderContainer = document.getElementById('dlv-active-order-container');
 
-  if (isOnline) {
-    statusText.innerHTML = '🟢 অনলাইন'; statusText.style.color = 'var(--mp-success)';
-    ordersContainer.style.display = 'block'; offlineMsg.style.display = 'none';
-    
-    const q = query(collection(db, "orders"), where("status", "in", ["bidding", "assigned"]));
-    
-    unsubscribeOrders = onSnapshot(q, (snapshot) => {
-      const ordersList = document.getElementById('dlv-live-orders');
-      const activeDetails = document.getElementById('dlv-active-order-details');
-      let liveOrdersHtml = '', activeOrderHtml = '', hasActiveOrder = false;
+    if (isOnline) {
+      statusText.innerHTML = '🟢 অনলাইন'; statusText.style.color = 'var(--mp-success)';
+      ordersContainer.style.display = 'block'; offlineMsg.style.display = 'none';
       
-      if (snapshot.empty) {
-          ordersList.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">এই মুহূর্তে কোনো অর্ডার নেই।</div>';
-          return;
-      }
-
-      snapshot.forEach(docSnap => {
-        const order = docSnap.data();
-        const orderId = docSnap.id;
+      // 🚀 FIX: কুয়েরিতে "picked_up" যোগ করা হলো
+      const q = query(collection(db, "orders"), where("status", "in", ["bidding", "assigned", "picked_up"]));
+      
+      unsubscribeOrders = onSnapshot(q, (snapshot) => {
+        const ordersList = document.getElementById('dlv-live-orders');
+        const activeDetails = document.getElementById('dlv-active-order-details');
+        let liveOrdersHtml = '', activeOrderHtml = '', hasActiveOrder = false;
         
-        let maxCharge = order.deliveryCharge || 35; 
-
-        if (order.status === 'bidding') {
-          let timeLeft = order.bidEndTime ? Math.max(0, Math.floor((order.bidEndTime - Date.now()) / 1000)) : 0;
-          let minBid = order.lowestBid || maxCharge;
-          
-          // 🚀 টাইমার শেষ হয়ে গেলে অটোমেটিক বিজয়ীকে অ্যাসাইন করার লজিক
-          if(timeLeft <= 0) {
-              if (order.lowestBidderId === currentUser.uid) {
-                  // আমি বিজয়ী, তাই অর্ডারটি আমার নামে অ্যাসাইন করে দিচ্ছি
-                  autoAssignOrderToWinner(orderId, minBid);
-              }
-              return; // অর্ডারটি UI থেকে সরিয়ে নেওয়া হচ্ছে
-          }
-
-          liveOrdersHtml += `
-            <div class="dlv-live-card" id="live-card-${orderId}" style="border-left: 4px solid var(--mp-warning);">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <h4 style="color:var(--mp-primary); margin:0;">অর্ডার #${orderId.slice(-4).toUpperCase()} (${order.deliveryMode.toUpperCase()})</h4>
-                  <span style="font-size: 14px; font-weight:bold; color: var(--mp-danger);" class="bid-timer" data-end="${order.bidEndTime}">00:00</span>
-              </div>
-              <div class="dlv-live-info" style="font-size: 12px; margin: 5px 0;">
-                <span>🏪 পিকআপ: ${order.shopName || 'Unknown'}</span>
-              </div>
-              <div style="font-size: 12px; color: #666; background: #f8f9fa; padding: 5px; border-radius: 4px;">
-                <b>সর্বোচ্চ ডেলিভারি চার্জ: ₹${maxCharge}</b><br>
-                <span style="color:#d93025;">বর্তমান সর্বনিম্ন বিড: ₹${minBid}</span>
-              </div>
-              <div class="dlv-bid-input-group" style="display:flex; gap:5px; margin-top: 8px; flex-wrap: wrap;">
-                <button onclick="placeBid('${orderId}', ${minBid - 5 > 0 ? minBid - 5 : 5})" style="background:#e8f0fe; color:var(--mp-primary); border:1px solid #ccc; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer;"> bid ₹${minBid - 5 > 0 ? minBid - 5 : 5}</button>
-                <button onclick="placeBid('${orderId}', ${minBid - 10 > 0 ? minBid - 10 : 10})" style="background:#e8f0fe; color:var(--mp-primary); border:1px solid #ccc; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer;"> bid ₹${minBid - 10 > 0 ? minBid - 10 : 10}</button>
-                <input type="number" id="bid-input-${orderId}" placeholder="নিজে লিখুন" style="flex:1; padding:5px; border:1px solid #ccc; border-radius:4px; min-width: 80px;">
-                <button onclick="submitCustomBid('${orderId}')" style="background:var(--mp-warning); color:#000; border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">বিড</button>
-              </div>
-            </div>`;
-        } else if (order.status === 'assigned' && order.deliveryBoyId === currentUser.uid) {
-          // 🚀 এখানে আপনার দোকানের লোকেশন এবং পিকআপ কোড দেখাবে
-          hasActiveOrder = true;
-          let mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${order.shopLat || 0},${order.shopLng || 0}&destination=${order.lat || 0},${order.lng || 0}`;
-
-          activeOrderHtml += `
-            <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--mp-success);">
-              <h4 style="color:var(--mp-primary);">অর্ডার #${orderId.slice(-4).toUpperCase()}</h4>
-              <p style="font-size: 12px; margin: 5px 0;"><b>🏪 পিকআপ (দোকান):</b> ${order.shopName || 'Unknown Store'}</p>
-              
-              <div style="background: #fff3e0; padding: 8px; border-radius: 6px; margin: 8px 0; text-align: center; border: 1px dashed #ffb74d;">
-                  <span style="font-size: 11px; color: #e65100;">দোকানদারকে এই কোডটি বলুন:</span><br>
-                  <b style="font-size: 18px; color: #d93025; letter-spacing: 2px;">${order.pickupOtp || '----'}</b>
-              </div>
-
-              <p style="font-size: 12px; margin: 5px 0;"><b>📍 ডেলিভারি:</b> ${order.customerAddress || 'ঠিকানা নেই'}</p>
-              <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">আপনার আয়: ₹${order.deliveryCharge || order.lowestBid}</p>
-              
-              <div style="display:flex; gap:10px; margin-top:10px;">
-                <button class="mp-btn mp-btn-primary" style="flex:1; margin:0;" onclick="window.open('${mapUrl}', '_blank')">📍 রাস্তা দেখুন</button>
-                <button class="mp-btn mp-btn-success" style="flex:1; margin:0;" onclick="promptOTP('${orderId}')">✅ Delivered</button>
-              </div>
-            </div>`;
+        if (snapshot.empty) {
+            ordersList.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">এই মুহূর্তে কোনো অর্ডার নেই।</div>';
+            return;
         }
-      });
-      
-      ordersList.innerHTML = liveOrdersHtml || '<div style="text-align: center; padding: 20px; color: #999;">এই মুহূর্তে কোনো নতুন অর্ডার নেই।</div>';
-      activeOrderContainer.style.display = hasActiveOrder ? 'block' : 'none';
-      activeDetails.innerHTML = activeOrderHtml;
-    });
 
-    if(window.dlvBidTimerInterval) clearInterval(window.dlvBidTimerInterval);
-    window.dlvBidTimerInterval = setInterval(() => {
-        document.querySelectorAll('.bid-timer').forEach(el => {
-            let endTime = parseInt(el.getAttribute('data-end'));
-            let left = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-            if(left <= 0) {
-                el.innerText = "00:00";
-                el.style.color = "red";
-            } else {
-                let m = Math.floor(left / 60);
-                let s = left % 60;
-                el.innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        snapshot.forEach(docSnap => {
+          const order = docSnap.data();
+          const orderId = docSnap.id;
+          
+          let maxCharge = order.deliveryCharge || 35; 
+
+          if (order.status === 'bidding') {
+            let timeLeft = order.bidEndTime ? Math.max(0, Math.floor((order.bidEndTime - Date.now()) / 1000)) : 0;
+            let minBid = order.lowestBid || maxCharge;
+            
+            // 🚀 টাইমার শেষ হয়ে গেলে অটোমেটিক বিজয়ীকে অ্যাসাইন করার লজিক
+            if(timeLeft <= 0) {
+                if (order.lowestBidderId === currentUser.uid) {
+                    // আমি বিজয়ী, তাই অর্ডারটি আমার নামে অ্যাসাইন করে দিচ্ছি
+                    autoAssignOrderToWinner(orderId, minBid);
+                }
+                return; // অর্ডারটি UI থেকে সরিয়ে নেওয়া হচ্ছে
             }
-        });
-    }, 1000);
 
-  } else {
-    statusText.innerHTML = '🔴 অফলাইন'; statusText.style.color = 'var(--mp-danger)';
-    ordersContainer.style.display = 'none'; offlineMsg.style.display = 'block';
-    activeOrderContainer.style.display = 'none';
-    if (unsubscribeOrders) unsubscribeOrders();
-    if (window.dlvBidTimerInterval) clearInterval(window.dlvBidTimerInterval);
-  }
-};
+            liveOrdersHtml += `
+              <div class="dlv-live-card" id="live-card-${orderId}" style="border-left: 4px solid var(--mp-warning);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="color:var(--mp-primary); margin:0;">অর্ডার #${orderId.slice(-4).toUpperCase()} (${order.deliveryMode.toUpperCase()})</h4>
+                    <span style="font-size: 14px; font-weight:bold; color: var(--mp-danger);" class="bid-timer" data-end="${order.bidEndTime}">00:00</span>
+                </div>
+                <div class="dlv-live-info" style="font-size: 12px; margin: 5px 0;">
+                  <span>🏪 পিকআপ: ${order.shopName || 'Unknown'}</span>
+                </div>
+                <div style="font-size: 12px; color: #666; background: #f8f9fa; padding: 5px; border-radius: 4px;">
+                  <b>সর্বোচ্চ ডেলিভারি চার্জ: ₹${maxCharge}</b><br>
+                  <span style="color:#d93025;">বর্তমান সর্বনিম্ন বিড: ₹${minBid}</span>
+                </div>
+                <div class="dlv-bid-input-group" style="display:flex; gap:5px; margin-top: 8px; flex-wrap: wrap;">
+                  <button onclick="placeBid('${orderId}', ${minBid - 5 > 0 ? minBid - 5 : 5})" style="background:#e8f0fe; color:var(--mp-primary); border:1px solid #ccc; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer;"> bid ₹${minBid - 5 > 0 ? minBid - 5 : 5}</button>
+                  <button onclick="placeBid('${orderId}', ${minBid - 10 > 0 ? minBid - 10 : 10})" style="background:#e8f0fe; color:var(--mp-primary); border:1px solid #ccc; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer;"> bid ₹${minBid - 10 > 0 ? minBid - 10 : 10}</button>
+                  <input type="number" id="bid-input-${orderId}" placeholder="নিজে লিখুন" style="flex:1; padding:5px; border:1px solid #ccc; border-radius:4px; min-width: 80px;">
+                  <button onclick="submitCustomBid('${orderId}')" style="background:var(--mp-warning); color:#000; border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">বিড</button>
+                </div>
+              </div>`;
+          } 
+          
+          // 🚀 assigned অথবা picked_up স্টেটাসের জন্য UI (ডেলিভারি বয়ের জন্য)
+          else if ((order.status === 'assigned' || order.status === 'picked_up') && order.deliveryBoyId === currentUser.uid) {
+            hasActiveOrder = true;
+            
+            if (order.status === 'assigned') {
+                // দোকানে যাওয়ার জন্য স্ক্রিন
+                let mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${order.shopLat || 0},${order.shopLng || 0}&destination=${order.lat || 0},${order.lng || 0}`;
+                activeOrderHtml += `
+                  <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--mp-success);">
+                    <h4 style="color:var(--mp-primary);">অর্ডার #${orderId.slice(-4).toUpperCase()}</h4>
+                    <p style="font-size: 12px; margin: 5px 0;"><b>🏪 পিকআপ (দোকান):</b> ${order.shopName || 'Unknown Store'}</p>
+                    
+                    <div style="background: #fff3e0; padding: 8px; border-radius: 6px; margin: 8px 0; text-align: center; border: 1px dashed #ffb74d;">
+                        <span style="font-size: 11px; color: #e65100;">দোকানদারকে এই কোডটি বলুন:</span><br>
+                        <b style="font-size: 18px; color: #d93025; letter-spacing: 2px;">${order.pickupOtp || '----'}</b>
+                    </div>
+                    <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">আপনার আয়: ₹${order.deliveryCharge || order.lowestBid}</p>
+                    
+                    <button class="mp-btn mp-btn-primary" style="width: 100%; margin-top: 10px;" onclick="window.open('${mapUrl}', '_blank')">📍 দোকানের রাস্তা দেখুন</button>
+                  </div>`;
+            } else if (order.status === 'picked_up') {
+                // 🚀 মাল হাতে পাওয়ার পর কাস্টমারের কাছে যাওয়ার স্ক্রিন
+                let mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${order.shopLat || 0},${order.shopLng || 0}&destination=${order.lat || 0},${order.lng || 0}`;
+                activeOrderHtml += `
+                  <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #1a73e8;">
+                    <h4 style="color:var(--mp-primary);">অর্ডার #${orderId.slice(-4).toUpperCase()} (ডেলিভারি)</h4>
+                    
+                    <div style="background: #e8f0fe; padding: 8px; border-radius: 6px; margin: 8px 0; text-align: center; border: 1px dashed #1a73e8;">
+                        <span style="font-size: 11px; color: #1a73e8;">কাস্টমারের কাছ থেকে OTP নিন:</span><br>
+                        <b style="font-size: 18px; color: #0f9d58; letter-spacing: 2px;">${order.otp || '----'}</b>
+                    </div>
+
+                    <p style="font-size: 12px; margin: 5px 0;"><b>📍 ডেলিভারি:</b> ${order.customerAddress || 'ঠিকানা নেই'}</p>
+                    
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+                      <button class="mp-btn mp-btn-primary" style="flex:1; margin:0;" onclick="window.open('${mapUrl}', '_blank')">📍 কাস্টমারের রাস্তা</button>
+                      <button class="mp-btn mp-btn-success" style="flex:1; margin:0;" onclick="promptOTP('${orderId}')">✅ OTP দিয়ে দিন</button>
+                    </div>
+                  </div>`;
+            }
+          }
+        });
+        
+        ordersList.innerHTML = liveOrdersHtml || '<div style="text-align: center; padding: 20px; color: #999;">এই মুহূর্তে কোনো নতুন অর্ডার নেই।</div>';
+        activeOrderContainer.style.display = hasActiveOrder ? 'block' : 'none';
+        activeDetails.innerHTML = activeOrderHtml;
+      });
+
+      if(window.dlvBidTimerInterval) clearInterval(window.dlvBidTimerInterval);
+      window.dlvBidTimerInterval = setInterval(() => {
+          document.querySelectorAll('.bid-timer').forEach(el => {
+              let endTime = parseInt(el.getAttribute('data-end'));
+              let left = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+              if(left <= 0) {
+                  el.innerText = "00:00";
+                  el.style.color = "red";
+              } else {
+                  let m = Math.floor(left / 60);
+                  let s = left % 60;
+                  el.innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+              }
+          });
+      }, 1000);
+
+    } else {
+      statusText.innerHTML = '🔴 অফলাইন'; statusText.style.color = 'var(--mp-danger)';
+      ordersContainer.style.display = 'none'; offlineMsg.style.display = 'block';
+      activeOrderContainer.style.display = 'none';
+      if (unsubscribeOrders) unsubscribeOrders();
+      if (window.dlvBidTimerInterval) clearInterval(window.dlvBidTimerInterval);
+    }
+  };
 
 // 🚀 নতুন ফাংশন: বিজয়ী ডেলিভারি বয়কে অটোমেটিক অ্যাসাইন করা
 async function autoAssignOrderToWinner(orderId, finalBid) {
