@@ -2673,6 +2673,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
           deliveryCharge: finalTotal - shopTotal,
           totalPaidByCustomer: finalTotal, 
           otp: otp,
+          pickupOtp: Math.floor(1000 + Math.random() * 9000).toString(), // 🚀 নতুন: পিকআপের জন্য ৪ ডিজিটের কোড
           deliveryMode: deliveryMode,
           paymentMethod: paymentMethod,
           status: "pending_shop_accept", 
@@ -3312,12 +3313,14 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
   // ==================== SHOPKEEPER ORDER MANAGEMENT (LIVE) ====================
   let shopTimerInterval = null;
 
-  window.loadShopNewOrders = function() {
+    window.loadShopNewOrders = function() {
     const list = document.getElementById('shop-new-orders-list');
-    const preparingList = document.getElementById('shop-preparing-orders-list'); // নতুন সেকশন
+    const preparingList = document.getElementById('shop-preparing-orders-list'); 
     if (!list) return;
 
-    // ১. নতুন অর্ডার লিসেনার
+    // ==========================================
+    // ১. নতুন অর্ডার লিসেনার (Pending Shop Accept)
+    // ==========================================
     const qNew = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("status", "==", "pending_shop_accept"));
     onSnapshot(qNew, (snap) => {
       if (snap.empty) {
@@ -3328,7 +3331,6 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       snap.forEach(docSnap => {
         const order = docSnap.data();
         
-        // 🚀 FIX: দাম NaN না আসার জন্য items থেকে হিসাব করা হচ্ছে
         let itemsListHtml = '';
         let calculatedTotal = 0;
         if (order.items && order.items.length > 0) {
@@ -3339,7 +3341,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
             });
         }
 
-        // যদি ডেটাবেসের price ভ্যালিড না হয়, তবে calculatedTotal দেখাবে
+        // NaN ফিক্স
         let displayPrice = (order.price && !isNaN(order.price)) ? order.price : calculatedTotal;
 
         html += `
@@ -3363,46 +3365,76 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       list.innerHTML = html;
     });
 
-    // ২. প্রস্তুত হচ্ছে (Preparing) এমন অর্ডারের লিসেনার
+    // ==========================================
+    // ২. প্রস্তুত হচ্ছে, রেডি এবং অ্যাসাইনড অর্ডারের লিসেনার
+    // ==========================================
     if(preparingList) {
-        const qPreparing = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("status", "==", "preparing"));
+        // 🚀 FIX: preparing এর পাশাপাশি ready এবং assigned ও যোগ করা হলো
+        const qPreparing = query(collection(db, "orders"), where("shopId", "==", currentUser.uid), where("status", "in", ["preparing", "ready", "assigned"]));
+        
         onSnapshot(qPreparing, (snap) => {
           if (snap.empty) {
-            preparingList.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">বর্তমানে কোনো অর্ডার প্রস্তুত হচ্ছে না।</div>';
+            preparingList.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">বর্তমানে কোনো চলমান অর্ডার নেই।</div>';
             return;
           }
           let html = '';
           snap.forEach(docSnap => {
             const order = docSnap.data();
-            // টাইমার ক্যালকুলেশনের জন্য ডেটা
-            const acceptedAt = order.acceptedAt ? order.acceptedAt.toMillis() : Date.now();
-            const prepMinutes = order.prepTimeMinutes || 10;
-            const targetTime = acceptedAt + (prepMinutes * 60 * 1000);
+            
+            // NaN ফিক্স
+            let displayPrice = (order.price && !isNaN(order.price)) ? order.price : 0;
+
+            // 🚀 অ্যাকশন বাটন লজিক
+            let actionHtml = '';
+            let timerHtml = '';
+
+            if (order.status === 'preparing') {
+                timerHtml = `<div style="font-size: 18px; font-weight: bold; color: var(--mp-primary);" id="timer-${docSnap.id}">⏳ লোড হচ্ছে...</div>`;
+                actionHtml = `
+                  <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 8px 15px;" onclick="markOrderReady('${docSnap.id}')">📦 প্যাকিং সম্পন্ন</button>
+                `;
+            } else if (order.status === 'ready') {
+                timerHtml = `<div style="font-size: 14px; font-weight: bold; color: var(--mp-warning);">⏳ ডেলিভারি বয়ের অপেক্ষায়...</div>`;
+                actionHtml = `
+                  <div style="display: flex; gap: 5px; align-items: center; margin-top: 10px;">
+                    <input type="number" id="shop-pickup-input-${docSnap.id}" class="dlv-input" placeholder="পিকআপ কোড" style="flex: 1; padding: 6px; text-align: center; font-weight: bold;">
+                    <button class="mp-btn mp-btn-success" style="width: auto; margin: 0; padding: 6px 12px; background: #0f9d58;" onclick="verifyPickupCode('${docSnap.id}')">✅ মাল দিন</button>
+                  </div>
+                `;
+            } else if (order.status === 'assigned') {
+                timerHtml = `<div style="font-size: 14px; font-weight: bold; color: var(--mp-success);">🛵 ডেলিভারি বয় পৌঁছেছে</div>`;
+                actionHtml = `
+                  <div style="display: flex; gap: 5px; align-items: center; margin-top: 10px;">
+                    <input type="number" id="shop-pickup-input-${docSnap.id}" class="dlv-input" placeholder="পিকআপ কোড" style="flex: 1; padding: 6px; text-align: center; font-weight: bold;">
+                    <button class="mp-btn mp-btn-success" style="width: auto; margin: 0; padding: 6px 12px; background: #0f9d58;" onclick="verifyPickupCode('${docSnap.id}')">✅ মাল দিন</button>
+                  </div>
+                `;
+            }
 
             html += `
               <div style="border: 1px solid #ffe082; background: #fffde7; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
                 <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom: 5px;">
                   <span style="color: #b06000;">অর্ডার #${docSnap.id.slice(-4).toUpperCase()}</span>
-                  <span style="color: var(--mp-danger);">${order.prepTimeMinutes} মিনিট</span>
+                  <span style="color: var(--mp-danger);">₹${displayPrice.toFixed(2)}</span>
                 </div>
                 <div style="font-size: 12px; margin-bottom: 10px;">আইটেম: ${order.items ? order.items.length : 0} টি</div>
                 
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div style="font-size: 18px; font-weight: bold; color: var(--mp-primary);" id="timer-${docSnap.id}">
-                    ⏳ লোড হচ্ছে...
-                  </div>
-                  <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 8px 15px;" onclick="markOrderReady('${docSnap.id}')">📦 প্যাকিং সম্পন্ন</button>
+                  ${timerHtml}
                 </div>
+                ${actionHtml}
               </div>
             `;
           });
           preparingList.innerHTML = html;
 
-          // 🚀 লাইভ টাইমার আপডেট করার লজিক
-          if(shopTimerInterval) clearInterval(shopTimerInterval);
-          shopTimerInterval = setInterval(() => {
+          // 🚀 লাইভ টাইমার আপডেট (শুধুমাত্র preparing স্ট্যাটাসের জন্য)
+          if(window.shopTimerInterval) clearInterval(window.shopTimerInterval);
+          window.shopTimerInterval = setInterval(() => {
             snap.forEach(docSnap => {
                 const order = docSnap.data();
+                if(order.status !== 'preparing') return; // রেডি বা অ্যাসাইনড হলে টাইমার লুকিয়ে যাবে
+
                 const acceptedAt = order.acceptedAt ? order.acceptedAt.toMillis() : Date.now();
                 const prepMinutes = order.prepTimeMinutes || 10;
                 const targetTime = acceptedAt + (prepMinutes * 60 * 1000);
@@ -4493,15 +4525,21 @@ document.addEventListener("DOMContentLoaded", () => {
             // 🚀 ম্যাপের জন্য পিকআপ এবং ড্রপ লোকেশন তৈরি
             let mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${order.shopLat || 0},${order.shopLng || 0}&destination=${order.lat || 0},${order.lng || 0}`;
 
-            activeOrderHtml += `
+              activeOrderHtml += `
               <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--mp-success);">
                 <h4 style="color:var(--mp-primary);">অর্ডার #${orderId.slice(-4).toUpperCase()}</h4>
                 <p style="font-size: 12px; margin: 5px 0;"><b>🏪 পিকআপ (দোকান):</b> ${shopNameDisplay}</p>
+                
+                <!-- 🚀 নতুন: ডেলিভারি বয়ের জন্য পিকআপ কোড -->
+                <div style="background: #fff3e0; padding: 8px; border-radius: 6px; margin: 8px 0; text-align: center; border: 1px dashed #ffb74d;">
+                    <span style="font-size: 11px; color: #e65100;">দোকানদারকে এই কোডটি বলুন:</span><br>
+                    <b style="font-size: 18px; color: #d93025; letter-spacing: 2px;">${order.pickupOtp || '----'}</b>
+                </div>
+
                 <p style="font-size: 12px; margin: 5px 0;"><b>📍 ডেলিভারি:</b> ${order.customerAddress || 'ঠিকানা নেই'}</p>
                 <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">চার্জ: ₹${order.deliveryCharge || 0}</p>
                 
                 <div style="display:flex; gap:10px; margin-top:10px;">
-                  <!-- 🚀 নতুন ম্যাপ বাটন (দোকান থেকে কাস্টমারের বাড়ি) -->
                   <button class="mp-btn mp-btn-primary" style="flex:1; margin:0;" onclick="window.open('${mapUrl}', '_blank')">📍 রাস্তা দেখুন</button>
                   <button class="mp-btn mp-btn-success" style="flex:1; margin:0;" onclick="promptOTP('${orderId}')">✅ Delivered</button>
                 </div>
@@ -7562,6 +7600,36 @@ window.handleCSVUpload = function(event) {
         smartCart[index].selectedUnit = unit;
     }
     updateSmartCartUI(); // UI রিফ্রেশ করবে এবং নতুন দাম দেখাবে
+  };
+
+  window.verifyPickupCode = async function(orderId) {
+    const inputEl = document.getElementById(`shop-pickup-input-${orderId}`);
+    const enteredCode = inputEl.value.trim();
+
+    if (!enteredCode) return alert("দয়া করে ডেলিভারি বয়ের কাছ থেকে কোডটি নিয়ে টাইপ করুন।");
+
+    try {
+      const orderRef = doc(db, "orders", orderId);
+      const orderSnap = await getDoc(orderRef);
+      
+      if (orderSnap.exists()) {
+        const orderData = orderSnap.data();
+        
+        if (orderData.pickupOtp === enteredCode) {
+          // 🚀 কোড মিলে গেলে স্ট্যাটাস আপডেট হবে
+          await updateDoc(orderRef, {
+            status: "picked_up", // মাল ডেলিভারি বয়ের কাছে হস্তান্তরিত হয়েছে
+            pickedUpAt: serverTimestamp()
+          });
+          alert("✅ কোড মিলেছে! মাল সফলভাবে ডেলিভারি বয়কে হস্তান্তর করা হয়েছে।");
+        } else {
+          alert("❌ ভুল কোড! দয়া করে ডেলিভারি বয়ের স্ক্রিন থেকে সঠিক কোডটি দেখে নিন।");
+        }
+      }
+    } catch(e) {
+      console.error(e);
+      alert("ভেরিফাই করতে সমস্যা হয়েছে!");
+    }
   };
 
 </script>
