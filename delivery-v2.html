@@ -5812,8 +5812,10 @@ window.searchPinUsers = async function() {
       // ম্যাপ তৈরি
       if (!liveTrackMap) {
         liveTrackMap = L.map('live-track-map').setView([dLat, dLng], 14);
-       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles © Esri'
+      // 🚀 আপনার পুরোনো L.tileLayer(...) লাইনটি মুছে নিচেরটি বসান
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
 }).addTo(liveTrackMap);
         // কাস্টমার মার্কার (🏠)
         customerMarker = L.marker([cLat, cLng], {
