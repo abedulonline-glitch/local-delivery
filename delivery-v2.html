@@ -596,7 +596,6 @@
     </div>   
 
     <!-- ২. Free Delivery Toggle -->
-    <!-- ২. Free Delivery Toggle -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee;">
       <div style="flex: 1; padding-right: 15px;">
         <div style="font-size: 14px; font-weight: bold; color: #0f9d58;">🎁 সবসময় ফ্রি ডেলিভারি</div>
@@ -698,12 +697,6 @@
         <h3>⏳ প্রস্তুত হচ্ছে (Preparing)</h3>
         <div id="shop-preparing-orders-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
       </div>
-
-        <!-- 🚀 ডেলিভারি বয় অ্যাসাইনড (Handover) -->
-      <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
-        <h3>🛵 ডেলিভারি বয় অ্যাসাইনড</h3>
-        <div id="shop-assigned-orders-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
-      </div>
   
   <!-- প্রোডাক্ট লিস্ট -->
   <div class="mp-card">
@@ -717,6 +710,12 @@
     </h3>
     <div id="shop-product-list"></div>
   </div>
+
+        <!-- 🚀 ডেলিভারি বয় অ্যাসাইনড (Handover) -->
+      <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
+        <h3>🛵 ডেলিভারি বয় অ্যাসাইনড</h3>
+        <div id="shop-assigned-orders-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
+      </div>
 
   <!-- 🚀 দোকানদারের ক্যাটাগরি সাজেশন সেকশন -->
   <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
@@ -2665,8 +2664,8 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
         let currentShopName = shopItems[0].shopName || 'Unknown Shop';
         let currentShopLat = shopItems[0].shopLat || 0;
         let currentShopLng = shopItems[0].shopLng || 0;
-        let pickupOtp = Math.floor(1000 + Math.random() * 9000).toString(); //
-       
+        let pickupOtp = Math.floor(1000 + Math.random() * 9000).toString();
+        
         await addDoc(collection(db, "orders"), {
           masterOrderId: masterOrderId,
           customerId: currentUser.uid,
@@ -7042,22 +7041,7 @@ async function assignClosestDeliveryBoy(orderId, order) {
     }
   };
 
-  // 🚀 ২. ডাইনামিক ডিসকাউন্ট রো তৈরি
-//  window.addDiscountTierRow = function(qty = '', pct = '') {
-   // const container = document.getElementById('sp-discount-tiers-container');
-  //  const rowId = 'tier-' + Date.now() + Math.floor(Math.random() * 100);
-    
-  //  const rowHtml = `
-     // <div id="${rowId}" style="display:flex; gap:5px; margin-bottom:5px; align-items:center;">
-       // <input type="number" placeholder="পরিমাণ (যেমন: 10)" class="tier-qty" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${qty}">
-       // <input type="number" placeholder="ছাড় (যেমন: 2)" class="tier-pct" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:12px;" value="${pct}">
-     //   <span style="font-size:12px;">%</span>
-      //  <button type="button" onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">&times;</button>
-    //  </div>
- //   `;
-  //  container.insertAdjacentHTML('beforeend', rowHtml);
- // };
-
+ 
   // 🚀 ৩. দোকানদার ড্যাশবোর্ডের টগল লজিক
   window.handleBulkDiscountToggle = async function(isChecked, toggleEl) {
     // এখানে ভবিষ্যতে চার্জ কাটার লজিক বসবে। আপাতত ফ্রি রাখা হলো।
@@ -7237,7 +7221,6 @@ window.parseExcelPaste = function() {
   }
 };
 
-// 🚀 ৪. ক্যাটাগরি ড্রপডাউন আপডেট (আগের Part 2-এর appendBulkRow ফাংশনটি রিপ্লেস করছি)
 // 🚀 ৫. ডাইনামিক রো তৈরি করা (AI ইমেজ, CSV এবং ম্যানুয়াল সাপোর্টসহ)
 window.appendBulkRow = function(imageBase64, autoName, selectedCat = '', price = 0, stock = 0) {
   const tbody = document.getElementById('bulk-table-body');
