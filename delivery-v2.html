@@ -5812,8 +5812,8 @@ window.searchPinUsers = async function() {
       // ম্যাপ তৈরি
       if (!liveTrackMap) {
         liveTrackMap = L.map('live-track-map').setView([dLat, dLng], 14);
-        L.tileLayer('https://tiles.openfreemap.org/styles/liberty/{z}/{x}/{y}.png', {
-    attribution: '© OpenFreeMap © OpenStreetMap'
+       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles © Esri'
 }).addTo(liveTrackMap);
         // কাস্টমার মার্কার (🏠)
         customerMarker = L.marker([cLat, cLng], {
