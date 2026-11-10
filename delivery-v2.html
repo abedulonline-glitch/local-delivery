@@ -4022,20 +4022,42 @@ window.saveShopLocation = async function() {
 };
 
   // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্ক ও এডিট বাটনসহ)
-  // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্ক ও এডিট বাটনসহ)
+  // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (সিম্পল ডিবাগিং ভার্সন)
   window.openAddProductModal = function() {
     try {
-      document.getElementById('dlv-catalog-modal').classList.add('active');
-      const list = document.getElementById('catalog-list-container');
-      if (!list) return alert("HTML-এ 'catalog-list-container' আইডি খুঁজে পাওয়া যায়নি!");
+      console.log("1. Function Started");
       
+      // ১. চেক করা মডাল আইডি ঠিক আছে কি না
+      const modal = document.getElementById('dlv-catalog-modal');
+      if (!modal) {
+          alert("❌ Error: 'dlv-catalog-modal' HTML-এ পাওয়া যায়নি!");
+          return;
+      }
+      modal.classList.add('active');
+      console.log("2. Modal Opened");
+
+      // ২. চেক করা লিস্ট কন্টেইনার ঠিক আছে কি না
+      const list = document.getElementById('catalog-list-container');
+      if (!list) {
+          alert("❌ Error: 'catalog-list-container' HTML-এ পাওয়া যায়নি!");
+          return;
+      }
       list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">লোড হচ্ছে...</div>';
+      console.log("3. Loading text shown");
+
+      // ৩. চেক করা কারেন্ট ইউজার ঠিক আছে কি না
+      if (!currentUser || !currentUser.uid) {
+          alert("❌ Error: ইউজার লগইন করা নেই বা UID পাওয়া যাচ্ছে না!");
+          return;
+      }
+      console.log("4. User UID found:", currentUser.uid);
 
       // দোকানদারের নিজের প্রোডাক্টগুলো খোঁজা
       const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
       
       onSnapshot(myProductsQ, (mySnap) => {
-        // দোকানদার আগে থেকে কোন কোন মাস্টার প্রোডাক্ট অ্যাড করেছে, তার ডেটা ম্যাপ
+        console.log("5. My products loaded. Count:", mySnap.size);
+        
         const myAddedProducts = {};
         mySnap.forEach(d => {
           const p = d.data();
@@ -4044,6 +4066,8 @@ window.saveShopLocation = async function() {
 
         // এবার অ্যাডমিনের মাস্টার প্রোডাক্টগুলো লোড করা
         onSnapshot(collection(db, "master_products"), (masterSnap) => {
+          console.log("6. Master products loaded. Count:", masterSnap.size);
+          
           if(masterSnap.empty) {
             list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
             return;
@@ -4053,19 +4077,15 @@ window.saveShopLocation = async function() {
           masterSnap.forEach(docSnap => {
             const p = docSnap.data();
             const masterId = docSnap.id;
-            
-            // চেক করা হচ্ছে দোকানদার এটি আগেই অ্যাড করেছে কি না
             const isAdded = myAddedProducts[masterId] ? true : false;
-
-            // ডিফল্ট ইউনিট এবং গ্রেড
-            const displayUnit = p.unit || 'pcs';
-            const displayGrade = p.grade || 'A';
-
-            // বাটনের লজিক (শুধু আইডি পাঠানো হচ্ছে)
+            
+            // বাটনের লজিক
             let actionBtn = '';
             if (isAdded) {
+              // 🚀 এখানে window. ব্যবহার করা হয়েছে
               actionBtn = `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick="window.editShopProduct('${masterId}')">✏️ এডিট</button>`;
             } else {
+              // 🚀 এখানে window. ব্যবহার করা হয়েছে
               actionBtn = `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick="window.selectMasterProduct('${masterId}')">➕ রেট দিন</button>`;
             }
 
@@ -4076,8 +4096,8 @@ window.saveShopLocation = async function() {
                     ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
                   </div>
                   <div>
-                    <div style="font-size:14px; font-weight:600;">${p.name}</div>
-                    <div style="font-size:11px; color:#666;">${displayGrade} | ${displayUnit}</div>
+                    <div style="font-size:14px; font-weight:600;">${p.name || 'Unknown'}</div>
+                    <div style="font-size:11px; color:#666;">${p.category || 'General'}</div>
                   </div>
                 </div>
                 <div>
@@ -4086,19 +4106,22 @@ window.saveShopLocation = async function() {
               </div>
             `;
           });
+          
           list.innerHTML = html;
+          console.log("7. HTML rendered successfully");
+          
         }, (error) => {
-          console.error("Master products load error:", error);
-          list.innerHTML = `<div style="color: red; text-align: center; padding: 20px;">ডেটা লোড করতে সমস্যা: ${error.message}</div>`;
+          console.error("Master products error:", error);
+          list.innerHTML = `<div style="color: red; text-align: center; padding: 20px;">ডেটা লোড এরর: ${error.message}</div>`;
         });
       }, (error) => {
-        console.error("My products load error:", error);
-        list.innerHTML = `<div style="color: red; text-align: center; padding: 20px;">আপনার ডেটা লোড করতে সমস্যা: ${error.message}</div>`;
+        console.error("My products error:", error);
+        list.innerHTML = `<div style="color: red; text-align: center; padding: 20px;">আপনার ডেটা লোড এরর: ${error.message}</div>`;
       });
 
     } catch(e) {
-      console.error("Open Add Product Modal Error:", e);
-      alert("প্রোডাক্ট মডাল ওপেন করতে সমস্যা: " + e.message);
+      console.error("Fatal Error:", e);
+      alert("❌ প্রোডাক্ট মডাল ওপেন করতে সমস্যা: " + e.message);
     }
   };
    
