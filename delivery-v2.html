@@ -1063,26 +1063,11 @@
         </div>
 
         <!-- নতুন ক্যাটাগরি রিকোয়েস্ট -->
-        <!-- 🚀 নতুন: রিকোয়েস্ট ম্যানেজমেন্ট -->
-        <div class="mp-card" style="border-left: 4px solid #0f9d58;">
-          <h3>📥 নতুন রিকোয়েস্ট ম্যানেজমেন্ট</h3>
-          
-          <!-- ট্যাব বাটন -->
-          <div style="display: flex; gap: 5px; margin-bottom: 15px; background: #f0f2f5; padding: 5px; border-radius: 8px;">
-            <button class="bulk-tab-btn active" onclick="switchAdminReqTab('category', this)" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: white; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">🗂️ ক্যাটাগরি রিকোয়েস্ট</button>
-            <button class="bulk-tab-btn" onclick="switchAdminReqTab('product', this)" style="flex: 1; padding: 8px; border: none; border-radius: 6px; background: transparent; font-size: 12px; font-weight: bold; cursor: pointer;">📦 প্রোডাক্ট রিকোয়েস্ট</button>
-          </div>
-
-          <!-- ক্যাটাগরি রিকোয়েস্ট লিস্ট -->
-          <div id="admin-cat-req-container" style="max-height: 250px; overflow-y: auto;">
-            <div style="text-align: center; color: #999; font-size: 13px;">কোনো ক্যাটাগরি রিকোয়েস্ট নেই।</div>
-          </div>
-
-          <!-- প্রোডাক্ট রিকোয়েস্ট লিস্ট (প্রথমে হাইড) -->
-          <div id="admin-prod-req-container" class="mp-hidden" style="max-height: 400px; overflow-y: auto;">
-            <div style="text-align: center; color: #999; font-size: 13px;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>
-          </div>
+        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
+        <div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
+          <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
         </div>
+      </div>
   
   <!-- 🚀 সার্চ বার -->
   <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
@@ -2997,10 +2982,8 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       loadShopBadgeStatus();
       loadShopNewOrders();
       loadCategoriesForDropdowns();
-           // 🚀 শপকিপার লোড হলে প্রোডাক্ট ফর্ম এবং ক্যাটাগরি লোড করা
-      loadCategoriesForRequest();
-  
-        // 🚀 নতুন যোগ করা হলো: পেজ রিফ্রেশে টগলের স্টেটাস লোড করা
+      
+      // 🚀 নতুন যোগ করা হলো: পেজ রিফ্রেশে টগলের স্টেটাস লোড করা
       const freeDelToggle = document.getElementById('toggle-shop-free-delivery');
       if (freeDelToggle) freeDelToggle.checked = globalUserData.freeDelivery || false;
       
@@ -5909,19 +5892,14 @@ window.searchPinUsers = async function() {
     currentUploadContext = context;
     let fileInput;
     
-    // 🚀 req-prod কনটেক্সট যোগ করা হলো
+    // 🚀 কোন কনটেক্সটের জন্য কোন ইনপুট ফিল্ড ব্যবহার হবে তা চেক করা
     if (context === 'mp') fileInput = document.getElementById('mp-image-input');
     else if (context === 'edit-mp') fileInput = document.getElementById('ep-image-input');
     else if (context === 'ad') fileInput = document.getElementById('ad-image-input');
-    else if (context === 'reg') fileInput = document.getElementById('reg-profile-pic-file');
-    else if (context === 'cp') fileInput = document.getElementById('cp-image-input');
-    else if (context === 'req-prod') fileInput = document.getElementById('req-prod-img-input'); // 🚀 নতুন
+    else if (context === 'reg') fileInput = document.getElementById('reg-profile-pic-file'); // 🚀 আইডি ঠিক করা হলো   else if (context === 'cp') fileInput = document.getElementById('cp-image-input'); // 🚀 নতুন: কাস্টম প্রোডাক্টের জন্য
     else fileInput = document.getElementById('add-p-image-file');
     
-    if (!fileInput) {
-        console.error("File input not found for context:", context);
-        return;
-    }
+    if (!fileInput) return; // যদি ইনপুট ফিল্ড না পাওয়া যায় তবে থেমে যাবে
 
     if (source === 'camera') fileInput.setAttribute('capture', 'environment');
     else fileInput.removeAttribute('capture');
@@ -5954,96 +5932,85 @@ window.searchPinUsers = async function() {
   };
 
   window.saveCroppedImage = async function() {
-    if (!cropperInstance) return;
+  if (!cropperInstance) return;
+  
+  const statusEl = document.getElementById('crop-status');
+  statusEl.innerText = "আপলোড হচ্ছে..."; 
+  statusEl.style.color = "#0f9d58";
+
+  try {
+    // 🚀 আগের মতোই Base64 পদ্ধতি ব্যবহার করা হলো (যা আপনার ফোনে কাজ করছিল)
+    const canvas = cropperInstance.getCroppedCanvas({
+      maxWidth: 600,  // সাইজ আরেকটু কমানো হলো যাতে দ্রুত আপলোড হয়
+      maxHeight: 600,
+    });
     
-    const statusEl = document.getElementById('crop-status');
-    statusEl.innerText = "আপলোড হচ্ছে..."; 
-    statusEl.style.color = "#0f9d58";
+    const base64Image = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
 
-    try {
-      // 🚀 Base64 পদ্ধতি ব্যবহার করে ছবি রিসাইজ করা
-      const canvas = cropperInstance.getCroppedCanvas({
-        maxWidth: 600,  
-        maxHeight: 600,
-      });
-      
-      const base64Image = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+    const formData = new FormData();
+    formData.append("image", base64Image);
 
-      const formData = new FormData();
-      formData.append("image", base64Image);
-
-      // ImgBB তে আপলোড
-      const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { 
-        method: "POST", 
-        body: formData 
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        const uploadedUrl = data.data.url;
-
-        // 🚀 সফলভাবে আপলোড হলে কোন জায়গায় যাবে তা চেক করা
-        if (currentUploadContext === 'reg') {
-          regProfilePicUrl = uploadedUrl; 
-          const img = document.getElementById('reg-profile-img');
-          const icon = document.getElementById('reg-profile-icon');
-          if(img && icon) {
-            img.src = regProfilePicUrl;
-            img.style.display = 'block';
-            icon.style.display = 'none';
-          }
-        } 
-        else if (currentUploadContext === 'edit-profile') {
-          editProfilePicUrl = uploadedUrl;
-          const img = document.getElementById('ep-preview-img');
-          const icon = document.getElementById('ep-preview-icon');
-          if(img && icon) {
-            img.src = editProfilePicUrl;
-            img.style.display = 'block';
-            icon.style.display = 'none';
-          }
+    // ImgBB তে আপলোড
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { 
+      method: "POST", 
+      body: formData 
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // 🚀 সফলভাবে আপলোড হলে কোন জায়গায় যাবে তা চেক করা
+      if (currentUploadContext === 'reg') {
+        regProfilePicUrl = data.data.url; 
+        const img = document.getElementById('reg-profile-img');
+        const icon = document.getElementById('reg-profile-icon');
+        if(img && icon) {
+          img.src = regProfilePicUrl;
+          img.style.display = 'block';
+          icon.style.display = 'none';
         }
-        // 🚀 নতুন: ক্যাটালগ রিকোয়েস্টের ছবি হ্যান্ডেল করা
-        else if (currentUploadContext === 'req-prod') {
-          reqUploadedImgUrl = uploadedUrl;
-          const preview = document.getElementById('req-prod-img-preview');
-          if(preview) {
-            preview.src = reqUploadedImgUrl;
-            preview.style.display = 'block';
-          }
+      } 
+      else if (currentUploadContext === 'edit-profile') {
+        editProfilePicUrl = data.data.url;
+        const img = document.getElementById('ep-preview-img');
+        const icon = document.getElementById('ep-preview-icon');
+        if(img && icon) {
+          img.src = editProfilePicUrl;
+          img.style.display = 'block';
+          icon.style.display = 'none';
         }
-        else {
-          uploadedImageUrl = uploadedUrl;
-          
-          let previewId;
-          if (currentUploadContext === 'mp') previewId = 'mp-image-preview';
-          else if (currentUploadContext === 'edit-mp') previewId = 'ep-image-preview';
-          else if (currentUploadContext === 'ad') previewId = 'ad-image-preview';
-          else if (currentUploadContext === 'cp') previewId = 'cp-image-preview'; 
-          else previewId = 'add-p-image-preview';
-          
-          const preview = document.getElementById(previewId);
-          if(preview) {
-            preview.src = uploadedImageUrl; 
-            preview.style.display = 'block';
-          }
-        }
-        
-        statusEl.innerText = "সফল!";
-        closeCropModal();
-        
-      } else {
-        console.error("ImgBB Error:", data);
-        throw new Error("ImgBB Upload Failed");
       }
-    } catch (e) {
-      console.error(e);
-      alert("ছবি আপলোডে সমস্যা! ইন্টারনেট কানেকশন চেক করুন বা আবার চেষ্টা করুন।"); 
-      statusEl.innerText = "ব্যর্থ!"; 
-      statusEl.style.color = "red";
+      else {
+        uploadedImageUrl = data.data.url;
+        
+        let previewId;
+        if (currentUploadContext === 'mp') previewId = 'mp-image-preview';
+        else if (currentUploadContext === 'edit-mp') previewId = 'ep-image-preview';
+        else if (currentUploadContext === 'ad') previewId = 'ad-image-preview';
+        else if (currentUploadContext === 'cp') previewId = 'cp-image-preview'; 
+        else previewId = 'add-p-image-preview';
+        
+        const preview = document.getElementById(previewId);
+        if(preview) {
+          preview.src = uploadedImageUrl; 
+          preview.style.display = 'block';
+        }
+      }
+      
+      statusEl.innerText = "সফল!";
+      closeCropModal();
+      
+    } else {
+      console.error("ImgBB Error:", data);
+      throw new Error("ImgBB Upload Failed");
     }
-  };
+  } catch (e) {
+    console.error(e);
+    alert("ছবি আপলোডে সমস্যা! ইন্টারনেট কানেকশন চেক করুন বা আবার চেষ্টা করুন।"); 
+    statusEl.innerText = "ব্যর্থ!"; 
+    statusEl.style.color = "red";
+  }
+};
 
   // ============================================================
   // OTHERS (Recharge, Rating)
@@ -6715,150 +6682,35 @@ window.clearImageSearch = function() {
   };
 
   // ৩. অ্যাডমিনের স্ক্রিনে রিকোয়েস্ট লোড করা
-  // ==================== ADMIN REQUEST MANAGEMENT ====================
-  
-  // ১. ট্যাব সুইচ লজিক
-  window.switchAdminReqTab = function(tab, btnEl) {
-    document.querySelectorAll('.bulk-tab-btn').forEach(btn => {
-      btn.style.background = 'transparent';
-      btn.style.boxShadow = 'none';
-    });
-    btnEl.style.background = 'white';
-    btnEl.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+  function loadAdminCategoryRequests() {
+    const list = document.getElementById('admin-category-requests');
+    if (!list) return;
 
-    if (tab === 'category') {
-      document.getElementById('admin-cat-req-container').classList.remove('mp-hidden');
-      document.getElementById('admin-prod-req-container').classList.add('mp-hidden');
-    } else {
-      document.getElementById('admin-cat-req-container').classList.add('mp-hidden');
-      document.getElementById('admin-prod-req-container').classList.remove('mp-hidden');
-    }
-  };
+    onSnapshot(query(collection(db, "category_requests"), orderBy("createdAt", "desc")), (snap) => {
+      if (snap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>';
+        return;
+      }
 
-  // ২. ক্যাটাগরি ও প্রোডাক্ট রিকোয়েস্ট লিসেনার
-  window.loadAdminCategoryRequests = function() {
-    // ক) ক্যাটাগরি রিকোয়েস্ট লিসেনার
-    const catContainer = document.getElementById('admin-cat-req-container');
-    if(catContainer) {
-        onSnapshot(query(collection(db, "category_requests"), orderBy("createdAt", "desc")), (snap) => {
-          if (snap.empty) {
-            catContainer.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো ক্যাটাগরি রিকোয়েস্ট নেই।</div>';
-            return;
-          }
-          let html = '';
-          snap.forEach(docSnap => {
-            const req = docSnap.data();
-            html += `
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
-                <div>
-                  <div style="font-size: 13px; font-weight: bold; color: var(--mp-primary);">${req.categoryName}</div>
-                  <div style="font-size: 11px; color: #666;">দোকান: ${req.shopName}</div>
-                </div>
-                <div style="display: flex; gap: 5px;">
-                  <button onclick="approveCategory('${docSnap.id}', '${req.categoryName}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
-                  <button onclick="rejectCategory('${docSnap.id}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
-                </div>
-              </div>
-            `;
-          });
-          catContainer.innerHTML = html;
-        });
-    }
-
-    // খ) প্রোডাক্ট রিকোয়েস্ট লিসেনার
-    const prodContainer = document.getElementById('admin-prod-req-container');
-    if(prodContainer) {
-        onSnapshot(query(collection(db, "product_requests"), orderBy("createdAt", "desc")), (snap) => {
-          if (snap.empty) {
-            prodContainer.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>';
-            return;
-          }
-          let html = '';
-          snap.forEach(docSnap => {
-            const req = docSnap.data();
-            
-            // ক্যাটাগরি ড্রপডাউন অপশন তৈরি (এডিট করার জন্য)
-            let catOptions = `<option value="${req.category}">${req.category}</option>`;
-            // (এখানে চাইলে সব ক্যাটাগরি লোড করা যাবে, তবে আপাতত ডিফল্ট দেখাচ্ছি)
-
-            html += `
-              <div style="border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fff;">
-                <div style="display: flex; gap: 10px; align-items: flex-start;">
-                  <!-- ছবি -->
-                  <div style="width: 60px; height: 60px; border-radius: 6px; background: #f0f2f5; overflow: hidden; flex-shrink: 0; display: flex; justify-content: center; align-items: center;">
-                    ${req.image ? `<img src="${req.image}" style="width:100%; height:100%; object-fit:cover;">` : '📦'}
-                  </div>
-                  
-                  <!-- ডিটেইলস -->
-                  <div style="flex: 1;">
-                    <div style="font-size: 14px; font-weight: bold; margin-bottom: 5px;">${req.productName}</div>
-                    <div style="font-size: 12px; color: #666; margin-bottom: 5px;">দোকান: ${req.shopName}</div>
-                    
-                    <!-- এডমিনের জন্য ক্যাটাগরি সিলেক্ট করার অপশন -->
-                    <div style="display: flex; gap: 5px; align-items: center; margin-top: 8px;">
-                      <span style="font-size: 11px;">ক্যাটাগরি:</span>
-                      <select id="prod-req-cat-${docSnap.id}" class="dlv-input" style="padding: 4px; font-size: 12px; width: auto;">
-                        ${catOptions}
-                        <!-- ভবিষ্যতে সব ক্যাটাগরির অপশন এখানে যুক্ত হবে -->
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- অ্যাকশন বাটন -->
-                <div style="display: flex; gap: 5px; margin-top: 12px;">
-                  <button onclick="approveProductRequest('${docSnap.id}')" style="flex: 1; background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:8px; font-size:12px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ করুন</button>
-                  <button onclick="rejectProductRequest('${docSnap.id}')" style="flex: 1; background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:8px; font-size:12px; cursor:pointer; font-weight:bold;">❌ বাতিল করুন</button>
-                </div>
-              </div>
-            `;
-          });
-          prodContainer.innerHTML = html;
-        });
-    }
-  };
-
-  // ৩. প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ করা (Master Products এ যোগ হবে)
-  window.approveProductRequest = async function(reqId) {
-    if (!confirm("আপনি কি এই প্রোডাক্টটি অনুমোদন করতে চান?")) return;
-    try {
-      const reqRef = doc(db, "product_requests", reqId);
-      const reqSnap = await getDoc(reqRef);
-      if (!reqSnap.exists()) return;
-      
-      const reqData = reqSnap.data();
-      
-      // এডিট করা ক্যাটাগরি নেওয়া
-      const selectedCat = document.getElementById(`prod-req-cat-${reqId}`).value;
-
-      // মাস্টার প্রোডাক্টে যোগ করা
-      await addDoc(collection(db, "master_products"), {
-        name: reqData.productName,
-        category: selectedCat,
-        image: reqData.image || null,
-        imageVector: "", // আপাতত খালি, চাইলে পরে জেনারেট হবে
-        createdAt: serverTimestamp()
+      let html = '';
+      snap.forEach(docSnap => {
+        const req = docSnap.data();
+        html += `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--mp-primary);">${req.categoryName}</div>
+              <div style="font-size: 11px; color: #666;">দোকান: ${req.shopName}</div>
+            </div>
+            <div style="display: flex; gap: 5px;">
+              <button onclick="approveCategory('${docSnap.id}', '${req.categoryName}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
+              <button onclick="rejectCategory('${docSnap.id}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
+            </div>
+          </div>
+        `;
       });
-
-      // রিকোয়েস্ট ডিলিট করা
-      await deleteDoc(reqRef);
-      alert("✅ প্রোডাক্ট অনুমোদিত হয়েছে এবং মাস্টার ক্যাটালগে যুক্ত হয়েছে!");
-    } catch(e) {
-      console.error(e);
-      alert("অনুমোদন করতে সমস্যা হয়েছে!");
-    }
-  };
-
-  // ৪. প্রোডাক্ট রিকোয়েস্ট রিজেক্ট করা
-  window.rejectProductRequest = async function(reqId) {
-    if (!confirm("আপনি কি এই প্রোডাক্টটি বাতিল করতে চান?")) return;
-    try {
-      await deleteDoc(doc(db, "product_requests", reqId));
-      alert("প্রোডাক্ট রিকোয়েস্ট বাতিল করা হয়েছে!");
-    } catch(e) {
-      alert("সমস্যা হয়েছে!");
-    }
-  };
+      list.innerHTML = html;
+    });
+  }
 
   // ৪. অ্যাডমিন কর্তৃক রিকোয়েস্ট অ্যাপ্রুভ করা
   window.approveCategory = async function(reqId, catName) {
@@ -8185,47 +8037,36 @@ window.submitOfflineSpeed = async function() {
 let reqUploadedImgUrl = null;
 
 // ১. ফর্ম টগল (প্রোডাক্ট নাকি ক্যাটাগরি)
-  window.toggleReqForm = function() {
-    const type = document.getElementById('req-type').value;
-    const catForm = document.getElementById('req-cat-form');
-    const prodForm = document.getElementById('req-prod-form');
+window.toggleReqForm = function() {
+  const type = document.getElementById('req-type').value;
+  const catForm = document.getElementById('req-cat-form');
+  const prodForm = document.getElementById('req-prod-form');
 
-    if (type === 'category') {
-      catForm.classList.remove('mp-hidden');
-      prodForm.classList.add('mp-hidden');
-    } else {
-      catForm.classList.add('mp-hidden');
-      prodForm.classList.remove('mp-hidden');
-      loadCategoriesForRequest(); // 🚀 ক্যাটাগরি লোড করা
-    }
-  };
+  if (type === 'category') {
+    catForm.classList.remove('mp-hidden');
+    prodForm.classList.add('mp-hidden');
+  } else {
+    catForm.classList.add('mp-hidden');
+    prodForm.classList.remove('mp-hidden');
+    loadCategoriesForRequest(); // ক্যাটাগরি লিস্ট লোড
+  }
+};
 
 // ২. ড্রপডাউনে ক্যাটাগরি লোড করা (নতুন ক্যাটাগরি অপশন সহ)
-  function loadCategoriesForRequest() {
-    const select = document.getElementById('req-prod-cat');
-    if(!select) return;
-    
-    // প্রথমে লোডিং মেসেজ দেখানো
-    select.innerHTML = '<option value="" disabled selected>ক্যাটাগরি লোড হচ্ছে...</option>';
-    
-    onSnapshot(collection(db, "categories"), (snap) => {
-      select.innerHTML = '<option value="" disabled selected>ক্যাটাগরি সিলেক্ট করুন...</option>';
-      
-      if(snap.empty) {
-          select.innerHTML += '<option value="" disabled>কোনো ক্যাটাগরি নেই</option>';
-      } else {
-          snap.forEach(doc => {
-            select.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`;
-          });
-      }
-      
-      // 🚀 একদম নিচে নতুন ক্যাটাগরি যোগ করার অপশন
-      select.innerHTML += `<option value="new_category" style="color:var(--mp-primary); font-weight:bold;">➕ নতুন ক্যাটাগরি যোগ করুন...</option>`;
-    }, (error) => {
-        console.error("Category load error:", error);
-        select.innerHTML = '<option value="" disabled>ক্যাটাগরি লোড করতে সমস্যা হয়েছে</option>';
+function loadCategoriesForRequest() {
+  const select = document.getElementById('req-prod-cat');
+  select.innerHTML = '<option value="" disabled selected>ক্যাটাগরি সিলেক্ট করুন...</option>';
+  
+  // ডেটাবেস থেকে ক্যাটাগরি আনা
+  onSnapshot(collection(db, "categories"), (snap) => {
+    select.innerHTML = '<option value="" disabled selected>ক্যাটাগরি সিলেক্ট করুন...</option>';
+    snap.forEach(doc => {
+      select.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`;
     });
-  }
+    // 🚀 একদম নিচে নতুন ক্যাটাগরি যোগ করার অপশন
+    select.innerHTML += `<option value="new_category" style="color:var(--mp-primary); font-weight:bold;">➕ নতুন ক্যাটাগরি যোগ করুন...</option>`;
+  });
+}
 
 // ৩. নতুন ক্যাটাগরি সিলেক্ট করলে টেক্সট বক্স দেখানো
 window.handleReqCatChange = function(val) {
