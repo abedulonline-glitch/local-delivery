@@ -6736,7 +6736,16 @@ window.clearImageSearch = function() {
   };
 
   // ২. ক্যাটাগরি ও প্রোডাক্ট রিকোয়েস্ট লিসেনার
+  // 🚀 সব ক্যাটাগরি জমা রাখার জন্য গ্লোবাল ভেরিয়েবল
+  let allMasterCategories = []; 
+
   window.loadAdminCategoryRequests = function() {
+    // 🚀 নতুন: ডেটাবেস থেকে সব ক্যাটাগরি লোড করে রাখা
+    onSnapshot(collection(db, "categories"), (catSnap) => {
+        allMasterCategories = [];
+        catSnap.forEach(doc => allMasterCategories.push(doc.data().name));
+    });
+
     // ক) ক্যাটাগরি রিকোয়েস্ট লিসেনার
     const catContainer = document.getElementById('admin-cat-req-container');
     if(catContainer) {
@@ -6777,9 +6786,21 @@ window.clearImageSearch = function() {
           snap.forEach(docSnap => {
             const req = docSnap.data();
             
-            // ক্যাটাগরি ড্রপডাউন অপশন তৈরি (এডিট করার জন্য)
-            let catOptions = `<option value="${req.category}">${req.category}</option>`;
-            // (এখানে চাইলে সব ক্যাটাগরি লোড করা যাবে, তবে আপাতত ডিফল্ট দেখাচ্ছি)
+            // 🚀 এখানে পুরোনো এবং নতুন ক্যাটাগরির অপশন তৈরি করা হচ্ছে
+            let catOptions = '';
+            
+            // ১. দোকানদার যে ক্যাটাগরি দিয়েছে সেটি ডিফল্ট সিলেক্টেড থাকবে
+            catOptions += `<option value="${req.category}" selected>${req.category}</option>`;
+            
+            // ২. ডেটাবেসে থাকা অন্যান্য সব ক্যাটাগরি
+            allMasterCategories.forEach(cat => {
+                if(cat !== req.category) {
+                    catOptions += `<option value="${cat}">${cat}</option>`;
+                }
+            });
+            
+            // ৩. একদম নিচে নতুন ক্যাটাগরি যোগ করার অপশন
+            catOptions += `<option value="new_category" style="color:var(--mp-primary); font-weight:bold;">➕ নতুন ক্যাটাগরি...</option>`;
 
             html += `
               <div style="border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fff;">
@@ -6797,10 +6818,14 @@ window.clearImageSearch = function() {
                     <!-- এডমিনের জন্য ক্যাটাগরি সিলেক্ট করার অপশন -->
                     <div style="display: flex; gap: 5px; align-items: center; margin-top: 8px;">
                       <span style="font-size: 11px;">ক্যাটাগরি:</span>
-                      <select id="prod-req-cat-${docSnap.id}" class="dlv-input" style="padding: 4px; font-size: 12px; width: auto;">
+                      <select id="prod-req-cat-${docSnap.id}" class="dlv-input" style="padding: 4px; font-size: 12px; width: auto; max-width: 150px;" onchange="handleAdminNewCatChange('${docSnap.id}', this.value)">
                         ${catOptions}
-                        <!-- ভবিষ্যতে সব ক্যাটাগরির অপশন এখানে যুক্ত হবে -->
                       </select>
+                    </div>
+                    
+                    <!-- 🚀 নতুন ক্যাটাগরি টাইপ করার ইনপুট বক্স -->
+                    <div id="new-cat-input-container-${docSnap.id}" class="mp-hidden" style="margin-top: 8px;">
+                        <input type="text" id="new-cat-input-${docSnap.id}" class="dlv-input" placeholder="নতুন ক্যাটাগরির নাম লিখুন..." style="padding: 4px; font-size: 12px;">
                     </div>
                   </div>
                 </div>
@@ -6818,7 +6843,19 @@ window.clearImageSearch = function() {
     }
   };
 
-  // ৩. প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ করা (Master Products এ যোগ হবে)
+  // 🚀 নতুন ফাংশন: অ্যাডমিন নতুন ক্যাটাগরি সিলেক্ট করলে ইনপুট বক্স দেখাবে
+  window.handleAdminNewCatChange = function(reqId, val) {
+      const container = document.getElementById(`new-cat-input-container-${reqId}`);
+      if (val === 'new_category') {
+          container.classList.remove('mp-hidden');
+          document.getElementById(`new-cat-input-${reqId}`).focus();
+      } else {
+          container.classList.add('mp-hidden');
+          document.getElementById(`new-cat-input-${reqId}`).value = '';
+      }
+  };
+
+  // 🚀 প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ করার ফাংশন আপডেট
   window.approveProductRequest = async function(reqId) {
     if (!confirm("আপনি কি এই প্রোডাক্টটি অনুমোদন করতে চান?")) return;
     try {
@@ -6828,15 +6865,27 @@ window.clearImageSearch = function() {
       
       const reqData = reqSnap.data();
       
-      // এডিট করা ক্যাটাগরি নেওয়া
-      const selectedCat = document.getElementById(`prod-req-cat-${reqId}`).value;
+      let selectedCat = document.getElementById(`prod-req-cat-${reqId}`).value;
+      
+      // 🚀 যদি অ্যাডমিন নতুন ক্যাটাগরি সিলেক্ট করে থাকে
+      if (selectedCat === 'new_category') {
+          const newCatName = document.getElementById(`new-cat-input-${reqId}`).value.trim();
+          if (!newCatName) return alert("দয়া করে নতুন ক্যাটাগরির নাম লিখুন!");
+          
+          // নতুন ক্যাটাগরি ডেটাবেসে যোগ করা
+          await addDoc(collection(db, "categories"), {
+              name: newCatName,
+              createdAt: serverTimestamp()
+          });
+          selectedCat = newCatName; // প্রোডাক্টের ক্যাটাগরি হিসেবে সেট করা
+      }
 
       // মাস্টার প্রোডাক্টে যোগ করা
       await addDoc(collection(db, "master_products"), {
         name: reqData.productName,
         category: selectedCat,
         image: reqData.image || null,
-        imageVector: "", // আপাতত খালি, চাইলে পরে জেনারেট হবে
+        imageVector: "", 
         createdAt: serverTimestamp()
       });
 
@@ -6849,7 +6898,7 @@ window.clearImageSearch = function() {
     }
   };
 
-  // ৪. প্রোডাক্ট রিকোয়েস্ট রিজেক্ট করা
+  // প্রোডাক্ট রিকোয়েস্ট রিজেক্ট করা (আগের মতোই)
   window.rejectProductRequest = async function(reqId) {
     if (!confirm("আপনি কি এই প্রোডাক্টটি বাতিল করতে চান?")) return;
     try {
