@@ -1407,14 +1407,13 @@
 </div>
 
 <!-- Master Catalog Modal (For Shopkeeper to select) -->
-<!-- Master Catalog Modal -->
-<div id="dlv-catalog-modal" class="dlv-modal-overlay" style="z-index: 10000;">
-  <div class="dlv-modal-content" style="max-height: 85vh; overflow-y: auto; position: relative; background: white; padding: 20px;">
+<div id="dlv-catalog-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 85vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-catalog-modal').classList.remove('active')">&times;</span>
     <h3 style="margin-bottom: 15px; color: var(--mp-primary);">🛒 ক্যাটালগ থেকে প্রোডাক্ট বাছুন</h3>
     <p style="font-size: 12px; color: #666; margin-bottom: 15px;">অ্যাডমিনের দেওয়া লিস্ট থেকে প্রোডাক্ট সিলেক্ট করে আপনার রেট দিন।</p>
     
-    <div id="catalog-list-container" style="display: block; min-height: 100px;">
+    <div id="catalog-list-container">
       <!-- Products will load here -->
       <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
     </div>
@@ -1756,26 +1755,6 @@
 </div>
 
 <script type="module">
-  // ==================== SMART ERROR HANDLER ====================
-  window.addEventListener('error', function(e) {
-    // এররটি কনসোলে দেখাবে
-    console.error("🚀 Error Caught:", e.message, "at", e.filename, ":", e.lineno);
-    
-    // ইউজারকে একটি সুন্দর অ্যালার্ট দেখাবে
-    let errorMsg = `⚠️ কোডে সমস্যা হয়েছে!\n\nError: ${e.message}\nLine: ${e.lineno}`;
-    alert(errorMsg);
-  });
-
-  // পেজে কোনো বাটন ক্লিক করলে সেটি ট্র্যাক করার জন্য (Debugger)
-  document.addEventListener('click', function(e) {
-      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') {
-          let funcName = e.target.getAttribute('onclick');
-          if(funcName) {
-              console.log(`👉 Button Clicked: ${funcName}`);
-          }
-      }
-  });
-  
   // ============================================================
   // FIREBASE & CORE CONFIG
   // ============================================================
@@ -4021,228 +4000,170 @@ window.saveShopLocation = async function() {
     alert("লোকেশন সেভ করতে সমস্যা হয়েছে!");
   }
 };
+  // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্কসহ)
+// ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্ক ও এডিট বাটনসহ)
+window.openAddProductModal = function() {
+  document.getElementById('dlv-catalog-modal').classList.add('active');
+  const list = document.getElementById('catalog-list-container');
+  list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">লোড হচ্ছে...</div>';
 
-  // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্ক ও এডিট বাটনসহ)
-  // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (সিম্পল ডিবাগিং ভার্সন)
-  window.openAddProductModal = function() {
-    try {
-      console.log("1. Function Started");
+  // দোকানদারের নিজের প্রোডাক্টগুলো খোঁজা
+  const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+  
+  onSnapshot(myProductsQ, (mySnap) => {
+    // দোকানদার আগে থেকে কোন কোন মাস্টার প্রোডাক্ট অ্যাড করেছে, তার ডেটা ম্যাপ
+    const myAddedProducts = {};
+    mySnap.forEach(d => {
+      const p = d.data();
+      if(p.masterProductId) myAddedProducts[p.masterProductId] = { docId: d.id, ...p };
+    });
+
+    // এবার অ্যাডমিনের মাস্টার প্রোডাক্টগুলো লোড করা
+    onSnapshot(collection(db, "master_products"), (masterSnap) => {
+      if(masterSnap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
+        return;
+      }
       
-      // ১. চেক করা মডাল আইডি ঠিক আছে কি না
-      const modal = document.getElementById('dlv-catalog-modal');
-      if (!modal) {
-          alert("❌ Error: 'dlv-catalog-modal' HTML-এ পাওয়া যায়নি!");
-          return;
-      }
-      modal.classList.add('active');
-      console.log("2. Modal Opened");
-
-      // ২. চেক করা লিস্ট কন্টেইনার ঠিক আছে কি না
-      const list = document.getElementById('catalog-list-container');
-      if (!list) {
-          alert("❌ Error: 'catalog-list-container' HTML-এ পাওয়া যায়নি!");
-          return;
-      }
-      list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">লোড হচ্ছে...</div>';
-      console.log("3. Loading text shown");
-
-      // ৩. চেক করা কারেন্ট ইউজার ঠিক আছে কি না
-      if (!currentUser || !currentUser.uid) {
-          alert("❌ Error: ইউজার লগইন করা নেই বা UID পাওয়া যাচ্ছে না!");
-          return;
-      }
-      console.log("4. User UID found:", currentUser.uid);
-
-      // দোকানদারের নিজের প্রোডাক্টগুলো খোঁজা
-      const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
-      
-      onSnapshot(myProductsQ, (mySnap) => {
-        console.log("5. My products loaded. Count:", mySnap.size);
+      let html = '';
+      masterSnap.forEach(docSnap => {
+        const p = docSnap.data();
+        const masterId = docSnap.id;
         
-        const myAddedProducts = {};
-        mySnap.forEach(d => {
-          const p = d.data();
-          if(p.masterProductId) myAddedProducts[p.masterProductId] = { docId: d.id, ...p };
-        });
+        // চেক করা হচ্ছে দোকানদার এটি আগেই অ্যাড করেছে কি না
+        const isAdded = myAddedProducts[masterId] ? true : false;
+        const myData = myAddedProducts[masterId];
 
-        // এবার অ্যাডমিনের মাস্টার প্রোডাক্টগুলো লোড করা
-        onSnapshot(collection(db, "master_products"), (masterSnap) => {
-          console.log("6. Master products loaded. Count:", masterSnap.size);
-          
-          if(masterSnap.empty) {
-            list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
-            return;
-          }
-          
-          let html = '';
-          masterSnap.forEach(docSnap => {
-            const p = docSnap.data();
-            const masterId = docSnap.id;
-            const isAdded = myAddedProducts[masterId] ? true : false;
-            
-            // বাটনের লজিক
-            let actionBtn = '';
-            if (isAdded) {
-              // 🚀 এখানে window. ব্যবহার করা হয়েছে
-              actionBtn = `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick="window.editShopProduct('${masterId}')">✏️ এডিট</button>`;
-            } else {
-              // 🚀 এখানে window. ব্যবহার করা হয়েছে
-              actionBtn = `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick="window.selectMasterProduct('${masterId}')">➕ রেট দিন</button>`;
-            }
+        // ডিফল্ট ইউনিট এবং গ্রেড (যেহেতু নতুন মাস্টার প্রোডাক্টে এগুলো নেই)
+        const displayUnit = p.unit || myData?.unit || 'pcs';
+        const displayGrade = p.grade || myData?.grade || 'A';
 
-            html += `
-              <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px 10px; border-bottom: 1px solid #eee;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                  <div style="width:45px; height:45px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
-                    ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
-                  </div>
-                  <div>
-                    <div style="font-size:14px; font-weight:600;">${p.name || 'Unknown'}</div>
-                    <div style="font-size:11px; color:#666;">${p.category || 'General'}</div>
-                  </div>
-                </div>
-                <div>
-                  ${actionBtn}
-                </div>
+        html += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px 10px; border-bottom: 1px solid #eee;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:45px; height:45px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
+                ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
               </div>
-            `;
-          });
-          
-          list.innerHTML = html;
-          console.log("7. HTML rendered successfully");
-          
-        }, (error) => {
-          console.error("Master products error:", error);
-          list.innerHTML = `<div style="color: red; text-align: center; padding: 20px;">ডেটা লোড এরর: ${error.message}</div>`;
-        });
-      }, (error) => {
-        console.error("My products error:", error);
-        list.innerHTML = `<div style="color: red; text-align: center; padding: 20px;">আপনার ডেটা লোড এরর: ${error.message}</div>`;
-      });
-
-    } catch(e) {
-      console.error("Fatal Error:", e);
-      alert("❌ প্রোডাক্ট মডাল ওপেন করতে সমস্যা: " + e.message);
-    }
-  };
-   
-  // ৩. এডিট করার জন্য ডেটা লোড করা
-  window.editShopProduct = async function(masterId) {
-    try {
-      // ১. দোকানদারের নিজের সেভ করা প্রোডাক্ট খোঁজা (masterId দিয়ে)
-      const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid), where("masterProductId", "==", masterId));
-      const snap = await getDocs(q);
-      
-      if (snap.empty) return alert("আপনার প্রোডাক্টটি পাওয়া যায়নি!");
-      
-      const myData = snap.docs[0].data();
-      myData.docId = snap.docs[0].id;
-      
-      // গ্লোবাল ভেরিয়েবলে সেভ করা
-      selectedMasterProduct = { ...myData, masterId: masterId };
-      
-      document.getElementById('sp-title').innerText = `${myData.name} - রেট এডিট করুন`;
-      
-      // ২. বেসিক ডেটা বসানো
-      document.getElementById('sp-price').value = myData.price || '';
-      document.getElementById('sp-base-weight').value = myData.baseWeight || '';
-      document.getElementById('sp-base-unit').value = myData.baseUnit || myData.unit || 'kg';
-      document.getElementById('sp-packaging-charge').value = myData.packagingCharge || '';
-      document.getElementById('sp-stock').value = myData.stock || '';
-      document.getElementById('sp-stock-unit').value = myData.stockUnit || 'kg';
-      document.getElementById('sp-grade').value = myData.grade || 'A';
-
-      // ৩. ট্যাগ চেক করা
-      document.querySelectorAll('.offer-tag').forEach(cb => cb.checked = false);
-      if (myData.tags && myData.tags.length > 0) {
-        document.querySelectorAll('.offer-tag').forEach(cb => {
-          if (myData.tags.includes(cb.value)) cb.checked = true;
-        });
-      }
-      
-      // ৪. স্মার্ট প্রাইসিং লোড
-      const isSmartPricing = myData.isSmartPricing === true;
-      document.getElementById('sp-enable-smart-pricing').checked = isSmartPricing;
-      toggleSmartPricing(isSmartPricing);
-
-      const discContainer = document.getElementById('sp-discount-tiers-container');
-      const extraContainer = document.getElementById('sp-extra-charge-tiers-container');
-      discContainer.innerHTML = '';
-      extraContainer.innerHTML = '';
-
-      if (isSmartPricing) {
-        if (myData.discountTiers && myData.discountTiers.length > 0) {
-          myData.discountTiers.forEach(t => addDiscountTierRow(t.qty, t.pct));
-        }
-        if (myData.extraChargeTiers && myData.extraChargeTiers.length > 0) {
-          myData.extraChargeTiers.forEach(t => addExtraChargeRow(t.qty, t.pct));
-        }
-      }
-
-      // ৫. গিফট লোড
-      const giftContainer = document.getElementById('sp-gift-container');
-      if(giftContainer) giftContainer.innerHTML = '';
-      if (myData.giftSlabs && myData.giftSlabs.length > 0) {
-        myData.giftSlabs.forEach(g => addGiftRow(g.slab, g.name, g.val));
-      } else {
-        addGiftRow(); // ডিফল্ট ১টি খালি রো
-      }
-
-      // ৬. ভ্যারিয়েন্ট ম্যাট্রিক্স লোড করা
-      matrixCols = 1; matrixRows = 1; // রিসেট
-      if (myData.variants && myData.variants.length > 0) {
-         // অনন্য ব্র্যান্ড এবং সাইজ বের করা
-         let uniqueBrands = [...new Set(myData.variants.map(v => v.brand))];
-         let uniqueSizes = [];
-         myData.variants.forEach(v => {
-            let sizeStr = `${v.size}_${v.unit}`;
-            if(!uniqueSizes.some(s => s.str === sizeStr)) {
-               uniqueSizes.push({ size: v.size, unit: v.unit, str: sizeStr });
+              <div>
+                <div style="font-size:14px; font-weight:600;">${p.name}</div>
+                <div style="font-size:11px; color:#666;">${displayGrade} | ${displayUnit}</div>
+              </div>
+            </div>
+            
+            <!-- 🚀 এখানে এডিট এবং রেট দিন বাটনের লজিক -->
+            ${isAdded 
+              ? `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick='editShopProduct(${JSON.stringify(myData).replace(/'/g, "&#39;")}, "${masterId}")'>✏️ এডিট</button>`
+              : `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick='selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;")}, "${masterId}")'>➕ রেট দিন</button>`
             }
-         });
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  });
+};
 
-         matrixRows = uniqueBrands.length || 1;
-         matrixCols = uniqueSizes.length || 1;
-         renderMatrixTable(); // টেবিল তৈরি
+// 🚀 নতুন যোগ করা হলো: দোকানদার তার নিজের দেওয়া রেট এডিট করার জন্য
+   
+window.editShopProduct = function(myData, masterId) {
+  selectedMasterProduct = { ...myData, masterId: masterId };
+  document.getElementById('sp-title').innerText = `${myData.name} - রেট এডিট করুন`;
+  
+  // বেসিক ডেটা
+  document.getElementById('sp-price').value = myData.price || '';
+  document.getElementById('sp-base-weight').value = myData.baseWeight || '';
+  document.getElementById('sp-base-unit').value = myData.baseUnit || 'kg';
+  document.getElementById('sp-packaging-charge').value = myData.packagingCharge || '';
+  document.getElementById('sp-stock').value = myData.stock || '';
+  document.getElementById('sp-stock-unit').value = myData.stockUnit || 'kg';
+  document.getElementById('sp-grade').value = myData.grade || 'A';
 
-         // ডেটা বসানো
-         setTimeout(() => {
-           const thead = document.getElementById('matrix-thead');
-           const tbody = document.getElementById('matrix-tbody');
-           
-           // সাইজ বসানো
-           let ths = thead.rows[0].querySelectorAll('th');
-           for(let i=0; i<uniqueSizes.length; i++) {
-             let sInput = ths[i+1].querySelector('.matrix-size-val');
-             let uSelect = ths[i+1].querySelector('.matrix-size-unit');
-             if(sInput && uSelect) { sInput.value = uniqueSizes[i].size; uSelect.value = uniqueSizes[i].unit; }
-           }
-
-           // ব্র্যান্ড ও দাম বসানো
-           for(let r=0; r<uniqueBrands.length; r++) {
-              let brandInput = tbody.rows[r].querySelector('.matrix-brand-name');
-              if(brandInput) brandInput.value = uniqueBrands[r];
-              
-              let priceInputs = tbody.rows[r].querySelectorAll('.matrix-price');
-              for(let c=0; c<uniqueSizes.length; c++) {
-                 let variantData = myData.variants.find(v => v.brand === uniqueBrands[r] && v.size == uniqueSizes[c].size && v.unit === uniqueSizes[c].unit);
-                 if(variantData && priceInputs[c]) priceInputs[c].value = variantData.price;
-              }
-           }
-         }, 100); // DOM আপডেট হওয়ার পর ডেটা বসানোর জন্য সামান্য ডিলে
-      } else {
-         renderMatrixTable(); // খালি টেবিল
-      }
-
-      // ৭. মডাল পরিবর্তন
-      document.getElementById('dlv-catalog-modal').classList.remove('active');
-      document.getElementById('dlv-set-price-modal').classList.add('active');
-
-    } catch(e) {
-      console.error(e);
-      alert("এডিট করতে সমস্যা হয়েছে!");
+     // 🚀 আগের ট্যাগ চেক করা
+    document.querySelectorAll('.offer-tag').forEach(cb => cb.checked = false);
+    if (myData.tags && myData.tags.length > 0) {
+      document.querySelectorAll('.offer-tag').forEach(cb => {
+        if (myData.tags.includes(cb.value)) cb.checked = true;
+      });
     }
-  };
+  
+  
+  // স্মার্ট প্রাইসিং লোড
+  const isSmartPricing = myData.isSmartPricing === true;
+  document.getElementById('sp-enable-smart-pricing').checked = isSmartPricing;
+  toggleSmartPricing(isSmartPricing);
+
+  const discContainer = document.getElementById('sp-discount-tiers-container');
+  const extraContainer = document.getElementById('sp-extra-charge-tiers-container');
+  discContainer.innerHTML = '';
+  extraContainer.innerHTML = '';
+
+  if (isSmartPricing) {
+    if (myData.discountTiers && myData.discountTiers.length > 0) {
+      myData.discountTiers.forEach(t => addDiscountTierRow(t.qty, t.pct));
+    }
+    if (myData.extraChargeTiers && myData.extraChargeTiers.length > 0) {
+      myData.extraChargeTiers.forEach(t => addExtraChargeRow(t.qty, t.pct));
+    }
+  }
+
+  // ভ্যারিয়েন্ট ম্যাট্রিক্স লোড করা
+  matrixCols = 1; matrixRows = 1; // রিসেট
+  if (myData.variants && myData.variants.length > 0) {
+     // অনন্য ব্র্যান্ড এবং সাইজ বের করা
+     let uniqueBrands = [...new Set(myData.variants.map(v => v.brand))];
+     let uniqueSizes = [];
+     myData.variants.forEach(v => {
+        let sizeStr = `${v.size}_${v.unit}`;
+        if(!uniqueSizes.some(s => s.str === sizeStr)) {
+           uniqueSizes.push({ size: v.size, unit: v.unit, str: sizeStr });
+        }
+     });
+
+     matrixRows = uniqueBrands.length || 1;
+     matrixCols = uniqueSizes.length || 1;
+     renderMatrixTable(); // টেবিল তৈরি
+
+     // ডেটা বসানো
+     setTimeout(() => {
+       const thead = document.getElementById('matrix-thead');
+       const tbody = document.getElementById('matrix-tbody');
+       
+         const giftContainer = document.getElementById('sp-gift-container');
+    if(giftContainer) giftContainer.innerHTML = '';
+    if (myData.giftSlabs && myData.giftSlabs.length > 0) {
+      myData.giftSlabs.forEach(g => addGiftRow(g.slab, g.name, g.val));
+    } else {
+      addGiftRow(); // ডিফল্ট ১টি খালি রো
+    }
+       
+       // সাইজ বসানো
+       let ths = thead.rows[0].querySelectorAll('th');
+       for(let i=0; i<uniqueSizes.length; i++) {
+         let sInput = ths[i+1].querySelector('.matrix-size-val');
+         let uSelect = ths[i+1].querySelector('.matrix-size-unit');
+         if(sInput && uSelect) { sInput.value = uniqueSizes[i].size; uSelect.value = uniqueSizes[i].unit; }
+       }
+
+       // ব্র্যান্ড ও দাম বসানো
+       for(let r=0; r<uniqueBrands.length; r++) {
+          let brandInput = tbody.rows[r].querySelector('.matrix-brand-name');
+          if(brandInput) brandInput.value = uniqueBrands[r];
+          
+          let priceInputs = tbody.rows[r].querySelectorAll('.matrix-price');
+          for(let c=0; c<uniqueSizes.length; c++) {
+             let variantData = myData.variants.find(v => v.brand === uniqueBrands[r] && v.size == uniqueSizes[c].size && v.unit === uniqueSizes[c].unit);
+             if(variantData && priceInputs[c]) priceInputs[c].value = variantData.price;
+          }
+       }
+     }, 100); // DOM আপডেট হওয়ার পর ডেটা বসানোর জন্য সামান্য ডিলে
+  } else {
+     renderMatrixTable(); // খালি টেবিল
+  }
+
+  // মডাল ওপেন
+  document.getElementById('dlv-catalog-modal').classList.remove('active');
+  document.getElementById('dlv-set-price-modal').classList.add('active');
+};
 // ==================== SMART MATRIX & PRICING LOGIC ====================
 
 // ১. স্মার্ট প্রাইসিং টগল
@@ -4646,33 +4567,14 @@ document.addEventListener("DOMContentLoaded", () => {
 };
 
   // ২. মাস্টার প্রোডাক্ট সিলেক্ট করা
-  // ২. মাস্টার প্রোডাক্ট সিলেক্ট করা (ডেটাবেস থেকে ডেটা লোড করে)
-  window.selectMasterProduct = async function(masterId) {
-    try {
-      // ডেটাবেস থেকে প্রোডাক্টের আসল ডেটা নিয়ে আসা
-      const docRef = doc(db, "master_products", masterId);
-      const docSnap = await getDoc(docRef);
-      
-      if (!docSnap.exists()) return alert("প্রোডাক্টটি পাওয়া যায়নি!");
-
-      const productData = docSnap.data();
-      
-      // গ্লোবাল ভেরিয়েবলে সেভ করা
-      selectedMasterProduct = { ...productData, masterId: masterId };
-      
-      document.getElementById('sp-title').innerText = `${productData.name} - রেট দিন`;
-      
-      // ফর্ম রিসেট করা
-      document.getElementById('sp-price').value = '';
-      document.getElementById('sp-stock').value = '';
-      
-      document.getElementById('dlv-catalog-modal').classList.remove('active');
-      document.getElementById('dlv-set-price-modal').classList.add('active');
-      
-    } catch(e) {
-      console.error(e);
-      alert("ডেটা লোড করতে সমস্যা হয়েছে!");
-    }
+  window.selectMasterProduct = function(productData, masterId) {
+    selectedMasterProduct = { ...productData, masterId: masterId };
+    document.getElementById('sp-title').innerText = `${productData.name} - রেট দিন`;
+    document.getElementById('sp-price').value = '';
+    document.getElementById('sp-stock').value = '';
+    
+    document.getElementById('dlv-catalog-modal').classList.remove('active');
+    document.getElementById('dlv-set-price-modal').classList.add('active');
   };
 
    // 🚀 ডিসকাউন্ট লেয়ার রো তৈরি করার ফাংশন
@@ -6375,179 +6277,83 @@ window.handleTextSearch = function(query) {
 };
 
 // ৩. ছবি সার্চ হ্যান্ডলার (AI CLIP)
-  // 🚀 AI ইমেজ সার্চ (FIXED Vector Matching)
   window.handleImageSearch = async function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+  const file = event.target.files[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      document.getElementById('search-image-preview').src = e.target.result;
-      document.getElementById('search-image-preview-container').style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-
-    // AI মডেল লোড
-    if (!window.clipVisionModel) {
-      document.getElementById('ai-loading-status').style.display = 'block';
-      document.getElementById('ai-loading-status').innerText = "🧠 AI মডেল লোড হচ্ছে...";
-      try {
-        window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
-        window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
-        document.getElementById('ai-loading-status').style.display = 'none';
-      } catch (error) {
-        alert("AI মডেল লোড করতে সমস্যা হয়েছে।");
-        return;
-      }
-    }
-
-    try {
-      // ১. কাস্টমারের ছবি থেকে ভেক্টর তৈরি
-      const image = await window.RawImage.fromURL(URL.createObjectURL(file));
-      const image_inputs = await window.clipProcessor(image);
-      const { image_embeds } = await window.clipVisionModel(image_inputs);
-      
-      // queryVector কে নরমাল অ্যারেতে কনভার্ট করা
-      const queryVector = Array.from(image_embeds.data).slice(0, 256); 
-
-      let results = [];
-      let vectorCount = 0;
-
-      // ২. ডেটাবেসের প্রতিটি প্রোডাক্টের সাথে তুলনা (আপনার পুরোনো লজিকের মতো)
-      for (const prod of allRawProducts) {
-        let vectorData = prod.imageVector;
-        
-        if (vectorData && vectorData !== "") {
-          try {
-            // 🚀 স্ট্রিং থেকে অ্যারে কনভার্ট করা
-            const prodVector = (typeof vectorData === 'string') ? JSON.parse(vectorData) : vectorData;
-            
-            if(Array.isArray(prodVector) && prodVector.length === 256) {
-                vectorCount++;
-                // 🚀 হেল্পার ফাংশন দিয়ে সিমিলারিটি বের করা
-                const similarity = calculateVectorSimilarity(queryVector, prodVector);
-                results.push({ product: prod, score: similarity });
-            }
-          } catch(e) { console.warn("Vector parse error for:", prod.name); }
-        }
-      }
-
-      // ৩. স্কোর অনুযায়ী সাজানো
-      results.sort((a, b) => b.score - a.score);
-      
-      // ডিবাগিং: কনসোলে চেক করুন কত স্কোর আসছে
-      console.log("Top 5 Matches:", results.slice(0, 5).map(r => `${r.product.name} (${(r.score*100).toFixed(2)}%)`));
-
-      // 🚀 থ্রেশহোল্ড ০.৭০ (৭০%) করা হলো, কারণ আপনার পুরোনো কোডে এটাই ছিল
-      const threshold = 0.70; 
-      const bestMatches = results.filter(r => r.score >= threshold).map(r => r.product);
-
-      const grid = document.getElementById('cst-product-grid');
-      
-      if (bestMatches.length > 0) {
-        // ম্যাচ পাওয়া গেলে গ্রিডে দেখানো
-        renderFilteredProductsToGrid(bestMatches);
-      } else {
-        // ম্যাচ না পেলে সবচেয়ে কাছাকাছি ফলাফলটি দেখানো (ডিবাগিং এর জন্য)
-        let closestName = results.length > 0 ? `${results[0].product.name} (${(results[0].score*100).toFixed(1)}%)` : "কিছুই না";
-        grid.innerHTML = `
-          <div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">
-            এই ছবির সাথে ৭০% মিল এমন কোনো প্রোডাক্ট পাওয়া যায়নি।<br>
-            <small>ডাটাবেসে ${vectorCount} টি প্রোডাক্টের ভেক্টর আছে।</small><br>
-            <small style="color:#d93025;">সবচেয়ে কাছাকাছি ম্যাচ: ${closestName}</small>
-          </div>`;
-      }
-    } catch (error) {
-      console.error("Image Search Error:", error);
-      alert("ছবি সার্চে সমস্যা হয়েছে!");
-    }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('search-image-preview').src = e.target.result;
+    document.getElementById('search-image-preview-container').style.display = 'block';
   };
+  reader.readAsDataURL(file);
 
-   // 🚀 ভেক্টর সিমিলারিটি ক্যালকুলেট করার হেল্পার ফাংশন (Cosine Similarity)
-  // 🚀 ভেক্টর সিমিলারিটি হেল্পার
-  function calculateVectorSimilarity(vecA, vecB) {
-      let dotProduct = 0, normA = 0, normB = 0;
-      for (let i = 0; i < vecA.length; i++) {
-          dotProduct += vecA[i] * vecB[i];
-          normA += vecA[i] * vecA[i];
-          normB += vecB[i] * vecB[i];
-      }
-      if (normA === 0 || normB === 0) return 0;
-      return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  if (!window.clipVisionModel) {
+    if (isAiModelLoading) return alert("AI মডেল লোড হচ্ছে, অপেক্ষা করুন...");
+    isAiModelLoading = true;
+    document.getElementById('ai-loading-status').style.display = 'block';
+    
+    try {
+      window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+      window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+      document.getElementById('ai-loading-status').innerText = "✅ AI মডেল প্রস্তুত!";
+      setTimeout(() => document.getElementById('ai-loading-status').style.display = 'none', 2000);
+    } catch (error) {
+      alert("AI মডেল লোড করতে সমস্যা হয়েছে।");
+      isAiModelLoading = false;
+      return;
+    }
+    isAiModelLoading = false;
   }
 
-  window.handleImageSearch = async function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+  try {
+    const image = await window.RawImage.fromURL(URL.createObjectURL(file));
+    const image_inputs = await window.clipProcessor(image);
+    const { image_embeds } = await window.clipVisionModel(image_inputs);
+    
+    // 🚀 সার্চ ভেক্টর ২৫৬ সাইজ
+    const queryVector = Array.from(image_embeds.data).slice(0, 256); 
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      document.getElementById('search-image-preview').src = e.target.result;
-      document.getElementById('search-image-preview-container').style.display = 'block';
-    };
-    reader.readAsDataURL(file);
+    let scoredProducts = [];
+    let vectorCount = 0;
 
-    if (!window.clipVisionModel) {
-      document.getElementById('ai-loading-status').style.display = 'block';
-      try {
-        window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
-        window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
-        document.getElementById('ai-loading-status').style.display = 'none';
-      } catch (error) { alert("AI মডেল লোড ব্যর্থ!"); return; }
+    for (const prod of allRawProducts) {
+      // 🚀 পুরোনো অ্যাপের মতো চেক করা (স্ট্রিং নাকি অ্যারে)
+      let vectorData = prod.imageVector;
+      if (vectorData && vectorData !== "") {
+        try {
+          const prodVector = (typeof vectorData === 'string') ? JSON.parse(vectorData) : vectorData;
+          vectorCount++;
+
+          let dotProduct = 0;
+          for (let i = 0; i < queryVector.length; i++) {
+            dotProduct += queryVector[i] * prodVector[i];
+          }
+          scoredProducts.push({ product: prod, score: dotProduct });
+        } catch(e) { console.warn("Vector parse error", prod.name); }
+      }
     }
 
-    try {
-      const image = await window.RawImage.fromURL(URL.createObjectURL(file));
-      const image_inputs = await window.clipProcessor(image);
-      const { image_embeds } = await window.clipVisionModel(image_inputs);
-      
-      // সার্চ ভেক্টর (কমা ছাড়া, শুধু ৪ ডেসিমেল)
-      const queryVector = Array.from(image_embeds.data).map(num => parseFloat(num.toFixed(4))); 
-
-      let results = [];
-      let vectorCount = 0;
-
-      for (const prod of allRawProducts) {
-        let vectorData = prod.imageVector;
-        
-        if (vectorData && vectorData !== "") {
-          try {
-            const prodVector = (typeof vectorData === 'string') ? JSON.parse(vectorData) : vectorData;
-            if(Array.isArray(prodVector) && prodVector.length > 0) {
-                vectorCount++;
-                const similarity = calculateVectorSimilarity(queryVector, prodVector);
-                results.push({ product: prod, score: similarity });
-            }
-          } catch(e) { console.warn("Vector parse error:", prod.name); }
-        }
-      }
-
-      results.sort((a, b) => b.score - a.score);
-      
-      // 🚀 থ্রেশহোল্ড ০.৭৫ (৭৫%)
-      const threshold = 0.75; 
-      const bestMatches = results.filter(r => r.score >= threshold).map(r => r.product);
-
-      const grid = document.getElementById('cst-product-grid');
-      
-      if (bestMatches.length > 0) {
-        renderFilteredProductsToGrid(bestMatches);
-      } else {
-        // সবচেয়ে কাছাকাছি ফলাফল দেখানো
-        let closestMatch = results.length > 0 ? `${results[0].product.name} (${(results[0].score*100).toFixed(1)}%)` : "কিছুই না";
-        grid.innerHTML = `
-          <div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">
-            এই ছবির সাথে ৭৫% মিল এমন কোনো প্রোডাক্ট পাওয়া যায়নি।<br>
-            <small>ডাটাবেসে ${vectorCount} টি প্রোডাক্টের ভেক্টর আছে।</small><br>
-            <small style="color:#d93025;">সবচেয়ে কাছাকাছি ম্যাচ: ${closestMatch}</small>
-          </div>`;
-      }
-    } catch (error) {
-      console.error("Image Search Error:", error);
-      alert("ছবি সার্চে সমস্যা হয়েছে!");
+    scoredProducts.sort((a, b) => b.score - a.score);
+    
+    // 🚀 থ্রেশহোল্ড ০.৫৫ করা হলো (পুরোনো অ্যাপের মতো)
+    const minThreshold = 0.55; 
+    const bestMatches = scoredProducts.filter(sp => sp.score >= minThreshold).map(sp => sp.product);
+    
+    if (bestMatches.length === 0) {
+      document.getElementById('cst-product-grid').innerHTML = `
+        <div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">
+          এই ছবির সাথে ৫৫% মিল এমন কোনো প্রোডাক্ট পাওয়া যায়নি।<br>
+          <small>ডাটাবেসে ${vectorCount} টি প্রোডাক্টে ভেক্টর আছে।</small>
+        </div>`;
+    } else {
+      renderFilteredProductsToGrid(bestMatches);
     }
-  };
-
+  } catch (error) {
+    console.error("Image Search Error:", error);
+    alert("ছবি সার্চে সমস্যা হয়েছে!");
+  }
+};
 
 // ৪. প্রোডাক্ট গ্রিড রেন্ডার করার হেল্পার ফাংশন
 function renderFilteredProductsToGrid(products) {
@@ -6930,16 +6736,7 @@ window.clearImageSearch = function() {
   };
 
   // ২. ক্যাটাগরি ও প্রোডাক্ট রিকোয়েস্ট লিসেনার
-  // 🚀 সব ক্যাটাগরি জমা রাখার জন্য গ্লোবাল ভেরিয়েবল
-  let allMasterCategories = []; 
-
   window.loadAdminCategoryRequests = function() {
-    // 🚀 নতুন: ডেটাবেস থেকে সব ক্যাটাগরি লোড করে রাখা
-    onSnapshot(collection(db, "categories"), (catSnap) => {
-        allMasterCategories = [];
-        catSnap.forEach(doc => allMasterCategories.push(doc.data().name));
-    });
-
     // ক) ক্যাটাগরি রিকোয়েস্ট লিসেনার
     const catContainer = document.getElementById('admin-cat-req-container');
     if(catContainer) {
@@ -6980,21 +6777,9 @@ window.clearImageSearch = function() {
           snap.forEach(docSnap => {
             const req = docSnap.data();
             
-            // 🚀 এখানে পুরোনো এবং নতুন ক্যাটাগরির অপশন তৈরি করা হচ্ছে
-            let catOptions = '';
-            
-            // ১. দোকানদার যে ক্যাটাগরি দিয়েছে সেটি ডিফল্ট সিলেক্টেড থাকবে
-            catOptions += `<option value="${req.category}" selected>${req.category}</option>`;
-            
-            // ২. ডেটাবেসে থাকা অন্যান্য সব ক্যাটাগরি
-            allMasterCategories.forEach(cat => {
-                if(cat !== req.category) {
-                    catOptions += `<option value="${cat}">${cat}</option>`;
-                }
-            });
-            
-            // ৩. একদম নিচে নতুন ক্যাটাগরি যোগ করার অপশন
-            catOptions += `<option value="new_category" style="color:var(--mp-primary); font-weight:bold;">➕ নতুন ক্যাটাগরি...</option>`;
+            // ক্যাটাগরি ড্রপডাউন অপশন তৈরি (এডিট করার জন্য)
+            let catOptions = `<option value="${req.category}">${req.category}</option>`;
+            // (এখানে চাইলে সব ক্যাটাগরি লোড করা যাবে, তবে আপাতত ডিফল্ট দেখাচ্ছি)
 
             html += `
               <div style="border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fff;">
@@ -7012,14 +6797,10 @@ window.clearImageSearch = function() {
                     <!-- এডমিনের জন্য ক্যাটাগরি সিলেক্ট করার অপশন -->
                     <div style="display: flex; gap: 5px; align-items: center; margin-top: 8px;">
                       <span style="font-size: 11px;">ক্যাটাগরি:</span>
-                      <select id="prod-req-cat-${docSnap.id}" class="dlv-input" style="padding: 4px; font-size: 12px; width: auto; max-width: 150px;" onchange="handleAdminNewCatChange('${docSnap.id}', this.value)">
+                      <select id="prod-req-cat-${docSnap.id}" class="dlv-input" style="padding: 4px; font-size: 12px; width: auto;">
                         ${catOptions}
+                        <!-- ভবিষ্যতে সব ক্যাটাগরির অপশন এখানে যুক্ত হবে -->
                       </select>
-                    </div>
-                    
-                    <!-- 🚀 নতুন ক্যাটাগরি টাইপ করার ইনপুট বক্স -->
-                    <div id="new-cat-input-container-${docSnap.id}" class="mp-hidden" style="margin-top: 8px;">
-                        <input type="text" id="new-cat-input-${docSnap.id}" class="dlv-input" placeholder="নতুন ক্যাটাগরির নাম লিখুন..." style="padding: 4px; font-size: 12px;">
                     </div>
                   </div>
                 </div>
@@ -7037,87 +6818,38 @@ window.clearImageSearch = function() {
     }
   };
 
-  // 🚀 নতুন ফাংশন: অ্যাডমিন নতুন ক্যাটাগরি সিলেক্ট করলে ইনপুট বক্স দেখাবে
-  window.handleAdminNewCatChange = function(reqId, val) {
-      const container = document.getElementById(`new-cat-input-container-${reqId}`);
-      if (val === 'new_category') {
-          container.classList.remove('mp-hidden');
-          document.getElementById(`new-cat-input-${reqId}`).focus();
-      } else {
-          container.classList.add('mp-hidden');
-          document.getElementById(`new-cat-input-${reqId}`).value = '';
-      }
-  };
-
-  // 🚀 প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ করার ফাংশন আপডেট
+  // ৩. প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ করা (Master Products এ যোগ হবে)
   window.approveProductRequest = async function(reqId) {
     if (!confirm("আপনি কি এই প্রোডাক্টটি অনুমোদন করতে চান?")) return;
-    
-    const btn = document.querySelector(`button[onclick="approveProductRequest('${reqId}')"]`);
-    if(btn) { btn.innerText = "⏳ এআই প্রসেসিং..."; btn.disabled = true; }
-
     try {
       const reqRef = doc(db, "product_requests", reqId);
       const reqSnap = await getDoc(reqRef);
       if (!reqSnap.exists()) return;
       
       const reqData = reqSnap.data();
-      let selectedCat = document.getElementById(`prod-req-cat-${reqId}`).value;
       
-      if (selectedCat === 'new_category') {
-          const newCatName = document.getElementById(`new-cat-input-${reqId}`).value.trim();
-          if (!newCatName) return alert("দয়া করে নতুন ক্যাটাগরির নাম লিখুন!");
-          await addDoc(collection(db, "categories"), { name: newCatName, createdAt: serverTimestamp() });
-          selectedCat = newCatName; 
-      }
+      // এডিট করা ক্যাটাগরি নেওয়া
+      const selectedCat = document.getElementById(`prod-req-cat-${reqId}`).value;
 
-      // 🚀 AI ভেক্টর জেনারেশন (সঠিক নিয়মে)
-      let generatedVectorStr = "";
-      if (reqData.image && window.CLIPVisionModelWithProjection) {
-        try {
-          if (!window.clipProcessor) {
-            window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
-            window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
-          }
-          
-          // 🚀 CORS ফিক্স: ImgBB ছবি সরাসরি লোড করতে হবে
-          const image = await window.RawImage.fromURL(reqData.image);
-          const image_inputs = await window.clipProcessor(image);
-          const { image_embeds } = await window.clipVisionModel(image_inputs);
-          
-          // ভেক্টর অ্যারে তৈরি
-          const vectorArray = Array.from(image_embeds.data);
-          
-          // 🚀 ডেটা সাইজ কমানোর জন্য 4 ডেসিমেল পর্যন্ত রাখা
-          const optimizedVector = vectorArray.map(num => parseFloat(num.toFixed(4)));
-          
-          generatedVectorStr = JSON.stringify(optimizedVector); 
-        } catch (err) { 
-          console.error("Vector Generation Error:", err); 
-        }
-      }
-
-      // ডেটাবেসে সেভ করা
+      // মাস্টার প্রোডাক্টে যোগ করা
       await addDoc(collection(db, "master_products"), {
         name: reqData.productName,
         category: selectedCat,
         image: reqData.image || null,
-        imageVector: generatedVectorStr,
+        imageVector: "", // আপাতত খালি, চাইলে পরে জেনারেট হবে
         createdAt: serverTimestamp()
       });
 
+      // রিকোয়েস্ট ডিলিট করা
       await deleteDoc(reqRef);
-      alert("✅ প্রোডাক্ট অনুমোদিত হয়েছে এবং এআই ভেক্টর সেভ হয়েছে!");
-      
+      alert("✅ প্রোডাক্ট অনুমোদিত হয়েছে এবং মাস্টার ক্যাটালগে যুক্ত হয়েছে!");
     } catch(e) {
       console.error(e);
       alert("অনুমোদন করতে সমস্যা হয়েছে!");
-    } finally {
-      if(btn) { btn.innerText = "✅ অ্যাপ্রুভ করুন"; btn.disabled = false; }
     }
   };
 
-  // প্রোডাক্ট রিকোয়েস্ট রিজেক্ট করা (আগের মতোই)
+  // ৪. প্রোডাক্ট রিকোয়েস্ট রিজেক্ট করা
   window.rejectProductRequest = async function(reqId) {
     if (!confirm("আপনি কি এই প্রোডাক্টটি বাতিল করতে চান?")) return;
     try {
@@ -8583,7 +8315,6 @@ window.submitCatalogRequest = async function() {
   }
 };
 
- 
 </script>
 
 <!-- Live Tracking Modal (Customer) -->
