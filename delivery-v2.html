@@ -1755,6 +1755,26 @@
 </div>
 
 <script type="module">
+  // ==================== SMART ERROR HANDLER ====================
+  window.addEventListener('error', function(e) {
+    // এররটি কনসোলে দেখাবে
+    console.error("🚀 Error Caught:", e.message, "at", e.filename, ":", e.lineno);
+    
+    // ইউজারকে একটি সুন্দর অ্যালার্ট দেখাবে
+    let errorMsg = `⚠️ কোডে সমস্যা হয়েছে!\n\nError: ${e.message}\nLine: ${e.lineno}`;
+    alert(errorMsg);
+  });
+
+  // পেজে কোনো বাটন ক্লিক করলে সেটি ট্র্যাক করার জন্য (Debugger)
+  document.addEventListener('click', function(e) {
+      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') {
+          let funcName = e.target.getAttribute('onclick');
+          if(funcName) {
+              console.log(`👉 Button Clicked: ${funcName}`);
+          }
+      }
+  });
+  
   // ============================================================
   // FIREBASE & CORE CONFIG
   // ============================================================
