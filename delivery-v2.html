@@ -720,15 +720,57 @@
     <div id="shop-product-list"></div>
   </div>
 
-  <!-- 🚀 দোকানদারের ক্যাটাগরি সাজেশন সেকশন -->
-  <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
-    <h3>💡 নতুন ক্যাটাগরি সাজেশন</h3>
-    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">আপনার কাঙ্ক্ষিত ক্যাটাগরি না থাকলে অ্যাডমিনকে সাজেস্ট করুন।</p>
-    <div style="display: flex; gap: 8px;">
-      <input type="text" id="shop-cat-suggestion" class="dlv-input" placeholder="ক্যাটাগরির নাম..." style="flex: 1;">
-      <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 0 15px;" onclick="sendCategorySuggestion()">📩 পাঠান</button>
+  <!-- 🚀 নতুন: ইউনিফাইড ক্যাটালগ রিকোয়েস্ট ফর্ম -->
+<div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
+  <h3>💡 নতুন আইটেম বা ক্যাটাগরি সাজেস্ট করুন</h3>
+  <p style="font-size: 12px; color: #666; margin-bottom: 15px;">আপনার কাঙ্ক্ষিত পণ্য আমাদের ক্যাটালগে নেই? অ্যাডমিনের কাছে সাজেস্ট করুন।</p>
+  
+  <div class="dlv-form-group">
+    <label>আপনি কী সাজেস্ট করতে চান?</label>
+    <select id="req-type" class="dlv-input" onchange="toggleReqForm()">
+      <option value="product">📦 নতুন প্রোডাক্ট</option>
+      <option value="category">🗂️ নতুন ক্যাটাগরি</option>
+    </select>
+  </div>
+
+  <!-- নতুন ক্যাটাগরির জন্য ফর্ম (প্রথমে হাইড থাকবে) -->
+  <div id="req-cat-form" class="mp-hidden">
+    <div class="dlv-form-group">
+      <label>নতুন ক্যাটাগরির নাম</label>
+      <input type="text" id="req-new-cat-name" class="dlv-input" placeholder="যেমন: ডেইরি ফার্ম">
     </div>
   </div>
+
+  <!-- নতুন প্রোডাক্টের জন্য ফর্ম -->
+  <div id="req-prod-form">
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের নাম *</label>
+      <input type="text" id="req-prod-name" class="dlv-input" placeholder="যেমন: আমুল মাখন">
+    </div>
+
+    <div class="dlv-form-group">
+      <label>ক্যাটাগরি *</label>
+      <!-- ড্রপডাউনে ডাইনামিক ক্যাটাগরি এবং নতুন ক্যাটাগরি যোগের অপশন -->
+      <select id="req-prod-cat" class="dlv-input" onchange="handleReqCatChange(this.value)">
+        <!-- JS দিয়ে অপশন লোড হবে -->
+      </select>
+      <!-- নতুন ক্যাটাগরি টাইপ করার ইনপুট (প্রথমে হাইড) -->
+      <input type="text" id="req-new-cat-inline" class="dlv-input mp-hidden" placeholder="নতুন ক্যাটাগরির নাম লিখুন" style="margin-top: 5px;">
+    </div>
+
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের ছবি (ঐচ্ছিক)</label>
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'req-prod')">📷 ক্যামেরা</button>
+        <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'req-prod')">🖼️ গ্যালারি</button>
+      </div>
+      <img id="req-prod-img-preview" style="width: 100%; height: 100px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
+      <input type="file" id="req-prod-img-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'req-prod')">
+    </div>
+  </div>
+
+  <button class="mp-btn mp-btn-primary" onclick="submitCatalogRequest()">📩 অ্যাডমিনের কাছে পাঠান</button>
+</div>
   
   <!-- দোকানের খাতা -->
   <div class="mp-card">
@@ -7988,6 +8030,129 @@ window.submitOfflineSpeed = async function() {
     alert("আপডেট পাঠাতে সমস্যা হয়েছে!");
   } finally {
     btn.innerText = "অফলাইন ট্র্যাকিং চালু করুন"; btn.disabled = false;
+  }
+};
+
+// ==================== CATALOG REQUEST LOGIC (PART 2) ====================
+let reqUploadedImgUrl = null;
+
+// ১. ফর্ম টগল (প্রোডাক্ট নাকি ক্যাটাগরি)
+window.toggleReqForm = function() {
+  const type = document.getElementById('req-type').value;
+  const catForm = document.getElementById('req-cat-form');
+  const prodForm = document.getElementById('req-prod-form');
+
+  if (type === 'category') {
+    catForm.classList.remove('mp-hidden');
+    prodForm.classList.add('mp-hidden');
+  } else {
+    catForm.classList.add('mp-hidden');
+    prodForm.classList.remove('mp-hidden');
+    loadCategoriesForRequest(); // ক্যাটাগরি লিস্ট লোড
+  }
+};
+
+// ২. ড্রপডাউনে ক্যাটাগরি লোড করা (নতুন ক্যাটাগরি অপশন সহ)
+function loadCategoriesForRequest() {
+  const select = document.getElementById('req-prod-cat');
+  select.innerHTML = '<option value="" disabled selected>ক্যাটাগরি সিলেক্ট করুন...</option>';
+  
+  // ডেটাবেস থেকে ক্যাটাগরি আনা
+  onSnapshot(collection(db, "categories"), (snap) => {
+    select.innerHTML = '<option value="" disabled selected>ক্যাটাগরি সিলেক্ট করুন...</option>';
+    snap.forEach(doc => {
+      select.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`;
+    });
+    // 🚀 একদম নিচে নতুন ক্যাটাগরি যোগ করার অপশন
+    select.innerHTML += `<option value="new_category" style="color:var(--mp-primary); font-weight:bold;">➕ নতুন ক্যাটাগরি যোগ করুন...</option>`;
+  });
+}
+
+// ৩. নতুন ক্যাটাগরি সিলেক্ট করলে টেক্সট বক্স দেখানো
+window.handleReqCatChange = function(val) {
+  const newCatInput = document.getElementById('req-new-cat-inline');
+  if (val === 'new_category') {
+    newCatInput.classList.remove('mp-hidden');
+    newCatInput.focus();
+  } else {
+    newCatInput.classList.add('mp-hidden');
+    newCatInput.value = '';
+  }
+};
+
+// ৪. ছবি আপলোড হ্যান্ডেল করা (আপনার আগের pickImageSource এবং handleImageSelect এর সাথে কানেক্ট করতে হবে)
+// (নোট: যেহেতু আপনার আগে থেকেই cropper.js আছে, সেখানে req-prod কনটেক্সট হ্যান্ডেল করতে হবে)
+// এখানে শুধু আপলোড হওয়া ছবির URL ট্র্যাক করব।
+// (অাপনার আগের saveCroppedImage ফাংশনে currentUploadContext === 'req-prod' হলে এখানে URL সেট করবেন)
+
+// ৫. ফর্ম সাবমিট করা
+window.submitCatalogRequest = async function() {
+  const type = document.getElementById('req-type').value;
+
+  try {
+    if (type === 'category') {
+      // শুধু নতুন ক্যাটাগরি রিকোয়েস্ট
+      const catName = document.getElementById('req-new-cat-name').value.trim();
+      if (!catName) return alert("ক্যাটাগরির নাম দিন!");
+
+      await addDoc(collection(db, "category_requests"), {
+        categoryName: catName,
+        shopId: currentUser.uid,
+        shopName: globalUserData.name,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+      alert("✅ নতুন ক্যাটাগরি সাজেশন পাঠানো হয়েছে!");
+      document.getElementById('req-new-cat-name').value = '';
+
+    } else {
+      // নতুন প্রোডাক্ট রিকোয়েস্ট
+      const prodName = document.getElementById('req-prod-name').value.trim();
+      let selectedCat = document.getElementById('req-prod-cat').value;
+      const newCatInline = document.getElementById('req-new-cat-inline').value.trim();
+
+      if (!prodName) return alert("প্রোডাক্টের নাম দিন!");
+      if (!selectedCat) return alert("ক্যাটাগরি সিলেক্ট করুন!");
+
+      // যদি নতুন ক্যাটাগরি লিখে থাকে
+      if (selectedCat === 'new_category') {
+        if (!newCatInline) return alert("নতুন ক্যাটাগরির নাম লিখুন!");
+        
+        // ১. নতুন ক্যাটাগরি রিকোয়েস্ট পাঠানো
+        await addDoc(collection(db, "category_requests"), {
+          categoryName: newCatInline,
+          shopId: currentUser.uid,
+          shopName: globalUserData.name,
+          status: 'pending',
+          createdAt: serverTimestamp()
+        });
+        // প্রোডাক্টের ক্যাটাগরি হিসেবে নতুন নামটি সেট করা
+        selectedCat = newCatInline; 
+      }
+
+      // ২. প্রোডাক্ট রিকোয়েস্ট পাঠানো
+      await addDoc(collection(db, "product_requests"), {
+        productName: prodName,
+        category: selectedCat,
+        image: reqUploadedImgUrl || null, // ছবি থাকলে
+        shopId: currentUser.uid,
+        shopName: globalUserData.name,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+
+      alert("✅ নতুন প্রোডাক্ট সাজেশন পাঠানো হয়েছে! অ্যাডমিন অ্যাপ্রুভ করলে এটি আপনার ক্যাটালগে যুক্ত হবে।");
+      
+      // ফর্ম রিসেট
+      document.getElementById('req-prod-name').value = '';
+      document.getElementById('req-prod-cat').value = '';
+      document.getElementById('req-new-cat-inline').classList.add('mp-hidden');
+      document.getElementById('req-prod-img-preview').style.display = 'none';
+      reqUploadedImgUrl = null;
+    }
+  } catch(e) {
+    console.error(e);
+    alert("সাবমিট করতে সমস্যা হয়েছে!");
   }
 };
 
