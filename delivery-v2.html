@@ -4000,170 +4000,186 @@ window.saveShopLocation = async function() {
     alert("লোকেশন সেভ করতে সমস্যা হয়েছে!");
   }
 };
-  // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্কসহ)
-// ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্ক ও এডিট বাটনসহ)
-window.openAddProductModal = function() {
-  document.getElementById('dlv-catalog-modal').classList.add('active');
-  const list = document.getElementById('catalog-list-container');
-  list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">লোড হচ্ছে...</div>';
 
-  // দোকানদারের নিজের প্রোডাক্টগুলো খোঁজা
-  const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
-  
-  onSnapshot(myProductsQ, (mySnap) => {
-    // দোকানদার আগে থেকে কোন কোন মাস্টার প্রোডাক্ট অ্যাড করেছে, তার ডেটা ম্যাপ
-    const myAddedProducts = {};
-    mySnap.forEach(d => {
-      const p = d.data();
-      if(p.masterProductId) myAddedProducts[p.masterProductId] = { docId: d.id, ...p };
+  // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্ক ও এডিট বাটনসহ)
+  window.openAddProductModal = function() {
+    document.getElementById('dlv-catalog-modal').classList.add('active');
+    const list = document.getElementById('catalog-list-container');
+    list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">লোড হচ্ছে...</div>';
+
+    // দোকানদারের নিজের প্রোডাক্টগুলো খোঁজা
+    const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+    
+    onSnapshot(myProductsQ, (mySnap) => {
+      // দোকানদার আগে থেকে কোন কোন মাস্টার প্রোডাক্ট অ্যাড করেছে, তার ডেটা ম্যাপ
+      const myAddedProducts = {};
+      mySnap.forEach(d => {
+        const p = d.data();
+        if(p.masterProductId) myAddedProducts[p.masterProductId] = { docId: d.id, ...p };
+      });
+
+      // এবার অ্যাডমিনের মাস্টার প্রোডাক্টগুলো লোড করা
+      onSnapshot(collection(db, "master_products"), (masterSnap) => {
+        if(masterSnap.empty) {
+          list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
+          return;
+        }
+        
+        let html = '';
+        masterSnap.forEach(docSnap => {
+          const p = docSnap.data();
+          const masterId = docSnap.id;
+          
+          // চেক করা হচ্ছে দোকানদার এটি আগেই অ্যাড করেছে কি না
+          const isAdded = myAddedProducts[masterId] ? true : false;
+
+          // ডিফল্ট ইউনিট এবং গ্রেড 
+          const displayUnit = p.unit || 'pcs';
+          const displayGrade = p.grade || 'A';
+
+          // 🚀 FIX: onclick-এ পুরো অবজেক্ট না পাঠিয়ে শুধু masterId পাঠানো হচ্ছে
+          html += `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px 10px; border-bottom: 1px solid #eee;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:45px; height:45px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
+                  ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
+                </div>
+                <div>
+                  <div style="font-size:14px; font-weight:600;">${p.name}</div>
+                  <div style="font-size:11px; color:#666;">${displayGrade} | ${displayUnit}</div>
+                </div>
+              </div>
+              
+              <!-- 🚀 বাটনে শুধু masterId পাঠানো হলো -->
+              ${isAdded 
+                ? `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick="editShopProduct('${masterId}')">✏️ এডিট</button>`
+                : `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick="selectMasterProduct('${masterId}')">➕ রেট দিন</button>`
+              }
+            </div>
+          `;
+        });
+        list.innerHTML = html;
+      });
     });
+  };
+   
+  // ৩. এডিট করার জন্য ডেটা লোড করা
+  window.editShopProduct = async function(masterId) {
+    try {
+      // ১. দোকানদারের নিজের সেভ করা প্রোডাক্ট খোঁজা (masterId দিয়ে)
+      const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid), where("masterProductId", "==", masterId));
+      const snap = await getDocs(q);
+      
+      if (snap.empty) return alert("আপনার প্রোডাক্টটি পাওয়া যায়নি!");
+      
+      const myData = snap.docs[0].data();
+      myData.docId = snap.docs[0].id;
+      
+      // গ্লোবাল ভেরিয়েবলে সেভ করা
+      selectedMasterProduct = { ...myData, masterId: masterId };
+      
+      document.getElementById('sp-title').innerText = `${myData.name} - রেট এডিট করুন`;
+      
+      // ২. বেসিক ডেটা বসানো
+      document.getElementById('sp-price').value = myData.price || '';
+      document.getElementById('sp-base-weight').value = myData.baseWeight || '';
+      document.getElementById('sp-base-unit').value = myData.baseUnit || myData.unit || 'kg';
+      document.getElementById('sp-packaging-charge').value = myData.packagingCharge || '';
+      document.getElementById('sp-stock').value = myData.stock || '';
+      document.getElementById('sp-stock-unit').value = myData.stockUnit || 'kg';
+      document.getElementById('sp-grade').value = myData.grade || 'A';
 
-    // এবার অ্যাডমিনের মাস্টার প্রোডাক্টগুলো লোড করা
-    onSnapshot(collection(db, "master_products"), (masterSnap) => {
-      if(masterSnap.empty) {
-        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
-        return;
+      // ৩. ট্যাগ চেক করা
+      document.querySelectorAll('.offer-tag').forEach(cb => cb.checked = false);
+      if (myData.tags && myData.tags.length > 0) {
+        document.querySelectorAll('.offer-tag').forEach(cb => {
+          if (myData.tags.includes(cb.value)) cb.checked = true;
+        });
       }
       
-      let html = '';
-      masterSnap.forEach(docSnap => {
-        const p = docSnap.data();
-        const masterId = docSnap.id;
-        
-        // চেক করা হচ্ছে দোকানদার এটি আগেই অ্যাড করেছে কি না
-        const isAdded = myAddedProducts[masterId] ? true : false;
-        const myData = myAddedProducts[masterId];
+      // ৪. স্মার্ট প্রাইসিং লোড
+      const isSmartPricing = myData.isSmartPricing === true;
+      document.getElementById('sp-enable-smart-pricing').checked = isSmartPricing;
+      toggleSmartPricing(isSmartPricing);
 
-        // ডিফল্ট ইউনিট এবং গ্রেড (যেহেতু নতুন মাস্টার প্রোডাক্টে এগুলো নেই)
-        const displayUnit = p.unit || myData?.unit || 'pcs';
-        const displayGrade = p.grade || myData?.grade || 'A';
+      const discContainer = document.getElementById('sp-discount-tiers-container');
+      const extraContainer = document.getElementById('sp-extra-charge-tiers-container');
+      discContainer.innerHTML = '';
+      extraContainer.innerHTML = '';
 
-        html += `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px 10px; border-bottom: 1px solid #eee;">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <div style="width:45px; height:45px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
-                ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
-              </div>
-              <div>
-                <div style="font-size:14px; font-weight:600;">${p.name}</div>
-                <div style="font-size:11px; color:#666;">${displayGrade} | ${displayUnit}</div>
-              </div>
-            </div>
-            
-            <!-- 🚀 এখানে এডিট এবং রেট দিন বাটনের লজিক -->
-            ${isAdded 
-              ? `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick='editShopProduct(${JSON.stringify(myData).replace(/'/g, "&#39;")}, "${masterId}")'>✏️ এডিট</button>`
-              : `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick='selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;")}, "${masterId}")'>➕ রেট দিন</button>`
-            }
-          </div>
-        `;
-      });
-      list.innerHTML = html;
-    });
-  });
-};
-
-// 🚀 নতুন যোগ করা হলো: দোকানদার তার নিজের দেওয়া রেট এডিট করার জন্য
-   
-window.editShopProduct = function(myData, masterId) {
-  selectedMasterProduct = { ...myData, masterId: masterId };
-  document.getElementById('sp-title').innerText = `${myData.name} - রেট এডিট করুন`;
-  
-  // বেসিক ডেটা
-  document.getElementById('sp-price').value = myData.price || '';
-  document.getElementById('sp-base-weight').value = myData.baseWeight || '';
-  document.getElementById('sp-base-unit').value = myData.baseUnit || 'kg';
-  document.getElementById('sp-packaging-charge').value = myData.packagingCharge || '';
-  document.getElementById('sp-stock').value = myData.stock || '';
-  document.getElementById('sp-stock-unit').value = myData.stockUnit || 'kg';
-  document.getElementById('sp-grade').value = myData.grade || 'A';
-
-     // 🚀 আগের ট্যাগ চেক করা
-    document.querySelectorAll('.offer-tag').forEach(cb => cb.checked = false);
-    if (myData.tags && myData.tags.length > 0) {
-      document.querySelectorAll('.offer-tag').forEach(cb => {
-        if (myData.tags.includes(cb.value)) cb.checked = true;
-      });
-    }
-  
-  
-  // স্মার্ট প্রাইসিং লোড
-  const isSmartPricing = myData.isSmartPricing === true;
-  document.getElementById('sp-enable-smart-pricing').checked = isSmartPricing;
-  toggleSmartPricing(isSmartPricing);
-
-  const discContainer = document.getElementById('sp-discount-tiers-container');
-  const extraContainer = document.getElementById('sp-extra-charge-tiers-container');
-  discContainer.innerHTML = '';
-  extraContainer.innerHTML = '';
-
-  if (isSmartPricing) {
-    if (myData.discountTiers && myData.discountTiers.length > 0) {
-      myData.discountTiers.forEach(t => addDiscountTierRow(t.qty, t.pct));
-    }
-    if (myData.extraChargeTiers && myData.extraChargeTiers.length > 0) {
-      myData.extraChargeTiers.forEach(t => addExtraChargeRow(t.qty, t.pct));
-    }
-  }
-
-  // ভ্যারিয়েন্ট ম্যাট্রিক্স লোড করা
-  matrixCols = 1; matrixRows = 1; // রিসেট
-  if (myData.variants && myData.variants.length > 0) {
-     // অনন্য ব্র্যান্ড এবং সাইজ বের করা
-     let uniqueBrands = [...new Set(myData.variants.map(v => v.brand))];
-     let uniqueSizes = [];
-     myData.variants.forEach(v => {
-        let sizeStr = `${v.size}_${v.unit}`;
-        if(!uniqueSizes.some(s => s.str === sizeStr)) {
-           uniqueSizes.push({ size: v.size, unit: v.unit, str: sizeStr });
+      if (isSmartPricing) {
+        if (myData.discountTiers && myData.discountTiers.length > 0) {
+          myData.discountTiers.forEach(t => addDiscountTierRow(t.qty, t.pct));
         }
-     });
+        if (myData.extraChargeTiers && myData.extraChargeTiers.length > 0) {
+          myData.extraChargeTiers.forEach(t => addExtraChargeRow(t.qty, t.pct));
+        }
+      }
 
-     matrixRows = uniqueBrands.length || 1;
-     matrixCols = uniqueSizes.length || 1;
-     renderMatrixTable(); // টেবিল তৈরি
+      // ৫. গিফট লোড
+      const giftContainer = document.getElementById('sp-gift-container');
+      if(giftContainer) giftContainer.innerHTML = '';
+      if (myData.giftSlabs && myData.giftSlabs.length > 0) {
+        myData.giftSlabs.forEach(g => addGiftRow(g.slab, g.name, g.val));
+      } else {
+        addGiftRow(); // ডিফল্ট ১টি খালি রো
+      }
 
-     // ডেটা বসানো
-     setTimeout(() => {
-       const thead = document.getElementById('matrix-thead');
-       const tbody = document.getElementById('matrix-tbody');
-       
-         const giftContainer = document.getElementById('sp-gift-container');
-    if(giftContainer) giftContainer.innerHTML = '';
-    if (myData.giftSlabs && myData.giftSlabs.length > 0) {
-      myData.giftSlabs.forEach(g => addGiftRow(g.slab, g.name, g.val));
-    } else {
-      addGiftRow(); // ডিফল্ট ১টি খালি রো
+      // ৬. ভ্যারিয়েন্ট ম্যাট্রিক্স লোড করা
+      matrixCols = 1; matrixRows = 1; // রিসেট
+      if (myData.variants && myData.variants.length > 0) {
+         // অনন্য ব্র্যান্ড এবং সাইজ বের করা
+         let uniqueBrands = [...new Set(myData.variants.map(v => v.brand))];
+         let uniqueSizes = [];
+         myData.variants.forEach(v => {
+            let sizeStr = `${v.size}_${v.unit}`;
+            if(!uniqueSizes.some(s => s.str === sizeStr)) {
+               uniqueSizes.push({ size: v.size, unit: v.unit, str: sizeStr });
+            }
+         });
+
+         matrixRows = uniqueBrands.length || 1;
+         matrixCols = uniqueSizes.length || 1;
+         renderMatrixTable(); // টেবিল তৈরি
+
+         // ডেটা বসানো
+         setTimeout(() => {
+           const thead = document.getElementById('matrix-thead');
+           const tbody = document.getElementById('matrix-tbody');
+           
+           // সাইজ বসানো
+           let ths = thead.rows[0].querySelectorAll('th');
+           for(let i=0; i<uniqueSizes.length; i++) {
+             let sInput = ths[i+1].querySelector('.matrix-size-val');
+             let uSelect = ths[i+1].querySelector('.matrix-size-unit');
+             if(sInput && uSelect) { sInput.value = uniqueSizes[i].size; uSelect.value = uniqueSizes[i].unit; }
+           }
+
+           // ব্র্যান্ড ও দাম বসানো
+           for(let r=0; r<uniqueBrands.length; r++) {
+              let brandInput = tbody.rows[r].querySelector('.matrix-brand-name');
+              if(brandInput) brandInput.value = uniqueBrands[r];
+              
+              let priceInputs = tbody.rows[r].querySelectorAll('.matrix-price');
+              for(let c=0; c<uniqueSizes.length; c++) {
+                 let variantData = myData.variants.find(v => v.brand === uniqueBrands[r] && v.size == uniqueSizes[c].size && v.unit === uniqueSizes[c].unit);
+                 if(variantData && priceInputs[c]) priceInputs[c].value = variantData.price;
+              }
+           }
+         }, 100); // DOM আপডেট হওয়ার পর ডেটা বসানোর জন্য সামান্য ডিলে
+      } else {
+         renderMatrixTable(); // খালি টেবিল
+      }
+
+      // ৭. মডাল পরিবর্তন
+      document.getElementById('dlv-catalog-modal').classList.remove('active');
+      document.getElementById('dlv-set-price-modal').classList.add('active');
+
+    } catch(e) {
+      console.error(e);
+      alert("এডিট করতে সমস্যা হয়েছে!");
     }
-       
-       // সাইজ বসানো
-       let ths = thead.rows[0].querySelectorAll('th');
-       for(let i=0; i<uniqueSizes.length; i++) {
-         let sInput = ths[i+1].querySelector('.matrix-size-val');
-         let uSelect = ths[i+1].querySelector('.matrix-size-unit');
-         if(sInput && uSelect) { sInput.value = uniqueSizes[i].size; uSelect.value = uniqueSizes[i].unit; }
-       }
-
-       // ব্র্যান্ড ও দাম বসানো
-       for(let r=0; r<uniqueBrands.length; r++) {
-          let brandInput = tbody.rows[r].querySelector('.matrix-brand-name');
-          if(brandInput) brandInput.value = uniqueBrands[r];
-          
-          let priceInputs = tbody.rows[r].querySelectorAll('.matrix-price');
-          for(let c=0; c<uniqueSizes.length; c++) {
-             let variantData = myData.variants.find(v => v.brand === uniqueBrands[r] && v.size == uniqueSizes[c].size && v.unit === uniqueSizes[c].unit);
-             if(variantData && priceInputs[c]) priceInputs[c].value = variantData.price;
-          }
-       }
-     }, 100); // DOM আপডেট হওয়ার পর ডেটা বসানোর জন্য সামান্য ডিলে
-  } else {
-     renderMatrixTable(); // খালি টেবিল
-  }
-
-  // মডাল ওপেন
-  document.getElementById('dlv-catalog-modal').classList.remove('active');
-  document.getElementById('dlv-set-price-modal').classList.add('active');
-};
+  };
 // ==================== SMART MATRIX & PRICING LOGIC ====================
 
 // ১. স্মার্ট প্রাইসিং টগল
@@ -4567,14 +4583,33 @@ document.addEventListener("DOMContentLoaded", () => {
 };
 
   // ২. মাস্টার প্রোডাক্ট সিলেক্ট করা
-  window.selectMasterProduct = function(productData, masterId) {
-    selectedMasterProduct = { ...productData, masterId: masterId };
-    document.getElementById('sp-title').innerText = `${productData.name} - রেট দিন`;
-    document.getElementById('sp-price').value = '';
-    document.getElementById('sp-stock').value = '';
-    
-    document.getElementById('dlv-catalog-modal').classList.remove('active');
-    document.getElementById('dlv-set-price-modal').classList.add('active');
+  // ২. মাস্টার প্রোডাক্ট সিলেক্ট করা (ডেটাবেস থেকে ডেটা লোড করে)
+  window.selectMasterProduct = async function(masterId) {
+    try {
+      // ডেটাবেস থেকে প্রোডাক্টের আসল ডেটা নিয়ে আসা
+      const docRef = doc(db, "master_products", masterId);
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) return alert("প্রোডাক্টটি পাওয়া যায়নি!");
+
+      const productData = docSnap.data();
+      
+      // গ্লোবাল ভেরিয়েবলে সেভ করা
+      selectedMasterProduct = { ...productData, masterId: masterId };
+      
+      document.getElementById('sp-title').innerText = `${productData.name} - রেট দিন`;
+      
+      // ফর্ম রিসেট করা
+      document.getElementById('sp-price').value = '';
+      document.getElementById('sp-stock').value = '';
+      
+      document.getElementById('dlv-catalog-modal').classList.remove('active');
+      document.getElementById('dlv-set-price-modal').classList.add('active');
+      
+    } catch(e) {
+      console.error(e);
+      alert("ডেটা লোড করতে সমস্যা হয়েছে!");
+    }
   };
 
    // 🚀 ডিসকাউন্ট লেয়ার রো তৈরি করার ফাংশন
