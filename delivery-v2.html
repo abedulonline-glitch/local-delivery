@@ -1407,13 +1407,14 @@
 </div>
 
 <!-- Master Catalog Modal (For Shopkeeper to select) -->
-<div id="dlv-catalog-modal" class="dlv-modal-overlay">
-  <div class="dlv-modal-content" style="max-height: 85vh; overflow-y: auto;">
+<!-- Master Catalog Modal -->
+<div id="dlv-catalog-modal" class="dlv-modal-overlay" style="z-index: 10000;">
+  <div class="dlv-modal-content" style="max-height: 85vh; overflow-y: auto; position: relative; background: white; padding: 20px;">
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-catalog-modal').classList.remove('active')">&times;</span>
     <h3 style="margin-bottom: 15px; color: var(--mp-primary);">🛒 ক্যাটালগ থেকে প্রোডাক্ট বাছুন</h3>
     <p style="font-size: 12px; color: #666; margin-bottom: 15px;">অ্যাডমিনের দেওয়া লিস্ট থেকে প্রোডাক্ট সিলেক্ট করে আপনার রেট দিন।</p>
     
-    <div id="catalog-list-container">
+    <div id="catalog-list-container" style="display: block; min-height: 100px;">
       <!-- Products will load here -->
       <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
     </div>
