@@ -6366,10 +6366,9 @@ window.handleTextSearch = function(query) {
   };
 
    // 🚀 ভেক্টর সিমিলারিটি ক্যালকুলেট করার হেল্পার ফাংশন (Cosine Similarity)
+  // 🚀 ভেক্টর সিমিলারিটি হেল্পার
   function calculateVectorSimilarity(vecA, vecB) {
-      let dotProduct = 0;
-      let normA = 0;
-      let normB = 0;
+      let dotProduct = 0, normA = 0, normB = 0;
       for (let i = 0; i < vecA.length; i++) {
           dotProduct += vecA[i] * vecB[i];
           normA += vecA[i] * vecA[i];
@@ -6378,6 +6377,78 @@ window.handleTextSearch = function(query) {
       if (normA === 0 || normB === 0) return 0;
       return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
   }
+
+  window.handleImageSearch = async function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      document.getElementById('search-image-preview').src = e.target.result;
+      document.getElementById('search-image-preview-container').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+
+    if (!window.clipVisionModel) {
+      document.getElementById('ai-loading-status').style.display = 'block';
+      try {
+        window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+        window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+        document.getElementById('ai-loading-status').style.display = 'none';
+      } catch (error) { alert("AI মডেল লোড ব্যর্থ!"); return; }
+    }
+
+    try {
+      const image = await window.RawImage.fromURL(URL.createObjectURL(file));
+      const image_inputs = await window.clipProcessor(image);
+      const { image_embeds } = await window.clipVisionModel(image_inputs);
+      
+      // সার্চ ভেক্টর (কমা ছাড়া, শুধু ৪ ডেসিমেল)
+      const queryVector = Array.from(image_embeds.data).map(num => parseFloat(num.toFixed(4))); 
+
+      let results = [];
+      let vectorCount = 0;
+
+      for (const prod of allRawProducts) {
+        let vectorData = prod.imageVector;
+        
+        if (vectorData && vectorData !== "") {
+          try {
+            const prodVector = (typeof vectorData === 'string') ? JSON.parse(vectorData) : vectorData;
+            if(Array.isArray(prodVector) && prodVector.length > 0) {
+                vectorCount++;
+                const similarity = calculateVectorSimilarity(queryVector, prodVector);
+                results.push({ product: prod, score: similarity });
+            }
+          } catch(e) { console.warn("Vector parse error:", prod.name); }
+        }
+      }
+
+      results.sort((a, b) => b.score - a.score);
+      
+      // 🚀 থ্রেশহোল্ড ০.৭৫ (৭৫%)
+      const threshold = 0.75; 
+      const bestMatches = results.filter(r => r.score >= threshold).map(r => r.product);
+
+      const grid = document.getElementById('cst-product-grid');
+      
+      if (bestMatches.length > 0) {
+        renderFilteredProductsToGrid(bestMatches);
+      } else {
+        // সবচেয়ে কাছাকাছি ফলাফল দেখানো
+        let closestMatch = results.length > 0 ? `${results[0].product.name} (${(results[0].score*100).toFixed(1)}%)` : "কিছুই না";
+        grid.innerHTML = `
+          <div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">
+            এই ছবির সাথে ৭৫% মিল এমন কোনো প্রোডাক্ট পাওয়া যায়নি।<br>
+            <small>ডাটাবেসে ${vectorCount} টি প্রোডাক্টের ভেক্টর আছে।</small><br>
+            <small style="color:#d93025;">সবচেয়ে কাছাকাছি ম্যাচ: ${closestMatch}</small>
+          </div>`;
+      }
+    } catch (error) {
+      console.error("Image Search Error:", error);
+      alert("ছবি সার্চে সমস্যা হয়েছে!");
+    }
+  };
 
 
 // ৪. প্রোডাক্ট গ্রিড রেন্ডার করার হেল্পার ফাংশন
@@ -6881,11 +6952,9 @@ window.clearImageSearch = function() {
   };
 
   // 🚀 প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ করার ফাংশন আপডেট
-  // 🚀 প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ করার ফাংশন (AI ভেক্টরসহ)
   window.approveProductRequest = async function(reqId) {
     if (!confirm("আপনি কি এই প্রোডাক্টটি অনুমোদন করতে চান?")) return;
     
-    // বাটনের লোডিং স্টেট (ঐচ্ছিক)
     const btn = document.querySelector(`button[onclick="approveProductRequest('${reqId}')"]`);
     if(btn) { btn.innerText = "⏳ এআই প্রসেসিং..."; btn.disabled = true; }
 
@@ -6895,54 +6964,52 @@ window.clearImageSearch = function() {
       if (!reqSnap.exists()) return;
       
       const reqData = reqSnap.data();
-      
       let selectedCat = document.getElementById(`prod-req-cat-${reqId}`).value;
       
-      // নতুন ক্যাটাগরি হ্যান্ডেল করা
       if (selectedCat === 'new_category') {
           const newCatName = document.getElementById(`new-cat-input-${reqId}`).value.trim();
           if (!newCatName) return alert("দয়া করে নতুন ক্যাটাগরির নাম লিখুন!");
-          
-          await addDoc(collection(db, "categories"), {
-              name: newCatName,
-              createdAt: serverTimestamp()
-          });
+          await addDoc(collection(db, "categories"), { name: newCatName, createdAt: serverTimestamp() });
           selectedCat = newCatName; 
       }
 
-      // 🚀 ১. AI ভেক্টর জেনারেশন লজিক শুরু
+      // 🚀 AI ভেক্টর জেনারেশন (সঠিক নিয়মে)
       let generatedVectorStr = "";
-      
       if (reqData.image && window.CLIPVisionModelWithProjection) {
         try {
           if (!window.clipProcessor) {
             window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
             window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
           }
+          
+          // 🚀 CORS ফিক্স: ImgBB ছবি সরাসরি লোড করতে হবে
           const image = await window.RawImage.fromURL(reqData.image);
           const image_inputs = await window.clipProcessor(image);
           const { image_embeds } = await window.clipVisionModel(image_inputs);
           
-          // ভেক্টরকে স্ট্রিং এ কনভার্ট করা (Firestore এ সেভ করার জন্য)
-          const vectorArray = Array.from(image_embeds.data).slice(0, 256);
-          generatedVectorStr = JSON.stringify(vectorArray); 
+          // ভেক্টর অ্যারে তৈরি
+          const vectorArray = Array.from(image_embeds.data);
+          
+          // 🚀 ডেটা সাইজ কমানোর জন্য 4 ডেসিমেল পর্যন্ত রাখা
+          const optimizedVector = vectorArray.map(num => parseFloat(num.toFixed(4)));
+          
+          generatedVectorStr = JSON.stringify(optimizedVector); 
         } catch (err) { 
           console.error("Vector Generation Error:", err); 
         }
       }
 
-      // 🚀 ২. মাস্টার প্রোডাক্টে সেভ করা (ভেক্টরসহ)
+      // ডেটাবেসে সেভ করা
       await addDoc(collection(db, "master_products"), {
         name: reqData.productName,
         category: selectedCat,
         image: reqData.image || null,
-        imageVector: generatedVectorStr, // এখানে ভেক্টরটি সেভ হচ্ছে
+        imageVector: generatedVectorStr,
         createdAt: serverTimestamp()
       });
 
-      // রিকোয়েস্ট ডিলিট করা
       await deleteDoc(reqRef);
-      alert("✅ প্রোডাক্ট অনুমোদিত হয়েছে এবং মাস্টার ক্যাটালগে যুক্ত হয়েছে!");
+      alert("✅ প্রোডাক্ট অনুমোদিত হয়েছে এবং এআই ভেক্টর সেভ হয়েছে!");
       
     } catch(e) {
       console.error(e);
