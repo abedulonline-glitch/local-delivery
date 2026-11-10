@@ -1199,8 +1199,60 @@
   </div>
 </div>
 
-   
-<!-- 🚀 Smart Checkout & Payment Modal -->
+  <!-- 🚀 ডিলে রিপোর্ট মডাল (ডেলিভারি বয়ের জন্য) -->
+<div id="dlv-delay-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content">
+    <h3 style="color: var(--mp-warning); margin-bottom: 15px;">⚠️ ডিলে রিপোর্ট করুন</h3>
+    <input type="hidden" id="delay-order-id">
+    
+    <div class="dlv-form-group">
+      <label>কী কারণে দেরি হচ্ছে?</label>
+      <select id="delay-reason" class="dlv-input">
+        <option value="ট্রাফিক জ্যাম">🚧 ট্রাফিক জ্যাম</option>
+        <option value="গাড়ি নষ্ট/পাংচার">🛵 গাড়ি নষ্ট/পাংচার</option>
+        <option value="বিশ্রাম/টিফিন">☕ বিশ্রাম/টিফিন</option>
+        <option value="রাস্তা খারাপ">🛣️ রাস্তা খারাপ</option>
+        <option value="অন্যান্য">📝 অন্যান্য</option>
+      </select>
+    </div>
+
+    <div class="dlv-form-group">
+      <label>কত মিনিট দেরি হবে?</label>
+      <select id="delay-time" class="dlv-input">
+        <option value="5">৫ মিনিট</option>
+        <option value="10">১০ মিনিট</option>
+        <option value="15">১৫ মিনিট</option>
+        <option value="30">৩০ মিনিট</option>
+      </select>
+    </div>
+
+    <button class="mp-btn mp-btn-primary" onclick="submitDelayReport()">আপডেট পাঠান</button>
+    <button class="mp-btn" onclick="document.getElementById('dlv-delay-modal').classList.remove('active')" style="background:transparent; color:#999;">বাতিল</button>
+  </div>
+</div>
+
+<!-- 🚀 অফলাইন স্পিড সেটিংস মডাল (ডেলিভারি বয়ের জন্য) -->
+<div id="dlv-speed-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content">
+    <h3 style="color: var(--mp-primary); margin-bottom: 10px;">🔋 অফলাইন ট্র্যাকিং</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">ফোনের ব্যাটারি বা ইন্টারনেট বাঁচাতে লোকেশন বন্ধ রাখতে পারেন। কাস্টমার AI ট্র্যাকিং দেখতে পাবে।</p>
+    <input type="hidden" id="speed-order-id">
+    
+    <div class="dlv-form-group">
+      <label>আপনার গাড়ির গড় স্পিড (কিমি/ঘণ্টা)</label>
+      <select id="offline-speed" class="dlv-input">
+        <option value="10">১০ কিমি/ঘণ্টা (ধীরগতি)</option>
+        <option value="20">২০ কিমি/ঘণ্টা (স্বাভাবিক)</option>
+        <option value="30">৩০ কিমি/ঘণ্টা (দ্রুতগতি - বাইক)</option>
+      </select>
+    </div>
+
+    <button class="mp-btn mp-btn-success" onclick="submitOfflineSpeed()">অফলাইন ট্র্যাকিং চালু করুন</button>
+    <button class="mp-btn" onclick="document.getElementById('dlv-speed-modal').classList.remove('active')" style="background:transparent; color:#999;">বাতিল</button>
+  </div>
+</div> 
+
+    <!-- 🚀 Smart Checkout & Payment Modal -->
 <div id="dlv-payment-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content">
     <h3 style="margin-bottom: 15px; color: var(--mp-primary); text-align: center;">অর্ডার কনফার্ম করুন</h3>
@@ -4567,46 +4619,66 @@ document.addEventListener("DOMContentLoaded", () => {
           } 
           
           // 🚀 assigned অথবা picked_up স্টেটাসের জন্য UI (ডেলিভারি বয়ের জন্য)
-          else if ((order.status === 'assigned' || order.status === 'picked_up') && order.deliveryBoyId === currentUser.uid) {
-            hasActiveOrder = true;
-            
-            if (order.status === 'assigned') {
-                // দোকানে যাওয়ার জন্য স্ক্রিন
-                let mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${order.shopLat || 0},${order.shopLng || 0}&destination=${order.lat || 0},${order.lng || 0}`;
-                activeOrderHtml += `
-                  <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--mp-success);">
-                    <h4 style="color:var(--mp-primary);">অর্ডার #${orderId.slice(-4).toUpperCase()}</h4>
-                    <p style="font-size: 12px; margin: 5px 0;"><b>🏪 পিকআপ (দোকান):</b> ${order.shopName || 'Unknown Store'}</p>
-                    
-                    <div style="background: #fff3e0; padding: 8px; border-radius: 6px; margin: 8px 0; text-align: center; border: 1px dashed #ffb74d;">
-                        <span style="font-size: 11px; color: #e65100;">দোকানদারকে এই কোডটি বলুন:</span><br>
-                        <b style="font-size: 18px; color: #d93025; letter-spacing: 2px;">${order.pickupOtp || '----'}</b>
-                    </div>
-                    <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">আপনার আয়: ₹${order.deliveryCharge || order.lowestBid}</p>
-                    
-                    <button class="mp-btn mp-btn-primary" style="width: 100%; margin-top: 10px;" onclick="window.open('${mapUrl}', '_blank')">📍 দোকানের রাস্তা দেখুন</button>
-                  </div>`;
-            } else if (order.status === 'picked_up') {
-                // 🚀 মাল হাতে পাওয়ার পর কাস্টমারের কাছে যাওয়ার স্ক্রিন
-                let mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${order.shopLat || 0},${order.shopLng || 0}&destination=${order.lat || 0},${order.lng || 0}`;
-                activeOrderHtml += `
-                  <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #1a73e8;">
-                    <h4 style="color:var(--mp-primary);">অর্ডার #${orderId.slice(-4).toUpperCase()} (ডেলিভারি)</h4>
-                    
-                    <div style="background: #e8f0fe; padding: 8px; border-radius: 6px; margin: 8px 0; text-align: center; border: 1px dashed #1a73e8;">
-                        <span style="font-size: 11px; color: #1a73e8;">কাস্টমারের কাছ থেকে OTP নিন:</span><br>
-                        <b style="font-size: 18px; color: #0f9d58; letter-spacing: 2px;">${order.otp || '----'}</b>
-                    </div>
+else if ((order.status === 'assigned' || order.status === 'picked_up') && order.deliveryBoyId === currentUser.uid) {
+  hasActiveOrder = true;
+  
+  // ম্যাপের লিংক তৈরি
+  let mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${order.shopLat || 0},${order.shopLng || 0}&destination=${order.lat || 0},${order.lng || 0}`;
 
-                    <p style="font-size: 12px; margin: 5px 0;"><b>📍 ডেলিভারি:</b> ${order.customerAddress || 'ঠিকানা নেই'}</p>
-                    
-                    <div style="display:flex; gap:10px; margin-top:10px;">
-                      <button class="mp-btn mp-btn-primary" style="flex:1; margin:0;" onclick="window.open('${mapUrl}', '_blank')">📍 কাস্টমারের রাস্তা</button>
-                      <button class="mp-btn mp-btn-success" style="flex:1; margin:0;" onclick="promptOTP('${orderId}')">✅ OTP দিয়ে দিন</button>
-                    </div>
-                  </div>`;
-            }
-          }
+  if (order.status === 'assigned') {
+      // দোকানে যাওয়ার জন্য স্ক্রিন
+      activeOrderHtml += `
+        <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid var(--mp-success);">
+          <h4 style="color:var(--mp-primary);">অর্ডার #${orderId.slice(-4).toUpperCase()}</h4>
+          <p style="font-size: 12px; margin: 5px 0;"><b>🏪 পিকআপ (দোকান):</b> ${order.shopName || 'Unknown Store'}</p>
+          
+          <div style="background: #fff3e0; padding: 8px; border-radius: 6px; margin: 8px 0; text-align: center; border: 1px dashed #ffb74d;">
+              <span style="font-size: 11px; color: #e65100;">দোকানদারকে এই কোডটি বলুন:</span><br>
+              <b style="font-size: 18px; color: #d93025; letter-spacing: 2px;">${order.pickupOtp || '----'}</b>
+          </div>
+          <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">আপনার আয়: ₹${order.deliveryCharge || order.lowestBid}</p>
+          
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="mp-btn mp-btn-primary" style="width: 100%; margin:0;" onclick="window.open('${mapUrl}', '_blank')">📍 দোকানের রাস্তা দেখুন</button>
+          </div>
+
+          <!-- 🚀 স্মার্ট আপডেট বাটন (দোকানে যাওয়ার সময়) -->
+          <div style="margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px;">
+              <div style="display:flex; gap:5px;">
+                  <button class="mp-btn" style="margin:0; flex:1; background:#fef7e0; color:#b06000; font-size:12px; padding:6px;" onclick="openDelayModal('${orderId}')">⚠️ ডিলে রিপোর্ট</button>
+                  <button class="mp-btn" style="margin:0; flex:1; background:#e8f0fe; color:var(--mp-primary); font-size:12px; padding:6px;" onclick="openSpeedModal('${orderId}')">🔋 অফলাইন/স্পিড</button>
+              </div>
+          </div>
+        </div>`;
+  } else if (order.status === 'picked_up') {
+      // 🚀 মাল হাতে পাওয়ার পর কাস্টমারের কাছে যাওয়ার স্ক্রিন
+      activeOrderHtml += `
+        <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #1a73e8;">
+          <h4 style="color:var(--mp-primary);">অর্ডার #${orderId.slice(-4).toUpperCase()} (ডেলিভারি)</h4>
+          
+          <div style="background: #e8f0fe; padding: 8px; border-radius: 6px; margin: 8px 0; text-align: center; border: 1px dashed #1a73e8;">
+              <span style="font-size: 11px; color: #1a73e8;">কাস্টমারের কাছ থেকে OTP নিন:</span><br>
+              <b style="font-size: 18px; color: #0f9d58; letter-spacing: 2px;">${order.otp || '----'}</b>
+          </div>
+
+          <p style="font-size: 12px; margin: 5px 0;"><b>📍 ডেলিভারি:</b> ${order.customerAddress || 'ঠিকানা নেই'}</p>
+          <p style="font-size: 12px; color: var(--mp-danger); font-weight: bold;">আপনার আয়: ₹${order.deliveryCharge || order.lowestBid}</p>
+          
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="mp-btn mp-btn-primary" style="flex:1; margin:0;" onclick="window.open('${mapUrl}', '_blank')">📍 রাস্তা</button>
+            <button class="mp-btn mp-btn-success" style="flex:1; margin:0;" onclick="promptOTP('${orderId}')">✅ Delivered</button>
+          </div>
+
+          <!-- 🚀 স্মার্ট আপডেট বাটন (কাস্টমারের কাছে যাওয়ার সময়) -->
+          <div style="margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px;">
+              <div style="display:flex; gap:5px;">
+                  <button class="mp-btn" style="margin:0; flex:1; background:#fef7e0; color:#b06000; font-size:12px; padding:6px;" onclick="openDelayModal('${orderId}')">⚠️ ডিলে রিপোর্ট</button>
+                  <button class="mp-btn" style="margin:0; flex:1; background:#e8f0fe; color:var(--mp-primary); font-size:12px; padding:6px;" onclick="openSpeedModal('${orderId}')">🔋 অফলাইন/স্পিড</button>
+              </div>
+          </div>
+        </div>`;
+  }
+}
         });
         
         ordersList.innerHTML = liveOrdersHtml || '<div style="text-align: center; padding: 20px; color: #999;">এই মুহূর্তে কোনো নতুন অর্ডার নেই।</div>';
