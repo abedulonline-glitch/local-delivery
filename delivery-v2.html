@@ -8248,6 +8248,76 @@ window.submitCatalogRequest = async function() {
     }
   };
 
+  window.submitCatalogRequest = async function() {
+    const type = document.getElementById('req-type').value;
+
+    try {
+      if (type === 'category') {
+        // শুধু নতুন ক্যাটাগরি রিকোয়েস্ট
+        const catName = document.getElementById('req-new-cat-name').value.trim();
+        if (!catName) return alert("ক্যাটাগরির নাম দিন!");
+
+        const docRef = await addDoc(collection(db, "category_requests"), {
+          categoryName: catName,
+          shopId: currentUser.uid,
+          shopName: globalUserData.name,
+          status: 'pending',
+          createdAt: serverTimestamp()
+        });
+        console.log("Category Request Saved with ID: ", docRef.id); // 🚀 কনসোল লগ
+        alert("✅ নতুন ক্যাটাগরি সাজেশন পাঠানো হয়েছে!");
+        document.getElementById('req-new-cat-name').value = '';
+
+      } else {
+        // নতুন প্রোডাক্ট রিকোয়েস্ট
+        const prodName = document.getElementById('req-prod-name').value.trim();
+        let selectedCat = document.getElementById('req-prod-cat').value;
+        const newCatInline = document.getElementById('req-new-cat-inline').value.trim();
+
+        if (!prodName) return alert("প্রোডাক্টের নাম দিন!");
+        if (!selectedCat) return alert("ক্যাটাগরি সিলেক্ট করুন!");
+
+        // যদি নতুন ক্যাটাগরি লিখে থাকে
+        if (selectedCat === 'new_category') {
+          if (!newCatInline) return alert("নতুন ক্যাটাগরির নাম লিখুন!");
+          
+          await addDoc(collection(db, "category_requests"), {
+            categoryName: newCatInline,
+            shopId: currentUser.uid,
+            shopName: globalUserData.name,
+            status: 'pending',
+            createdAt: serverTimestamp()
+          });
+          selectedCat = newCatInline; 
+        }
+
+        // ২. প্রোডাক্ট রিকোয়েস্ট পাঠানো
+        const prodRef = await addDoc(collection(db, "product_requests"), {
+          productName: prodName,
+          category: selectedCat,
+          image: reqUploadedImgUrl || null,
+          shopId: currentUser.uid,
+          shopName: globalUserData.name,
+          status: 'pending',
+          createdAt: serverTimestamp()
+        });
+
+        console.log("Product Request Saved with ID: ", prodRef.id); // 🚀 কনসোল লগ
+        alert("✅ নতুন প্রোডাক্ট সাজেশন পাঠানো হয়েছে! অ্যাডমিন অ্যাপ্রুভ করলে এটি আপনার ক্যাটালগে যুক্ত হবে।");
+        
+        // ফর্ম রিসেট
+        document.getElementById('req-prod-name').value = '';
+        document.getElementById('req-prod-cat').value = '';
+        document.getElementById('req-new-cat-inline').classList.add('mp-hidden');
+        document.getElementById('req-prod-img-preview').style.display = 'none';
+        reqUploadedImgUrl = null;
+      }
+    } catch(e) {
+      console.error(e);
+      alert("সাবমিট করতে সমস্যা হয়েছে! এরর: " + e.message);
+    }
+  };
+
 </script>
 
 <!-- Live Tracking Modal (Customer) -->
