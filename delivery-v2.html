@@ -6282,7 +6282,6 @@ window.handleTextSearch = function(query) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // ইমেজ প্রিভিউ
     const reader = new FileReader();
     reader.onload = (e) => {
       document.getElementById('search-image-preview').src = e.target.result;
@@ -6290,7 +6289,7 @@ window.handleTextSearch = function(query) {
     };
     reader.readAsDataURL(file);
 
-    // AI মডেল লোড চেক
+    // AI মডেল লোড
     if (!window.clipVisionModel) {
       document.getElementById('ai-loading-status').style.display = 'block';
       document.getElementById('ai-loading-status').innerText = "🧠 AI মডেল লোড হচ্ছে...";
@@ -6310,70 +6309,76 @@ window.handleTextSearch = function(query) {
       const image_inputs = await window.clipProcessor(image);
       const { image_embeds } = await window.clipVisionModel(image_inputs);
       
-      // কাস্টমারের ভেক্টর (অ্যারে)
+      // queryVector কে নরমাল অ্যারেতে কনভার্ট করা
       const queryVector = Array.from(image_embeds.data).slice(0, 256); 
 
-      let scoredProducts = [];
+      let results = [];
       let vectorCount = 0;
 
-      // ২. ডেটাবেসের প্রতিটি প্রোডাক্টের সাথে তুলনা
+      // ২. ডেটাবেসের প্রতিটি প্রোডাক্টের সাথে তুলনা (আপনার পুরোনো লজিকের মতো)
       for (const prod of allRawProducts) {
         let vectorData = prod.imageVector;
         
         if (vectorData && vectorData !== "") {
           try {
-            // 🚀 FIX: ডেটাবেসে স্ট্রিং হিসেবে থাকলে অ্যারেতে কনভার্ট করা
+            // 🚀 স্ট্রিং থেকে অ্যারে কনভার্ট করা
             const prodVector = (typeof vectorData === 'string') ? JSON.parse(vectorData) : vectorData;
             
             if(Array.isArray(prodVector) && prodVector.length === 256) {
                 vectorCount++;
-
-                // ৩. Dot Product (Cosine Similarity) হিসাব
-                let dotProduct = 0;
-                let normA = 0;
-                let normB = 0;
-
-                for (let i = 0; i < 256; i++) {
-                    dotProduct += queryVector[i] * prodVector[i];
-                    normA += queryVector[i] * queryVector[i];
-                    normB += prodVector[i] * prodVector[i];
-                }
-
-                // Cosine Similarity বের করা (০ থেকে ১ এর মধ্যে)
-                let similarity = dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-                
-                scoredProducts.push({ product: prod, score: similarity });
+                // 🚀 হেল্পার ফাংশন দিয়ে সিমিলারিটি বের করা
+                const similarity = calculateVectorSimilarity(queryVector, prodVector);
+                results.push({ product: prod, score: similarity });
             }
-          } catch(e) { console.warn("Vector parse error", prod.name); }
+          } catch(e) { console.warn("Vector parse error for:", prod.name); }
         }
       }
 
-      // ৪. স্কোর অনুযায়ী সাজানো (বড় থেকে ছোট)
-      scoredProducts.sort((a, b) => b.score - a.score);
+      // ৩. স্কোর অনুযায়ী সাজানো
+      results.sort((a, b) => b.score - a.score);
       
-      // 🚀 FIX: থ্রেশহোল্ড কমানো হলো (0.75 থেকে 0.70 বা 0.65)
-      // ছবির মান, আলো বা অ্যাঙ্গেলের কারণে স্কোর কিছুটা কমতে পারে।
-      const minThreshold = 0.65; 
-      const bestMatches = scoredProducts.filter(sp => sp.score >= minThreshold).map(sp => sp.product);
-      
-      // ডিবাগিং-এর জন্য কনসোলে দেখতে পারেন
-      console.log("Top 5 Matches:", scoredProducts.slice(0, 5).map(s => `${s.product.name} (${(s.score*100).toFixed(1)}%)`));
+      // ডিবাগিং: কনসোলে চেক করুন কত স্কোর আসছে
+      console.log("Top 5 Matches:", results.slice(0, 5).map(r => `${r.product.name} (${(r.score*100).toFixed(2)}%)`));
 
-      if (bestMatches.length === 0) {
-        document.getElementById('cst-product-grid').innerHTML = `
-          <div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">
-            এই ছবির সাথে মিল এমন কোনো প্রোডাক্ট পাওয়া যায়নি।<br>
-            <small>ডাটাবেসে ${vectorCount} টি প্রোডাক্টের ভেক্টর পাওয়া গেছে।</small>
-          </div>`;
-      } else {
+      // 🚀 থ্রেশহোল্ড ০.৭০ (৭০%) করা হলো, কারণ আপনার পুরোনো কোডে এটাই ছিল
+      const threshold = 0.70; 
+      const bestMatches = results.filter(r => r.score >= threshold).map(r => r.product);
+
+      const grid = document.getElementById('cst-product-grid');
+      
+      if (bestMatches.length > 0) {
         // ম্যাচ পাওয়া গেলে গ্রিডে দেখানো
         renderFilteredProductsToGrid(bestMatches);
+      } else {
+        // ম্যাচ না পেলে সবচেয়ে কাছাকাছি ফলাফলটি দেখানো (ডিবাগিং এর জন্য)
+        let closestName = results.length > 0 ? `${results[0].product.name} (${(results[0].score*100).toFixed(1)}%)` : "কিছুই না";
+        grid.innerHTML = `
+          <div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">
+            এই ছবির সাথে ৭০% মিল এমন কোনো প্রোডাক্ট পাওয়া যায়নি।<br>
+            <small>ডাটাবেসে ${vectorCount} টি প্রোডাক্টের ভেক্টর আছে।</small><br>
+            <small style="color:#d93025;">সবচেয়ে কাছাকাছি ম্যাচ: ${closestName}</small>
+          </div>`;
       }
     } catch (error) {
       console.error("Image Search Error:", error);
       alert("ছবি সার্চে সমস্যা হয়েছে!");
     }
   };
+
+   // 🚀 ভেক্টর সিমিলারিটি ক্যালকুলেট করার হেল্পার ফাংশন (Cosine Similarity)
+  function calculateVectorSimilarity(vecA, vecB) {
+      let dotProduct = 0;
+      let normA = 0;
+      let normB = 0;
+      for (let i = 0; i < vecA.length; i++) {
+          dotProduct += vecA[i] * vecB[i];
+          normA += vecA[i] * vecA[i];
+          normB += vecB[i] * vecB[i];
+      }
+      if (normA === 0 || normB === 0) return 0;
+      return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  }
+
 
 // ৪. প্রোডাক্ট গ্রিড রেন্ডার করার হেল্পার ফাংশন
 function renderFilteredProductsToGrid(products) {
@@ -8413,6 +8418,7 @@ window.submitCatalogRequest = async function() {
   }
 };
 
+ 
 </script>
 
 <!-- Live Tracking Modal (Customer) -->
