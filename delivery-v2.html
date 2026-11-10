@@ -5667,12 +5667,29 @@ window.openEditMasterProduct = async function(id) {
       document.getElementById('ep-name').value = p.name || '';
       
       // ক্যাটাগরি লোড করা
+      // 🚀 ক্যাটাগরি ড্রপডাউনে সব ক্যাটাগরি লোড করা
       const catSelect = document.getElementById('ep-category');
-      catSelect.innerHTML = ''; // আগের অপশন ক্লিয়ার
-      if (!Array.from(catSelect.options).some(o => o.value === p.category)) {
-        catSelect.add(new Option(p.category, p.category));
+      catSelect.innerHTML = '<option value="">লোড হচ্ছে...</option>';
+
+      try {
+          const catSnap = await getDocs(collection(db, "categories"));
+          catSelect.innerHTML = ''; // আগের অপশন ক্লিয়ার
+          
+          catSnap.forEach(cDoc => {
+              const catName = cDoc.data().name;
+              // যদি ডেটাবেসের ক্যাটাগরিটি প্রোডাক্টের ক্যাটাগরির সাথে মিলে, তবে সেটি সিলেক্টেড থাকবে
+              catSelect.innerHTML += `<option value="${catName}" ${p.category === catName ? 'selected' : ''}>${catName}</option>`;
+          });
+
+          // যদি প্রোডাক্টের ক্যাটাগরি ডেটাবেসের লিস্টে না থাকে (পুরোনো বা কাস্টম ক্যাটাগরি হলে)
+          if(!Array.from(catSelect.options).some(o => o.value === p.category)) {
+              catSelect.innerHTML += `<option value="${p.category}" selected>${p.category}</option>`;
+          }
+      } catch (error) {
+          console.error("Category load error:", error);
+          // এরর হলে ডিফল্টভাবে আগের ক্যাটাগরি দেখাবে
+          catSelect.innerHTML = `<option value="${p.category}" selected>${p.category}</option>`;
       }
-      catSelect.value = p.category;
 
       // ছবি সেট করা (যদি থাকে)
       uploadedImageUrl = p.image || null;
@@ -5909,7 +5926,7 @@ window.searchPinUsers = async function() {
     currentUploadContext = context;
     let fileInput;
     
-    // 🚀 req-prod কনটেক্সট যোগ করা হলো
+    // 🚀 সব কনটেক্সটের জন্য সঠিক ইনপুট আইডি ম্যাপিং
     if (context === 'mp') fileInput = document.getElementById('mp-image-input');
     else if (context === 'edit-mp') fileInput = document.getElementById('ep-image-input');
     else if (context === 'ad') fileInput = document.getElementById('ad-image-input');
@@ -5920,7 +5937,7 @@ window.searchPinUsers = async function() {
     
     if (!fileInput) {
         console.error("File input not found for context:", context);
-        return;
+        return alert("ছবি আপলোডের ইনপুট পাওয়া যায়নি!");
     }
 
     if (source === 'camera') fileInput.setAttribute('capture', 'environment');
@@ -6766,8 +6783,15 @@ window.clearImageSearch = function() {
     }
 
     // খ) প্রোডাক্ট রিকোয়েস্ট লিসেনার
+    // খ) প্রোডাক্ট রিকোয়েস্ট লিসেনার
     const prodContainer = document.getElementById('admin-prod-req-container');
     if(prodContainer) {
+        // 🚀 প্রথমে সব ক্যাটাগরি লোড করে নেয়া
+        let allCats = [];
+        onSnapshot(collection(db, "categories"), (catSnap) => {
+            catSnap.forEach(c => allCats.push(c.data().name));
+        });
+
         onSnapshot(query(collection(db, "product_requests"), orderBy("createdAt", "desc")), (snap) => {
           if (snap.empty) {
             prodContainer.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>';
@@ -6777,35 +6801,33 @@ window.clearImageSearch = function() {
           snap.forEach(docSnap => {
             const req = docSnap.data();
             
-            // ক্যাটাগরি ড্রপডাউন অপশন তৈরি (এডিট করার জন্য)
-            let catOptions = `<option value="${req.category}">${req.category}</option>`;
-            // (এখানে চাইলে সব ক্যাটাগরি লোড করা যাবে, তবে আপাতত ডিফল্ট দেখাচ্ছি)
+            // 🚀 ড্রপডাউনে সব ক্যাটাগরি অপশন তৈরি
+            let catOptions = '';
+            allCats.forEach(cat => {
+                catOptions += `<option value="${cat}" ${req.category === cat ? 'selected' : ''}>${cat}</option>`;
+            });
+            // যদি দোকানদারের দেওয়া ক্যাটাগরি লিস্টে না থাকে তবে সেটিও দেখাবে
+            if(!allCats.includes(req.category)) {
+                catOptions += `<option value="${req.category}" selected>${req.category} (নতুন)</option>`;
+            }
 
             html += `
               <div style="border: 1px solid #eee; border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fff;">
                 <div style="display: flex; gap: 10px; align-items: flex-start;">
-                  <!-- ছবি -->
                   <div style="width: 60px; height: 60px; border-radius: 6px; background: #f0f2f5; overflow: hidden; flex-shrink: 0; display: flex; justify-content: center; align-items: center;">
                     ${req.image ? `<img src="${req.image}" style="width:100%; height:100%; object-fit:cover;">` : '📦'}
                   </div>
-                  
-                  <!-- ডিটেইলস -->
                   <div style="flex: 1;">
                     <div style="font-size: 14px; font-weight: bold; margin-bottom: 5px;">${req.productName}</div>
                     <div style="font-size: 12px; color: #666; margin-bottom: 5px;">দোকান: ${req.shopName}</div>
-                    
-                    <!-- এডমিনের জন্য ক্যাটাগরি সিলেক্ট করার অপশন -->
                     <div style="display: flex; gap: 5px; align-items: center; margin-top: 8px;">
                       <span style="font-size: 11px;">ক্যাটাগরি:</span>
                       <select id="prod-req-cat-${docSnap.id}" class="dlv-input" style="padding: 4px; font-size: 12px; width: auto;">
                         ${catOptions}
-                        <!-- ভবিষ্যতে সব ক্যাটাগরির অপশন এখানে যুক্ত হবে -->
                       </select>
                     </div>
                   </div>
                 </div>
-                
-                <!-- অ্যাকশন বাটন -->
                 <div style="display: flex; gap: 5px; margin-top: 12px;">
                   <button onclick="approveProductRequest('${docSnap.id}')" style="flex: 1; background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:8px; font-size:12px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ করুন</button>
                   <button onclick="rejectProductRequest('${docSnap.id}')" style="flex: 1; background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:8px; font-size:12px; cursor:pointer; font-weight:bold;">❌ বাতিল করুন</button>
@@ -6816,7 +6838,6 @@ window.clearImageSearch = function() {
           prodContainer.innerHTML = html;
         });
     }
-  };
 
   // ৩. প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ করা (Master Products এ যোগ হবে)
   window.approveProductRequest = async function(reqId) {
