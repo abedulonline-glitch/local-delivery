@@ -6856,8 +6856,14 @@ window.clearImageSearch = function() {
   };
 
   // 🚀 প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ করার ফাংশন আপডেট
+  // 🚀 প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ করার ফাংশন (AI ভেক্টরসহ)
   window.approveProductRequest = async function(reqId) {
     if (!confirm("আপনি কি এই প্রোডাক্টটি অনুমোদন করতে চান?")) return;
+    
+    // বাটনের লোডিং স্টেট (ঐচ্ছিক)
+    const btn = document.querySelector(`button[onclick="approveProductRequest('${reqId}')"]`);
+    if(btn) { btn.innerText = "⏳ এআই প্রসেসিং..."; btn.disabled = true; }
+
     try {
       const reqRef = doc(db, "product_requests", reqId);
       const reqSnap = await getDoc(reqRef);
@@ -6867,34 +6873,57 @@ window.clearImageSearch = function() {
       
       let selectedCat = document.getElementById(`prod-req-cat-${reqId}`).value;
       
-      // 🚀 যদি অ্যাডমিন নতুন ক্যাটাগরি সিলেক্ট করে থাকে
+      // নতুন ক্যাটাগরি হ্যান্ডেল করা
       if (selectedCat === 'new_category') {
           const newCatName = document.getElementById(`new-cat-input-${reqId}`).value.trim();
           if (!newCatName) return alert("দয়া করে নতুন ক্যাটাগরির নাম লিখুন!");
           
-          // নতুন ক্যাটাগরি ডেটাবেসে যোগ করা
           await addDoc(collection(db, "categories"), {
               name: newCatName,
               createdAt: serverTimestamp()
           });
-          selectedCat = newCatName; // প্রোডাক্টের ক্যাটাগরি হিসেবে সেট করা
+          selectedCat = newCatName; 
       }
 
-      // মাস্টার প্রোডাক্টে যোগ করা
+      // 🚀 ১. AI ভেক্টর জেনারেশন লজিক শুরু
+      let generatedVectorStr = "";
+      
+      if (reqData.image && window.CLIPVisionModelWithProjection) {
+        try {
+          if (!window.clipProcessor) {
+            window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+            window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+          }
+          const image = await window.RawImage.fromURL(reqData.image);
+          const image_inputs = await window.clipProcessor(image);
+          const { image_embeds } = await window.clipVisionModel(image_inputs);
+          
+          // ভেক্টরকে স্ট্রিং এ কনভার্ট করা (Firestore এ সেভ করার জন্য)
+          const vectorArray = Array.from(image_embeds.data).slice(0, 256);
+          generatedVectorStr = JSON.stringify(vectorArray); 
+        } catch (err) { 
+          console.error("Vector Generation Error:", err); 
+        }
+      }
+
+      // 🚀 ২. মাস্টার প্রোডাক্টে সেভ করা (ভেক্টরসহ)
       await addDoc(collection(db, "master_products"), {
         name: reqData.productName,
         category: selectedCat,
         image: reqData.image || null,
-        imageVector: "", 
+        imageVector: generatedVectorStr, // এখানে ভেক্টরটি সেভ হচ্ছে
         createdAt: serverTimestamp()
       });
 
       // রিকোয়েস্ট ডিলিট করা
       await deleteDoc(reqRef);
       alert("✅ প্রোডাক্ট অনুমোদিত হয়েছে এবং মাস্টার ক্যাটালগে যুক্ত হয়েছে!");
+      
     } catch(e) {
       console.error(e);
       alert("অনুমোদন করতে সমস্যা হয়েছে!");
+    } finally {
+      if(btn) { btn.innerText = "✅ অ্যাপ্রুভ করুন"; btn.disabled = false; }
     }
   };
 
