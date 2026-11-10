@@ -4022,65 +4022,84 @@ window.saveShopLocation = async function() {
 };
 
   // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্ক ও এডিট বাটনসহ)
+  // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্ক ও এডিট বাটনসহ)
   window.openAddProductModal = function() {
-    document.getElementById('dlv-catalog-modal').classList.add('active');
-    const list = document.getElementById('catalog-list-container');
-    list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">লোড হচ্ছে...</div>';
+    try {
+      document.getElementById('dlv-catalog-modal').classList.add('active');
+      const list = document.getElementById('catalog-list-container');
+      if (!list) return alert("HTML-এ 'catalog-list-container' আইডি খুঁজে পাওয়া যায়নি!");
+      
+      list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">লোড হচ্ছে...</div>';
 
-    // দোকানদারের নিজের প্রোডাক্টগুলো খোঁজা
-    const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
-    
-    onSnapshot(myProductsQ, (mySnap) => {
-      // দোকানদার আগে থেকে কোন কোন মাস্টার প্রোডাক্ট অ্যাড করেছে, তার ডেটা ম্যাপ
-      const myAddedProducts = {};
-      mySnap.forEach(d => {
-        const p = d.data();
-        if(p.masterProductId) myAddedProducts[p.masterProductId] = { docId: d.id, ...p };
-      });
+      // দোকানদারের নিজের প্রোডাক্টগুলো খোঁজা
+      const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+      
+      onSnapshot(myProductsQ, (mySnap) => {
+        // দোকানদার আগে থেকে কোন কোন মাস্টার প্রোডাক্ট অ্যাড করেছে, তার ডেটা ম্যাপ
+        const myAddedProducts = {};
+        mySnap.forEach(d => {
+          const p = d.data();
+          if(p.masterProductId) myAddedProducts[p.masterProductId] = { docId: d.id, ...p };
+        });
 
-      // এবার অ্যাডমিনের মাস্টার প্রোডাক্টগুলো লোড করা
-      onSnapshot(collection(db, "master_products"), (masterSnap) => {
-        if(masterSnap.empty) {
-          list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
-          return;
-        }
-        
-        let html = '';
-        masterSnap.forEach(docSnap => {
-          const p = docSnap.data();
-          const masterId = docSnap.id;
+        // এবার অ্যাডমিনের মাস্টার প্রোডাক্টগুলো লোড করা
+        onSnapshot(collection(db, "master_products"), (masterSnap) => {
+          if(masterSnap.empty) {
+            list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
+            return;
+          }
           
-          // চেক করা হচ্ছে দোকানদার এটি আগেই অ্যাড করেছে কি না
-          const isAdded = myAddedProducts[masterId] ? true : false;
+          let html = '';
+          masterSnap.forEach(docSnap => {
+            const p = docSnap.data();
+            const masterId = docSnap.id;
+            
+            // চেক করা হচ্ছে দোকানদার এটি আগেই অ্যাড করেছে কি না
+            const isAdded = myAddedProducts[masterId] ? true : false;
 
-          // ডিফল্ট ইউনিট এবং গ্রেড 
-          const displayUnit = p.unit || 'pcs';
-          const displayGrade = p.grade || 'A';
+            // ডিফল্ট ইউনিট এবং গ্রেড
+            const displayUnit = p.unit || 'pcs';
+            const displayGrade = p.grade || 'A';
 
-          // 🚀 FIX: onclick-এ পুরো অবজেক্ট না পাঠিয়ে শুধু masterId পাঠানো হচ্ছে
-          html += `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px 10px; border-bottom: 1px solid #eee;">
-              <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:45px; height:45px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
-                  ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
+            // বাটনের লজিক (শুধু আইডি পাঠানো হচ্ছে)
+            let actionBtn = '';
+            if (isAdded) {
+              actionBtn = `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick="window.editShopProduct('${masterId}')">✏️ এডিট</button>`;
+            } else {
+              actionBtn = `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick="window.selectMasterProduct('${masterId}')">➕ রেট দিন</button>`;
+            }
+
+            html += `
+              <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px 10px; border-bottom: 1px solid #eee;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div style="width:45px; height:45px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
+                    ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
+                  </div>
+                  <div>
+                    <div style="font-size:14px; font-weight:600;">${p.name}</div>
+                    <div style="font-size:11px; color:#666;">${displayGrade} | ${displayUnit}</div>
+                  </div>
                 </div>
                 <div>
-                  <div style="font-size:14px; font-weight:600;">${p.name}</div>
-                  <div style="font-size:11px; color:#666;">${displayGrade} | ${displayUnit}</div>
+                  ${actionBtn}
                 </div>
               </div>
-              
-              <!-- 🚀 বাটনে শুধু masterId পাঠানো হলো -->
-              ${isAdded 
-                ? `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick="editShopProduct('${masterId}')">✏️ এডিট</button>`
-                : `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick="selectMasterProduct('${masterId}')">➕ রেট দিন</button>`
-              }
-            </div>
-          `;
+            `;
+          });
+          list.innerHTML = html;
+        }, (error) => {
+          console.error("Master products load error:", error);
+          list.innerHTML = `<div style="color: red; text-align: center; padding: 20px;">ডেটা লোড করতে সমস্যা: ${error.message}</div>`;
         });
-        list.innerHTML = html;
+      }, (error) => {
+        console.error("My products load error:", error);
+        list.innerHTML = `<div style="color: red; text-align: center; padding: 20px;">আপনার ডেটা লোড করতে সমস্যা: ${error.message}</div>`;
       });
-    });
+
+    } catch(e) {
+      console.error("Open Add Product Modal Error:", e);
+      alert("প্রোডাক্ট মডাল ওপেন করতে সমস্যা: " + e.message);
+    }
   };
    
   // ৩. এডিট করার জন্য ডেটা লোড করা
