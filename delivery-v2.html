@@ -5894,12 +5894,11 @@ window.searchPinUsers = async function() {
     else if (context === 'ad') fileInput = document.getElementById('ad-image-input');
     else if (context === 'reg') fileInput = document.getElementById('reg-profile-pic-file');
     else if (context === 'cp') fileInput = document.getElementById('cp-image-input');
-    else if (context === 'req-prod') fileInput = document.getElementById('req-prod-img-input'); 
+    else if (context === 'req-prod') fileInput = document.getElementById('req-prod-img-input');
     else fileInput = document.getElementById('add-p-image-file');
     
     if (!fileInput) {
         console.error("File input not found for context:", context);
-        alert("ছবি আপলোডের ইনপুট ফিল্ডটি পাওয়া যায়নি! কোড চেক করুন।");
         return;
     }
 
@@ -5918,10 +5917,7 @@ window.searchPinUsers = async function() {
       const cropModal = document.getElementById('dlv-crop-modal');
       const cropImage = document.getElementById('crop-image');
       
-      if(!cropModal || !cropImage) {
-          alert("ক্রপ মডালটি HTML-এ পাওয়া যায়নি!");
-          return;
-      }
+      if(!cropModal || !cropImage) return alert("ক্রপ মডালটি HTML-এ পাওয়া যায়নি!");
 
       cropModal.style.display = 'flex';
       cropImage.src = e.target.result;
@@ -5933,7 +5929,7 @@ window.searchPinUsers = async function() {
     };
     reader.readAsDataURL(file);
     
-    // 🚀 ইনপুট ভ্যালু রিসেট করা যাতে একই ছবি আবার সিলেক্ট করা যায়
+    // 🚀 ইনপুট ভ্যালু রিসেট করা (যাতে একই ছবি আবার সিলেক্ট করা যায়)
     event.target.value = ''; 
   };
 
@@ -5992,6 +5988,7 @@ window.searchPinUsers = async function() {
             icon.style.display = 'none';
           }
         }
+        // 🚀 নতুন: ক্যাটালগ রিকোয়েস্টের ছবি হ্যান্ডেল করা
         else if (currentUploadContext === 'req-prod') {
           reqUploadedImgUrl = uploadedUrl;
           const preview = document.getElementById('req-prod-img-preview');
