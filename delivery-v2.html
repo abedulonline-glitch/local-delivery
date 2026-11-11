@@ -4000,24 +4000,20 @@ window.saveShopLocation = async function() {
   }
 };
   // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্কসহ)
-// ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্ক ও এডিট বাটনসহ)
 window.openAddProductModal = function() {
   document.getElementById('dlv-catalog-modal').classList.add('active');
   const list = document.getElementById('catalog-list-container');
   list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">লোড হচ্ছে...</div>';
 
-  // দোকানদারের নিজের প্রোডাক্টগুলো খোঁজা
   const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
   
   onSnapshot(myProductsQ, (mySnap) => {
-    // দোকানদার আগে থেকে কোন কোন মাস্টার প্রোডাক্ট অ্যাড করেছে, তার ডেটা ম্যাপ
     const myAddedProducts = {};
     mySnap.forEach(d => {
       const p = d.data();
       if(p.masterProductId) myAddedProducts[p.masterProductId] = { docId: d.id, ...p };
     });
 
-    // এবার অ্যাডমিনের মাস্টার প্রোডাক্টগুলো লোড করা
     onSnapshot(collection(db, "master_products"), (masterSnap) => {
       if(masterSnap.empty) {
         list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
@@ -4028,12 +4024,9 @@ window.openAddProductModal = function() {
       masterSnap.forEach(docSnap => {
         const p = docSnap.data();
         const masterId = docSnap.id;
-        
-        // চেক করা হচ্ছে দোকানদার এটি আগেই অ্যাড করেছে কি না
         const isAdded = myAddedProducts[masterId] ? true : false;
         const myData = myAddedProducts[masterId];
 
-        // ডিফল্ট ইউনিট এবং গ্রেড (যেহেতু নতুন মাস্টার প্রোডাক্টে এগুলো নেই)
         const displayUnit = p.unit || myData?.unit || 'pcs';
         const displayGrade = p.grade || myData?.grade || 'A';
 
@@ -4049,7 +4042,6 @@ window.openAddProductModal = function() {
               </div>
             </div>
             
-            <!-- 🚀 এখানে এডিট এবং রেট দিন বাটনের লজিক -->
             ${isAdded 
               ? `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick='editShopProduct(${JSON.stringify(myData).replace(/'/g, "&#39;")}, "${masterId}")'>✏️ এডিট</button>`
               : `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick='selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;")}, "${masterId}")'>➕ রেট দিন</button>`
@@ -6716,84 +6708,90 @@ window.clearImageSearch = function() {
   // ==================== ADMIN REQUEST REVIEW LOGIC ====================
 
 // ১. ক্যাটাগরি ও প্রোডাক্ট রিকোয়েস্ট লোড করা
+// ==================== ADMIN REQUEST REVIEW LOGIC (FIXED) ====================
+let adminCategoriesList = [];
+
 function loadAdminRequests() {
-    // ক্যাটাগরি রিকোয়েস্ট
-    onSnapshot(query(collection(db, "category_requests"), orderBy("createdAt", "desc")), (snap) => {
-        const list = document.getElementById('admin-cat-req-list');
-        if (!list) return;
-        
-        if (snap.empty) {
-            list.innerHTML = '<div style="font-size: 12px; color: #999;">কোনো ক্যাটাগরি রিকোয়েস্ট নেই।</div>';
-            return;
-        }
-        
-        let html = '';
-        snap.forEach(docSnap => {
-            const req = docSnap.data();
-            html += `
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; background: #fff; margin-bottom: 5px; border-radius: 4px;">
-                <div>
-                  <div style="font-size: 13px; font-weight: 600; color: var(--mp-primary);">${req.categoryName}</div>
-                  <div style="font-size: 11px; color: #666;">দোকান: ${req.shopName}</div>
-                </div>
-                <div style="display: flex; gap: 5px;">
-                  <button onclick="approveCategory('${docSnap.id}', '${req.categoryName}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
-                  <button onclick="rejectCategory('${docSnap.id}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
-                </div>
-              </div>
-            `;
-        });
-        list.innerHTML = html;
-    });
+    // ১. আগে সব ক্যাটাগরি লোড করে রাখা
+    onSnapshot(collection(db, "categories"), (catSnap) => {
+        adminCategoriesList = [];
+        catSnap.forEach(doc => adminCategoriesList.push(doc.data().name));
 
-    // প্রোডাক্ট রিকোয়েস্ট
-    onSnapshot(query(collection(db, "product_requests"), orderBy("createdAt", "desc")), (snap) => {
-        const list = document.getElementById('admin-prod-req-list');
-        if (!list) return;
-        
-        if (snap.empty) {
-            list.innerHTML = '<div style="font-size: 12px; color: #999;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>';
-            return;
-        }
-        
-        let html = '';
-        snap.forEach(docSnap => {
-            const req = docSnap.data();
-            // ক্যাটাগরি অপশন তৈরি (সব ক্যাটাগরি লোড করে)
-            let catOptions = '<option value="">সিলেক্ট করুন</option>';
-            // এখানে একটি গ্লোবাল ভেরিয়েবল থেকে ক্যাটাগরি লিস্ট নিতে হবে, আপাতত শর্টকাট
-            document.querySelectorAll('#admin-cat-req-list option').forEach(opt => {
-                catOptions += `<option value="${opt.value}">${opt.value}</option>`;
+        // ২. ক্যাটাগরি রিকোয়েস্ট লোড
+        onSnapshot(query(collection(db, "category_requests"), orderBy("createdAt", "desc")), (snap) => {
+            const list = document.getElementById('admin-cat-req-list');
+            if (!list) return;
+            if (snap.empty) {
+                list.innerHTML = '<div style="font-size: 12px; color: #999;">কোনো ক্যাটাগরি রিকোয়েস্ট নেই।</div>';
+                return;
+            }
+            let html = '';
+            snap.forEach(docSnap => {
+                const req = docSnap.data();
+                html += `
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; background: #fff; margin-bottom: 5px; border-radius: 4px;">
+                    <div>
+                      <div style="font-size: 13px; font-weight: 600; color: var(--mp-primary);">${req.categoryName}</div>
+                      <div style="font-size: 11px; color: #666;">দোকান: ${req.shopName}</div>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                      <button onclick="approveCategory('${docSnap.id}', '${req.categoryName}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
+                      <button onclick="rejectCategory('${docSnap.id}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
+                    </div>
+                  </div>
+                `;
             });
-
-            html += `
-              <div style="padding: 10px; border: 1px solid #eee; border-radius: 6px; background: #fff; margin-bottom: 10px;">
-                <div style="display: flex; gap: 10px; align-items: center;">
-                  <div style="width: 40px; height: 40px; border-radius: 6px; background: #f0f2f5; overflow: hidden;">
-                    ${req.image ? `<img src="${req.image}" style="width:100%; height:100%; object-fit:cover;">` : '📦'}
-                  </div>
-                  <div style="flex: 1;">
-                    <div style="font-size: 14px; font-weight: bold;">${req.productName}</div>
-                    <div style="font-size: 11px; color: #666;">রিকোয়েস্টকারী: ${req.shopName}</div>
-                  </div>
-                </div>
-                
-                <!-- ক্যাটাগরি সিলেক্ট (অ্যাডমিন চাইলে পরিবর্তন করতে পারবে) -->
-                <div style="margin-top: 8px;">
-                  <label style="font-size: 11px; color: #555;">ক্যাটাগরি সেট করুন:</label>
-                  <select id="prod-req-cat-${docSnap.id}" class="dlv-input" style="padding: 4px; font-size: 12px; margin-top: 3px;">
-                    ${catOptions}
-                  </select>
-                </div>
-
-                <div style="display: flex; gap: 5px; margin-top: 8px;">
-                  <button onclick="approveProductRequest('${docSnap.id}', '${req.productName}', '${req.image || ''}')" style="flex: 2; background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px; font-size:12px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ করুন</button>
-                  <button onclick="rejectProductRequest('${docSnap.id}')" style="flex: 1; background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:6px; font-size:12px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
-                </div>
-              </div>
-            `;
+            list.innerHTML = html;
         });
-        list.innerHTML = html;
+
+        // ৩. প্রোডাক্ট রিকোয়েস্ট লোড
+        onSnapshot(query(collection(db, "product_requests"), orderBy("createdAt", "desc")), (snap) => {
+            const list = document.getElementById('admin-prod-req-list');
+            if (!list) return;
+            if (snap.empty) {
+                list.innerHTML = '<div style="font-size: 12px; color: #999;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>';
+                return;
+            }
+            
+            let html = '';
+            snap.forEach(docSnap => {
+                const req = docSnap.data();
+                
+                // 🚀 ড্রপডাউনে ক্যাটাগরি লিস্ট তৈরি
+                let catOptions = '<option value="" disabled selected>ক্যাটাগরি সিলেক্ট করুন</option>';
+                adminCategoriesList.forEach(cat => {
+                    let isSelected = (cat === req.category) ? 'selected' : ''; // যদি রিকোয়েস্টের সময় ক্যাটাগরি দেওয়া থাকে
+                    catOptions += `<option value="${cat}" ${isSelected}>${cat}</option>`;
+                });
+
+                html += `
+                  <div style="padding: 10px; border: 1px solid #eee; border-radius: 6px; background: #fff; margin-bottom: 10px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                      <div style="width: 40px; height: 40px; border-radius: 6px; background: #f0f2f5; overflow: hidden;">
+                        ${req.image ? `<img src="${req.image}" style="width:100%; height:100%; object-fit:cover;">` : '📦'}
+                      </div>
+                      <div style="flex: 1;">
+                        <div style="font-size: 14px; font-weight: bold;">${req.productName}</div>
+                        <div style="font-size: 11px; color: #666;">রিকোয়েস্টকারী: ${req.shopName}</div>
+                      </div>
+                    </div>
+                    
+                    <div style="margin-top: 8px;">
+                      <label style="font-size: 11px; color: #555;">ক্যাটাগরি সেট করুন:</label>
+                      <select id="prod-req-cat-${docSnap.id}" class="dlv-input" style="padding: 4px; font-size: 12px; margin-top: 3px;">
+                        ${catOptions}
+                      </select>
+                    </div>
+
+                    <div style="display: flex; gap: 5px; margin-top: 8px;">
+                      <button onclick="approveProductRequest('${docSnap.id}', '${req.productName}', '${req.image || ''}')" style="flex: 2; background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px; font-size:12px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ করুন</button>
+                      <button onclick="rejectProductRequest('${docSnap.id}')" style="flex: 1; background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:6px; font-size:12px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
+                    </div>
+                  </div>
+                `;
+            });
+            list.innerHTML = html;
+        });
     });
 }
 
@@ -8270,30 +8268,59 @@ window.rejectCategory = async function(reqId) {
     alert("রিকোয়েস্ট বাতিল হয়েছে!");
   } catch(e) { alert("সমস্যা হয়েছে!"); }
 };
-
-// 🚀 প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ
+  
+// 🚀 প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ এবং AI ভেক্টর জেনারেশন
 window.approveProductRequest = async function(reqId, prodName, prodImg) {
   const selectedCat = document.getElementById(`prod-req-cat-${reqId}`).value;
   if (!selectedCat) return alert("দয়া করে ক্যাটাগরি সিলেক্ট করুন!");
 
   if (!confirm(`"${prodName}" কে মাস্টার প্রোডাক্ট হিসেবে অ্যাপ্রুভ করবেন?`)) return;
   
+  const btn = event.target;
+  btn.innerText = "⏳ AI প্রসেসিং...";
+  btn.disabled = true;
+
+  let generatedVectorStr = "";
+
   try {
-    // ১. মাস্টার প্রোডাক্ট তৈরি
+    // 🚀 ১. AI ভেক্টর জেনারেশন (যদি ছবি থাকে)
+    if (prodImg && window.CLIPVisionModelWithProjection) {
+      try {
+        if (!window.clipProcessor) {
+          window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+          window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+        }
+        const image = await window.RawImage.fromURL(prodImg);
+        const image_inputs = await window.clipProcessor(image);
+        const { image_embeds } = await window.clipVisionModel(image_inputs);
+        const vectorArray = Array.from(image_embeds.data).slice(0, 256);
+        generatedVectorStr = JSON.stringify(vectorArray);
+      } catch (err) { 
+        console.warn("Vector Generation Failed:", err); 
+      }
+    }
+
+    // 🚀 ২. মাস্টার প্রোডাক্ট তৈরি
     await addDoc(collection(db, "master_products"), {
       name: prodName,
       category: selectedCat,
       image: prodImg,
+      imageVector: generatedVectorStr, // ভেক্টর সেভ
       createdAt: serverTimestamp()
     });
     
-    // ২. রিকোয়েস্ট ডিলিট
+    // 🚀 ৩. রিকোয়েস্ট ডিলিট
     await deleteDoc(doc(db, "product_requests", reqId));
     alert("✅ প্রোডাক্ট অ্যাপ্রুভ হয়েছে এবং মাস্টার লিস্টে যুক্ত হয়েছে!");
     
-  } catch(e) { console.error(e); alert("সমস্যা হয়েছে!"); }
+  } catch(e) { 
+    console.error(e); 
+    alert("সমস্যা হয়েছে!"); 
+  } finally {
+    btn.innerText = "✅ অ্যাপ্রুভ করুন";
+    btn.disabled = false;
+  }
 };
-
 // 🚀 প্রোডাক্ট রিকোয়েস্ট রিজেক্ট
 window.rejectProductRequest = async function(reqId) {
   if (!confirm("আপনি কি এই প্রোডাক্ট রিকোয়েস্টটি বাতিল করতে চান?")) return;
