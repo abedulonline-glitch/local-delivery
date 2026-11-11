@@ -6686,11 +6686,12 @@ window.clearImageSearch = function() {
   };
 
   // ৩. অ্যাডমিনের স্ক্রিনে রিকোয়েস্ট লোড করা
-  function loadAdminCategoryRequests() {
+   function loadAdminCategoryRequests() {
     const list = document.getElementById('admin-category-requests');
     if (!list) return;
 
-    onSnapshot(query(collection(db, "category_requests"), orderBy("createdAt", "desc")), (snap) => {
+    // 🚀 FIX: orderBy বাদ দিয়ে শুধু কালেকশন লিসেন করা হচ্ছে, যাতে কোনো ডেটা মিস না হয়
+    onSnapshot(collection(db, "category_requests"), (snap) => {
       if (snap.empty) {
         list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>';
         return;
@@ -8247,6 +8248,101 @@ window.submitCatalogRequest = async function() {
     } finally {
       btn.innerText = originalText; btn.disabled = false;
     }
+  };
+
+  // ==================== ADMIN PRODUCT REQUESTS LOGIC ====================
+
+  // ১. প্রোডাক্ট রিকোয়েস্ট লোড করা
+  function loadAdminProductRequests() {
+    const list = document.getElementById('admin-product-requests');
+    if (!list) return;
+
+    onSnapshot(collection(db, "product_requests"), (snap) => {
+      if (snap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>';
+        return;
+      }
+
+      let html = '';
+      snap.forEach(docSnap => {
+        const req = docSnap.data();
+        html += `
+          <div style="display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee; align-items: center;">
+            <!-- প্রোডাক্টের ছবি -->
+            <div style="width: 45px; height: 45px; border-radius: 6px; background: #f0f2f5; overflow: hidden; flex-shrink: 0;">
+              ${req.image ? `<img src="${req.image}" style="width:100%; height:100%; object-fit:cover;">` : '📦'}
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; font-weight: 600;">${req.productName}</div>
+              <div style="font-size: 11px; color: #666;">ক্যাটাগরি: ${req.category} | দোকান: ${req.shopName}</div>
+            </div>
+            <div style="display: flex; gap: 5px;">
+              <button onclick="approveProductRequest('${docSnap.id}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
+              <button onclick="rejectProductRequest('${docSnap.id}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
+            </div>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  }
+
+  // ২. প্রোডাক্ট অ্যাপ্রুভ করা (AI ভেক্টর জেনারেশন সহ)
+  window.approveProductRequest = async function(reqId) {
+    if(!confirm("এই প্রোডাক্টটি মাস্টার ক্যাটালগে যুক্ত করতে চান?")) return;
+    
+    try {
+      const reqRef = doc(db, "product_requests", reqId);
+      const reqSnap = await getDoc(reqRef);
+      if(!reqSnap.exists()) return;
+      const reqData = reqSnap.data();
+
+      // বাটন লোডিং স্টেট (ঐচ্ছিক)
+      alert("⏳ AI ভেক্টর তৈরি হচ্ছে, অপেক্ষা করুন...");
+
+      let generatedVectorStr = "";
+      if (reqData.image && window.CLIPVisionModelWithProjection) {
+        try {
+          if (!window.clipProcessor) {
+            window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+            window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+          }
+          const image = await window.RawImage.fromURL(reqData.image);
+          const image_inputs = await window.clipProcessor(image);
+          const { image_embeds } = await window.clipVisionModel(image_inputs);
+          const vectorArray = Array.from(image_embeds.data).slice(0, 256);
+          generatedVectorStr = JSON.stringify(vectorArray);
+        } catch (err) { console.warn("Vector generation failed:", err); }
+      }
+
+      // মাস্টার প্রোডাক্ট তৈরি
+      await addDoc(collection(db, "master_products"), {
+        name: reqData.productName,
+        category: reqData.category,
+        image: reqData.image || null,
+        imageVector: generatedVectorStr,
+        unit: 'pcs', // ডিফল্ট
+        grade: 'A',  // ডিফল্ট
+        createdAt: serverTimestamp()
+      });
+
+      // রিকোয়েস্ট ডিলিট
+      await deleteDoc(reqRef);
+      alert("✅ প্রোডাক্ট সফলভাবে মাস্টার লিস্টে যুক্ত হয়েছে!");
+
+    } catch(e) {
+      console.error(e);
+      alert("অ্যাপ্রুভ করতে সমস্যা হয়েছে!");
+    }
+  };
+
+  // ৩. প্রোডাক্ট রিজেক্ট করা
+  window.rejectProductRequest = async function(reqId) {
+    if(!confirm("আপনি কি এই প্রোডাক্ট রিকোয়েস্টটি বাতিল করতে চান?")) return;
+    try {
+      await deleteDoc(doc(db, "product_requests", reqId));
+      alert("রিকোয়েস্ট বাতিল করা হয়েছে।");
+    } catch(e) { alert("সমস্যা হয়েছে!"); }
   };
 
 </script>
