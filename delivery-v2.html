@@ -573,12 +573,12 @@
 <div id="dlv-view-shopkeeper" class="mp-hidden">
   <div class="dlv-dashboard-title">দোকানদার ড্যাশবোর্ড</div>
 
-  <!-- 🚀 SaaS Standalone Mode & Delivery Settings -->
+  <!-- 🚀 স্টোর সেটিংস ও কনফিগারেশন -->
   <div class="mp-card" style="border-left: 4px solid #7b1fa2;">
     <h3>⚙️ স্টোর সেটিংস</h3>
     
     <!-- 📍 স্টোর লোকেশন সেটিংস -->
-    <div class="mp-card" style="border-left: 4px solid var(--mp-danger);">
+    <div class="mp-card" style="border-left: 4px solid var(--mp-danger); margin-bottom: 15px;">
       <h3 style="justify-content: space-between;">
         📍 স্টোর লোকেশন
         <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openShopLocationModal()">লোকেশন সেট করুন</button>
@@ -589,20 +589,19 @@
     </div>
     
     <!-- 🚀 POS বাটন -->
-    <div class="mp-card" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: white; text-align: center; cursor: pointer;" onclick="openPOS()">
+    <div class="mp-card" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: white; text-align: center; cursor: pointer; margin-bottom: 15px;" onclick="openPOS()">
       <div style="font-size: 30px; margin-bottom: 5px;">📷</div>
       <h3 style="color: white; justify-content: center; margin: 0;">POS স্ক্যানার ও বিলিং</h3>
       <p style="font-size: 12px; opacity: 0.9; margin-top: 5px;">প্রোডাক্ট স্ক্যান করে সাথে সাথে বিল তৈরি করুন</p>
     </div>   
 
-    <!-- ২. Free Delivery Toggle -->
-    <!-- ২. Free Delivery Toggle -->
+    <!-- ফ্রি ডেলিভারি টগল -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee;">
       <div style="flex: 1; padding-right: 15px;">
         <div style="font-size: 14px; font-weight: bold; color: #0f9d58;">🎁 সবসময় ফ্রি ডেলিভারি</div>
-        <div style="font-size: 11px; color: #666; margin-top: 4px;">এটি অন করলে আপনার প্রোডাক্টে ডেলিভারি চার্জ ০ হবে (কাস্টমার খুশি হবে)।</div>
+        <div style="font-size: 11px; color: #666; margin-top: 4px;">এটি অন করলে আপনার প্রোডাক্টে ডেলিভারি চার্জ ০ হবে।</div>
         
-        <!-- 🚀 নতুন নোটিশ বক্স (শুধু অ্যাডমিন গ্লোবাল ফ্রি ডেলিভারি অন থাকলে দেখাবে) -->
+        <!-- গ্লোবাল ফ্রি ডেলিভারি নোটিশ -->
         <div id="global-free-notice" class="mp-hidden" style="margin-top: 6px; font-size: 10px; color: #d93025; background: #fce8e6; padding: 4px 8px; border-radius: 4px; display: inline-block;">
           ⚠️ বর্তমানে অ্যাডমিন সবার জন্য ফ্রি ডেলিভারি চালু রেখেছেন।
         </div>
@@ -613,11 +612,11 @@
       </label>
     </div>
 
-    <!-- ৩. Self Delivery Toggle -->
+    <!-- নিজস্ব ডেলিভারি বয় টগল -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee;">
       <div style="flex: 1; padding-right: 15px;">
         <div style="font-size: 14px; font-weight: bold; color: var(--mp-primary);">নিজস্ব ডেলিভারি বয়</div>
-        <div style="font-size: 11px; color: #666; margin-top: 4px;">এটি অন করলে অর্ডার ডেলিভারি বয়দের কাছে বিড হবে না, আপনি নিজেই ডেলিভারি দেবেন।</div>
+        <div style="font-size: 11px; color: #666; margin-top: 4px;">এটি অন করলে আপনি নিজেই ডেলিভারি দেবেন।</div>
       </div>
       <label class="dlv-switch" style="margin: 0;">
         <input type="checkbox" id="toggle-self-delivery" onchange="handleSelfDeliveryToggle(this.checked)">
@@ -625,14 +624,13 @@
       </label>
     </div>
     
-
-    <!-- 🚀 Bulk Discount Toggle (এখানে বসানো হলো) -->
+    <!-- বাল্ক ডিসকাউন্ট টগল -->
     <div style="display: flex; justify-content: space-between; align-items: center;">
       <div>
         <div style="font-size: 14px; font-weight: bold; color: #d93025;">🎁 বাল্ক ডিসকাউন্ট</div>
         <div style="font-size: 11px; color: #666;">কাস্টমারকে বেশি কিনতে উদ্বুদ্ধ করতে ডিসকাউন্ট দিন।</div>
       </div>
-      <label class="dlv-switch">
+      <label class="dlv-switch" style="margin: 0;">
         <input type="checkbox" id="toggle-bulk-discount" onchange="handleBulkDiscountToggle(this.checked, this)">
         <span class="dlv-slider" style="--mp-success: #d93025;"></span>
       </label>
@@ -642,14 +640,14 @@
   <!-- ব্যাজ স্ট্যাটাস ও টগল -->
   <div class="mp-card" style="border-left: 4px solid var(--mp-primary); background: #e8f0fe;">
     <h3>🌟 আপনার দোকানের স্ট্যাটাস</h3>
-    <p style="font-size: 12px; color: #555; margin-bottom: 15px;">বেশি কাস্টমার পেতে ব্যাজ চালু করুন। ব্যাজ চালু করলে কাস্টমার সার্চে আপনার দোকান সবার উপরে থাকবে।</p>
+    <p style="font-size: 12px; color: #555; margin-bottom: 15px;">বেশি কাস্টমার পেতে ব্যাজ চালু করুন।</p>
     
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
       <div>
         <div style="font-size: 14px; font-weight: bold;">🌟 প্রিমিয়াম ব্যাজ</div>
         <div style="font-size: 11px; color: #666;">ফি: ₹৫০০ / ৩০ দিন</div>
       </div>
-      <label class="dlv-switch">
+      <label class="dlv-switch" style="margin: 0;">
         <input type="checkbox" id="toggle-premium" onchange="handleBadgeToggle('isPremium', this.checked, 500, this)">
         <span class="dlv-slider"></span>
       </label>
@@ -660,7 +658,7 @@
         <div style="font-size: 14px; font-weight: bold;">✅ ভেরিফাইড ব্যাজ</div>
         <div style="font-size: 11px; color: #666;">ফি: ₹২০০ / ৩০ দিন</div>
       </div>
-      <label class="dlv-switch">
+      <label class="dlv-switch" style="margin: 0;">
         <input type="checkbox" id="toggle-verified" onchange="handleBadgeToggle('isVerified', this.checked, 200, this)">
         <span class="dlv-slider"></span>
       </label>
@@ -672,44 +670,35 @@
     <h3>🏷️ বারকোড প্রিন্ট সেন্টার (প্ল্যান)</h3>
     <p style="font-size: 12px; color: #666; margin-bottom: 10px;">বারকোড জেনারেট ও প্রিন্ট করতে এই প্ল্যানটি চালু করুন।</p>
     
-    <div id="barcode-plan-status" style="margin-bottom: 10px;">
-      <!-- JS দিয়ে এখানে স্ট্যাটাস দেখাবে -->
-    </div>
-
+    <div id="barcode-plan-status" style="margin-bottom: 10px;"></div>
     <div id="barcode-plan-buy-btn" style="display: none;">
       <button class="mp-btn mp-btn-success" onclick="buyBarcodePlan()">🚀 বারকোড প্ল্যান চালু করুন (₹১০০/মাস)</button>
     </div>
   </div>
 
-  <!-- নতুন অর্ডার (পেন্ডিং) -->
+  <!-- 🔔 নতুন অর্ডার (পেন্ডিং) -->
   <div class="mp-card" style="border-left: 4px solid var(--mp-danger);">
     <h3>🔔 নতুন অর্ডার (পেন্ডিং)</h3>
     <div id="shop-new-orders-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
   </div>
 
-       <!-- নতুন অর্ডার (পেন্ডিং) -->
-      <div class="mp-card" style="border-left: 4px solid var(--mp-danger);">
-        <h3>🔔 নতুন অর্ডার (পেন্ডিং)</h3>
-        <div id="shop-new-orders-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
-      </div>
+  <!-- ⏳ চলমান অর্ডার (Preparing) -->
+  <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
+    <h3>⏳ প্রস্তুত হচ্ছে / চলমান অর্ডার</h3>
+    <div id="shop-preparing-orders-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
+  </div>
 
-      <!-- চলমান অর্ডার (Preparing) -->
-      <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
-        <h3>⏳ প্রস্তুত হচ্ছে / চলমান অর্ডার</h3>
-        <div id="shop-preparing-orders-list"><div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div></div>
-      </div>
-
-      <!-- 🚀 নতুন: অর্ডার হিস্ট্রি -->
-      <div class="mp-card" style="border-left: 4px solid #5f6368; margin-top: 15px;">
-        <h3 style="color: #5f6368;">📜 অর্ডার হিস্ট্রি</h3>
-        <div id="shop-history-orders-list" style="max-height: 200px; overflow-y: auto;">
-            <div style="text-align: center; color: #999; font-size: 13px;">কোনো হিস্ট্রি নেই।</div>
-        </div>
-      </div>
+  <!-- 📜 অর্ডার হিস্ট্রি -->
+  <div class="mp-card" style="border-left: 4px solid #5f6368; margin-top: 15px;">
+    <h3 style="color: #5f6368;">📜 অর্ডার হিস্ট্রি</h3>
+    <div id="shop-history-orders-list" style="max-height: 200px; overflow-y: auto;">
+        <div style="text-align: center; color: #999; font-size: 13px;">কোনো হিস্ট্রি নেই।</div>
+    </div>
+  </div>
   
-  <!-- প্রোডাক্ট লিস্ট -->
+  <!-- 📦 প্রোডাক্ট লিস্ট -->
   <div class="mp-card">
-    <h3 style="justify-content: space-between;">
+    <h3 style="justify-content: space-between; flex-wrap: wrap; gap:5px;">
       📦 আমার প্রোডাক্ট লিস্ট
       <div style="display: flex; gap: 5px;">
         <button class="mp-btn mp-btn-primary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px;" onclick="openAddProductModal()">+ Add</button>
@@ -720,59 +709,57 @@
     <div id="shop-product-list"></div>
   </div>
 
-  <!-- 🚀 নতুন: ইউনিফাইড ক্যাটালগ রিকোয়েস্ট ফর্ম -->
-<div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
-  <h3>💡 নতুন আইটেম বা ক্যাটাগরি সাজেস্ট করুন</h3>
-  <p style="font-size: 12px; color: #666; margin-bottom: 15px;">আপনার কাঙ্ক্ষিত পণ্য আমাদের ক্যাটালগে নেই? অ্যাডমিনের কাছে সাজেস্ট করুন।</p>
-  
-  <div class="dlv-form-group">
-    <label>আপনি কী সাজেস্ট করতে চান?</label>
-    <select id="req-type" class="dlv-input" onchange="toggleReqForm()">
-      <option value="product">📦 নতুন প্রোডাক্ট</option>
-      <option value="category">🗂️ নতুন ক্যাটাগরি</option>
-    </select>
-  </div>
-
-  <!-- নতুন ক্যাটাগরির জন্য ফর্ম (প্রথমে হাইড থাকবে) -->
-  <div id="req-cat-form" class="mp-hidden">
+  <!-- 🚀 নতুন: ক্যাটালগ রিকোয়েস্ট ফর্ম -->
+  <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
+    <h3>💡 নতুন আইটেম বা ক্যাটাগরি সাজেস্ট করুন</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">আপনার কাঙ্ক্ষিত পণ্য আমাদের ক্যাটালগে নেই? অ্যাডমিনের কাছে সাজেস্ট করুন।</p>
+    
     <div class="dlv-form-group">
-      <label>নতুন ক্যাটাগরির নাম</label>
-      <input type="text" id="req-new-cat-name" class="dlv-input" placeholder="যেমন: ডেইরি ফার্ম">
-    </div>
-  </div>
-
-  <!-- নতুন প্রোডাক্টের জন্য ফর্ম -->
-  <div id="req-prod-form">
-    <div class="dlv-form-group">
-      <label>প্রোডাক্টের নাম *</label>
-      <input type="text" id="req-prod-name" class="dlv-input" placeholder="যেমন: আমুল মাখন">
-    </div>
-
-    <div class="dlv-form-group">
-      <label>ক্যাটাগরি *</label>
-      <!-- ড্রপডাউনে ডাইনামিক ক্যাটাগরি এবং নতুন ক্যাটাগরি যোগের অপশন -->
-      <select id="req-prod-cat" class="dlv-input" onchange="handleReqCatChange(this.value)">
-        <!-- JS দিয়ে অপশন লোড হবে -->
+      <label>আপনি কী সাজেস্ট করতে চান?</label>
+      <select id="req-type" class="dlv-input" onchange="toggleReqForm()">
+        <option value="product">📦 নতুন প্রোডাক্ট</option>
+        <option value="category">🗂️ নতুন ক্যাটাগরি</option>
       </select>
-      <!-- নতুন ক্যাটাগরি টাইপ করার ইনপুট (প্রথমে হাইড) -->
-      <input type="text" id="req-new-cat-inline" class="dlv-input mp-hidden" placeholder="নতুন ক্যাটাগরির নাম লিখুন" style="margin-top: 5px;">
     </div>
 
-    <div class="dlv-form-group">
-      <label>প্রোডাক্টের ছবি (ঐচ্ছিক)</label>
-      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'req-prod')">📷 ক্যামেরা</button>
-        <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'req-prod')">🖼️ গ্যালারি</button>
+    <!-- নতুন ক্যাটাগরির জন্য ফর্ম -->
+    <div id="req-cat-form" class="mp-hidden">
+      <div class="dlv-form-group">
+        <label>নতুন ক্যাটাগরির নাম</label>
+        <input type="text" id="req-new-cat-name" class="dlv-input" placeholder="যেমন: ডেইরি ফার্ম">
       </div>
-      <img id="req-prod-img-preview" style="width: 100%; height: 100px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
-      <input type="file" id="req-prod-img-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'req-prod')">
     </div>
-  </div>
 
-  <button class="mp-btn mp-btn-primary" onclick="submitCatalogRequest()">📩 অ্যাডমিনের কাছে পাঠান</button>
-</div>
+    <!-- নতুন প্রোডাক্টের জন্য ফর্ম -->
+    <div id="req-prod-form">
+      <div class="dlv-form-group">
+        <label>প্রোডাক্টের নাম *</label>
+        <input type="text" id="req-prod-name" class="dlv-input" placeholder="যেমন: আমুল মাখন">
+      </div>
+
+      <div class="dlv-form-group">
+        <label>ক্যাটাগরি *</label>
+        <select id="req-prod-cat" class="dlv-input" onchange="handleReqCatChange(this.value)">
+          <!-- JS দিয়ে অপশন লোড হবে -->
+        </select>
+        <input type="text" id="req-new-cat-inline" class="dlv-input mp-hidden" placeholder="নতুন ক্যাটাগরির নাম লিখুন" style="margin-top: 5px;">
+      </div>
+
+      <div class="dlv-form-group">
+        <label>প্রোডাক্টের ছবি (ঐচ্ছিক)</label>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+          <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'req-prod')">📷 ক্যামেরা</button>
+          <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'req-prod')">🖼️ গ্যালারি</button>
+        </div>
+        <img id="req-prod-img-preview" style="width: 100%; height: 100px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
+        <input type="file" id="req-prod-img-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'req-prod')">
+      </div>
+    </div>
+
+    <button class="mp-btn mp-btn-primary" onclick="submitCatalogRequest()">📩 অ্যাডমিনের কাছে পাঠান</button>
+  </div>
   
-  <!-- দোকানের খাতা -->
+  <!-- 📒 দোকানের খাতা -->
   <div class="mp-card">
     <h3 style="justify-content: space-between;">
       📒 দোকানের খাতা
@@ -781,8 +768,8 @@
     <div style="font-size: 13px; color: var(--mp-text-light);">মোট বাকি: <strong id="shop-total-due" style="color: var(--mp-danger); font-size: 16px;">₹0.00</strong></div>
   </div>
 </div>
-   
-  <!-- 🚀 Shopkeeper Prep Time Modal -->
+
+<!-- 🚀 Shopkeeper Prep Time Modal -->
 <div id="dlv-prep-time-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="text-align: center;">
     <h3 style="color: var(--mp-primary); margin-bottom: 10px;">⏱️ প্রস্তুতির সময়</h3>
@@ -791,10 +778,10 @@
     <input type="hidden" id="prep-order-id">
     
     <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
-      <button class="mp-btn" style="width: 60px; padding: 10px 0; background: #e8f0fe; color: var(--mp-primary);" onclick="setPrepTime(10)">১০</button>
-      <button class="mp-btn" style="width: 60px; padding: 10px 0; background: #e8f0fe; color: var(--mp-primary);" onclick="setPrepTime(15)">১৫</button>
-      <button class="mp-btn" style="width: 60px; padding: 10px 0; background: #e8f0fe; color: var(--mp-primary);" onclick="setPrepTime(20)">২০</button>
-      <button class="mp-btn" style="width: 60px; padding: 10px 0; background: #e8f0fe; color: var(--mp-primary);" onclick="setPrepTime(30)">৩০</button>
+      <button class="mp-btn" style="width: 60px; padding: 10px 0; background: #e8f0fe; color: var(--mp-primary); margin:0;" onclick="setPrepTime(10)">১০</button>
+      <button class="mp-btn" style="width: 60px; padding: 10px 0; background: #e8f0fe; color: var(--mp-primary); margin:0;" onclick="setPrepTime(15)">১৫</button>
+      <button class="mp-btn" style="width: 60px; padding: 10px 0; background: #e8f0fe; color: var(--mp-primary); margin:0;" onclick="setPrepTime(20)">২০</button>
+      <button class="mp-btn" style="width: 60px; padding: 10px 0; background: #e8f0fe; color: var(--mp-primary); margin:0;" onclick="setPrepTime(30)">৩০</button>
     </div>
     
     <button class="mp-btn" onclick="document.getElementById('dlv-prep-time-modal').classList.remove('active')" style="background: #f0f2f5; color: #333;">বাতিল</button>
@@ -1062,12 +1049,11 @@
           <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
         </div>
 
-        <!-- নতুন ক্যাটাগরি রিকোয়েস্ট -->
-        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
-        <div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
-          <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
+        <!-- 🚀 নতুন: দোকানদারদের ক্যাটালগ রিকোয়েস্ট -->
+        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের প্রোডাক্ট রিকোয়েস্ট</h4>
+        <div id="admin-product-requests" style="max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
+          <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
         </div>
-      </div>
   
   <!-- 🚀 সার্চ বার -->
   <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
@@ -8173,6 +8159,138 @@ window.submitCatalogRequest = async function() {
     alert("সাবমিট করতে সমস্যা হয়েছে!");
   }
 };
+
+  // ==================== SMART CATALOG REQUEST LOGIC ====================
+
+  // ১. দোকানদার সাজেশন পাঠাবে
+  window.sendProductSuggestion = async function() {
+    const name = document.getElementById('shop-req-prod-name').value.trim();
+    const category = document.getElementById('shop-req-cat-name').value.trim();
+    const image = uploadedImageUrl || null; 
+
+    if (!name || !category) return alert("প্রোডাক্টের নাম এবং ক্যাটাগরি অবশ্যই দিতে হবে!");
+
+    try {
+      await addDoc(collection(db, "product_requests"), {
+        shopId: currentUser.uid,
+        shopName: globalUserData.name,
+        productName: name,
+        category: category,
+        image: image,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+      
+      alert("✅ আপনার সাজেশন অ্যাডমিনের কাছে পাঠানো হয়েছে!");
+      document.getElementById('shop-req-prod-name').value = '';
+      document.getElementById('shop-req-cat-name').value = '';
+      document.getElementById('shop-req-image-preview').style.display = 'none';
+      uploadedImageUrl = null; // গ্লোবাল ভেরিয়েবল রিসেট
+
+    } catch(e) { 
+      console.error(e); 
+      alert("সাজেশন পাঠাতে সমস্যা হয়েছে!"); 
+    }
+  };
+
+  // ২. অ্যাডমিন প্যানেলে রিকোয়েস্ট লোড করা
+  function loadProductRequests() {
+    const list = document.getElementById('admin-product-requests');
+    if (!list) return;
+
+    onSnapshot(query(collection(db, "product_requests"), orderBy("createdAt", "desc")), (snap) => {
+      if (snap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>';
+        return;
+      }
+
+      let html = '';
+      snap.forEach(docSnap => {
+        const req = docSnap.data();
+        html += `
+          <div style="display: flex; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; align-items: center;">
+            <div style="width: 40px; height: 40px; border-radius: 6px; overflow: hidden; background: #f0f2f5; flex-shrink: 0;">
+              ${req.image ? `<img src="${req.image}" style="width:100%; height:100%; object-fit:cover;">` : '📦'}
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; font-weight: 600; color: var(--mp-primary);">${req.productName}</div>
+              <div style="font-size: 11px; color: #666;">ক্যাটাগরি: ${req.category} | দোকান: ${req.shopName}</div>
+            </div>
+            <div style="display: flex; gap: 5px;">
+              <button onclick="approveProductRequest('${docSnap.id}', '${req.productName}', '${req.category}', '${req.image}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
+              <button onclick="rejectProductRequest('${docSnap.id}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
+            </div>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  }
+
+  // ৩. অ্যাডমিন অ্যাপ্রুভ করলে (AI ভেক্টরসহ মাস্টার প্রোডাক্টে সেভ)
+  window.approveProductRequest = async function(reqId, productName, category, image) {
+    if (!confirm(`"${productName}" প্রোডাক্টটি ক্যাটালগে যুক্ত করবেন?`)) return;
+    
+    const btn = event.target;
+    btn.innerText = "⏳...";
+    btn.disabled = true;
+
+    try {
+      let generatedVectorStr = "";
+
+      // 🚀 AI ভেক্টর জেনারেশন (যদি ছবি থাকে)
+      if (image && window.CLIPVisionModelWithProjection) {
+        try {
+          if (!window.clipProcessor) {
+            window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+            window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+          }
+          const imgData = await window.RawImage.fromURL(image);
+          const image_inputs = await window.clipProcessor(imgData);
+          const { image_embeds } = await window.clipVisionModel(image_inputs);
+          const vectorArray = Array.from(image_embeds.data).slice(0, 256);
+          generatedVectorStr = JSON.stringify(vectorArray); 
+        } catch (err) { console.warn("Vector Generation Failed:", err); }
+      }
+
+      // ১. মাস্টার প্রোডাক্টে সেভ করা
+      await addDoc(collection(db, "master_products"), {
+        name: productName,
+        category: category,
+        image: image || null,
+        imageVector: generatedVectorStr,
+        createdAt: serverTimestamp()
+      });
+
+      // ২. ক্যাটাগরি লিস্টে চেক করা, যদি না থাকে তবে নতুন ক্যাটাগরি তৈরি করা
+      const catQ = query(collection(db, "categories"), where("name", "==", category));
+      const catSnap = await getDocs(catQ);
+      if (catSnap.empty) {
+        await addDoc(collection(db, "categories"), { name: category, createdAt: serverTimestamp() });
+      }
+
+      // ৩. রিকোয়েস্টটি ডিলিট করা
+      await deleteDoc(doc(db, "product_requests", reqId));
+      
+      alert("✅ প্রোডাক্টটি সফলভাবে ক্যাটালগে যুক্ত হয়েছে!");
+
+    } catch(e) {
+      console.error(e);
+      alert("অ্যাপ্রুভ করতে সমস্যা হয়েছে!");
+    } finally {
+      btn.innerText = "✅ অ্যাপ্রুভ";
+      btn.disabled = false;
+    }
+  };
+
+  // ৪. অ্যাডমিন রিজেক্ট করলে
+  window.rejectProductRequest = async function(reqId) {
+    if (!confirm("আপনি কি এই রিকোয়েস্টটি বাতিল করতে চান?")) return;
+    try {
+      await deleteDoc(doc(db, "product_requests", reqId));
+      alert("রিকোয়েস্ট বাতিল করা হয়েছে।");
+    } catch(e) { alert("সমস্যা হয়েছে!"); }
+  };
 
 </script>
 
