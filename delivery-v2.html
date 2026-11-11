@@ -6698,7 +6698,29 @@ window.clearImageSearch = function() {
     } catch(e) { console.error(e); alert("সাজেশন পাঠাতে সমস্যা হয়েছে!"); }
   };
 
-  // ২. রিকোয়েস্টগুলো UI-তে রেন্ডার করা
+  // ==================== UNIVERSAL REQUEST MANAGEMENT (ADMIN) ====================
+  
+  // ৩. অ্যাডমিনের স্ক্রিনে রিকোয়েস্ট লোড করা (ক্যাটাগরি এবং প্রোডাক্ট)
+  function loadAdminCategoryRequests() {
+    const list = document.getElementById('admin-request-list');
+    if (!list) return;
+
+    // ক) ক্যাটাগরি রিকোয়েস্ট লিসেনার
+    onSnapshot(query(collection(db, "category_requests"), orderBy("createdAt", "desc")), (catSnap) => {
+      
+      // খ) প্রোডাক্ট রিকোয়েস্ট লিসেনার
+      onSnapshot(query(collection(db, "product_requests"), orderBy("createdAt", "desc")), (prodSnap) => {
+        
+        // ক্যাটাগরি লোড করা (প্রোডাক্টের ক্যাটাগরি সিলেক্ট করার জন্য)
+        getDocs(collection(db, "categories")).then(catDocs => {
+            let loadedCategories = catDocs.docs.map(d => d.data().name);
+            renderAdminRequests(catSnap, prodSnap, loadedCategories);
+        });
+      });
+    });
+  }
+
+  // ৪. রিকোয়েস্টগুলো UI-তে রেন্ডার করা
   function renderAdminRequests(catSnap, prodSnap, categories) {
     const list = document.getElementById('admin-request-list');
     if(catSnap.empty && prodSnap.empty) {
@@ -6768,7 +6790,7 @@ window.clearImageSearch = function() {
     list.innerHTML = html;
   }
 
-  // ৩. প্রোডাক্ট অ্যাপ্রুভ করা (AI ভেক্টরসহ)
+  // ৫. প্রোডাক্ট অ্যাপ্রুভ করা (AI ভেক্টরসহ)
   window.approveProductRequest = async function(reqId, prodName, imageUrl) {
     const selectedCat = document.getElementById(`req-cat-select-${reqId}`).value;
     if(!selectedCat) return alert("দয়া করে একটি ক্যাটাগরি সিলেক্ট করুন!");
@@ -6819,8 +6841,30 @@ window.clearImageSearch = function() {
       btn.innerText = originalText; btn.disabled = false;
     }
   };
-                          
-  // 🚀 ইউনিট অনুযায়ী লেবেল পরিবর্তন করার ফাংশন
+
+  // ৬. ক্যাটাগরি অ্যাপ্রুভ করা
+  window.approveCategory = async function(reqId, catName) {
+    if (!confirm(`"${catName}" ক্যাটাগরিটি অ্যাপ্রুভ করবেন?`)) return;
+    try {
+      await addDoc(collection(db, "categories"), {
+        name: catName,
+        createdAt: serverTimestamp()
+      });
+      await deleteDoc(doc(db, "category_requests", reqId));
+      alert("ক্যাটাগরি অ্যাপ্রুভ হয়েছে!");
+    } catch(e) { console.error(e); alert("সমস্যা হয়েছে!"); }
+  };
+
+  // ৭. রিজেক্ট করা (কমন ফাংশন)
+  window.rejectRequest = async function(collectionName, reqId) {
+    if (!confirm("আপনি কি এই রিকোয়েস্টটি রিজেক্ট করতে চান?")) return;
+    try {
+      await deleteDoc(doc(db, collectionName, reqId));
+      alert("রিকোয়েস্টটি বাতিল করা হয়েছে!");
+    } catch(e) { alert("বাতিল করতে সমস্যা হয়েছে!"); }
+  };
+
+  // 🚀 ইউনিট অনুযায়ী লেবেল পরিবর্তন করার ফাংশন (অক্ষত রাখা হলো)
   window.updateUnitLabels = function(context) {
     const unitSelect = document.getElementById(context + '-unit');
     if(!unitSelect) return;
@@ -6843,7 +6887,6 @@ window.clearImageSearch = function() {
     if(lblMinOrder) lblMinOrder.innerText = `মিনিমাম অর্ডার (${minUnit})`;
     if(lblStock) lblStock.innerText = `মোট স্টক (${weightUnit}) *`;
   };
-
   // ==================== SMART SLIDER CALCULATOR (PART 2) ====================
   
   // 🚀 চিপস তৈরি করার ফাংশন (Quick Select)
