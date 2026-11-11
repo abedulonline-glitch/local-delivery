@@ -5886,8 +5886,9 @@ window.searchPinUsers = async function() {
   // IMAGE UPLOAD & CROPPER LOGIC
   // ============================================================
   window.pickImageSource = function(source, context) {
-    currentUploadContext = context;
-    let fileInput;
+  alert("বাটনে ক্লিক হয়েছে! কনটেক্সট: " + context); // 🚀 টেস্ট লাইন
+  currentUploadContext = context;
+  // ... বাকি কোড ... let fileInput;
     
     if (context === 'mp') fileInput = document.getElementById('mp-image-input');
     else if (context === 'edit-mp') fileInput = document.getElementById('ep-image-input');
