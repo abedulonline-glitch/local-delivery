@@ -1762,6 +1762,7 @@
   // ============================================================
   // GLOBAL VARIABLES
   // ============================================================
+  let fileInput;
   let currentUser = null;
   let globalUserData = null;
   let userRole = null;
@@ -5887,21 +5888,17 @@ window.searchPinUsers = async function() {
   // ============================================================
   window.pickImageSource = function(source, context) {
     currentUploadContext = context;
-    let fileInput;
     
-    // 🚀 req-prod কনটেক্সট যোগ করা হলো
+    // 🚀 কোন কনটেক্সটের জন্য কোন ইনপুট ফিল্ড ব্যবহার হবে তা চেক করা
     if (context === 'mp') fileInput = document.getElementById('mp-image-input');
     else if (context === 'edit-mp') fileInput = document.getElementById('ep-image-input');
     else if (context === 'ad') fileInput = document.getElementById('ad-image-input');
     else if (context === 'reg') fileInput = document.getElementById('reg-profile-pic-file');
     else if (context === 'cp') fileInput = document.getElementById('cp-image-input');
-    else if (context === 'req-prod') fileInput = document.getElementById('req-prod-img-input'); // 🚀 নতুন
+    else if (context === 'shop_suggest') fileInput = document.getElementById('shop_suggest-image-input'); // 🚀 নতুন যোগ করা হলো
     else fileInput = document.getElementById('add-p-image-file');
     
-    if (!fileInput) {
-        console.error("File input not found for context:", context);
-        return;
-    }
+    if (!fileInput) return; // যদি ইনপুট ফিল্ড না পাওয়া যায় তবে থেমে যাবে
 
     if (source === 'camera') fileInput.setAttribute('capture', 'environment');
     else fileInput.removeAttribute('capture');
@@ -5917,6 +5914,7 @@ window.searchPinUsers = async function() {
     reader.onload = function(e) {
       const cropModal = document.getElementById('dlv-crop-modal');
       const cropImage = document.getElementById('crop-image');
+      
       cropModal.style.display = 'flex';
       cropImage.src = e.target.result;
 
@@ -5941,7 +5939,7 @@ window.searchPinUsers = async function() {
     statusEl.style.color = "#0f9d58";
 
     try {
-      // 🚀 Base64 পদ্ধতি ব্যবহার করে ছবি রিসাইজ করা
+      // 🚀 Base64 ইমেজ তৈরি
       const canvas = cropperInstance.getCroppedCanvas({
         maxWidth: 600,  
         maxHeight: 600,
@@ -5961,11 +5959,9 @@ window.searchPinUsers = async function() {
       const data = await response.json();
       
       if (data.success) {
-        const uploadedUrl = data.data.url;
-
         // 🚀 সফলভাবে আপলোড হলে কোন জায়গায় যাবে তা চেক করা
         if (currentUploadContext === 'reg') {
-          regProfilePicUrl = uploadedUrl; 
+          regProfilePicUrl = data.data.url; 
           const img = document.getElementById('reg-profile-img');
           const icon = document.getElementById('reg-profile-icon');
           if(img && icon) {
@@ -5975,7 +5971,7 @@ window.searchPinUsers = async function() {
           }
         } 
         else if (currentUploadContext === 'edit-profile') {
-          editProfilePicUrl = uploadedUrl;
+          editProfilePicUrl = data.data.url;
           const img = document.getElementById('ep-preview-img');
           const icon = document.getElementById('ep-preview-icon');
           if(img && icon) {
@@ -5984,23 +5980,15 @@ window.searchPinUsers = async function() {
             icon.style.display = 'none';
           }
         }
-        // 🚀 নতুন: ক্যাটালগ রিকোয়েস্টের ছবি হ্যান্ডেল করা
-        else if (currentUploadContext === 'req-prod') {
-          reqUploadedImgUrl = uploadedUrl;
-          const preview = document.getElementById('req-prod-img-preview');
-          if(preview) {
-            preview.src = reqUploadedImgUrl;
-            preview.style.display = 'block';
-          }
-        }
         else {
-          uploadedImageUrl = uploadedUrl;
+          uploadedImageUrl = data.data.url;
           
           let previewId;
           if (currentUploadContext === 'mp') previewId = 'mp-image-preview';
           else if (currentUploadContext === 'edit-mp') previewId = 'ep-image-preview';
           else if (currentUploadContext === 'ad') previewId = 'ad-image-preview';
           else if (currentUploadContext === 'cp') previewId = 'cp-image-preview'; 
+          else if (currentUploadContext === 'shop_suggest') previewId = 'shop_suggest-image-preview'; // 🚀 নতুন যোগ করা হলো
           else previewId = 'add-p-image-preview';
           
           const preview = document.getElementById(previewId);
