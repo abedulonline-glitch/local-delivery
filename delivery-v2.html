@@ -712,15 +712,13 @@
     <h3 style="justify-content: space-between;">
       📦 আমার প্রোডাক্ট লিস্ট
       <div style="display: flex; gap: 5px;">
-     <!-- আপনার পুরোনো ৩টি বাটনের জায়গায় এই ৩টি বসান -->
-<button class="mp-btn mp-btn-primary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px;" onclick="openAddProductModal()">+ Add</button>
-<button class="mp-btn" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px; background: #7b1fa2; color: white;" onclick="openBulkEditor()">📦 বাল্ক</button>
-<button class="mp-btn" style="width: auto; padding: 6px 10px; margin: 0; font-size: 12px; background: #f9a825; color: #000; font-weight: bold;" onclick="scrollToBarcodeCenter()">🏷️ বারকোড</button>
+        <button class="mp-btn mp-btn-primary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px;" onclick="openAddProductModal()">+ Add</button>
+        <button class="mp-btn" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px; background: #7b1fa2; color: white;" onclick="openBulkEditor()">📦 বাল্ক</button>
+        <button class="mp-btn" style="width: auto; padding: 6px 10px; margin: 0; font-size: 12px; background: #f9a825; color: #000; font-weight: bold;" onclick="scrollToBarcodeCenter()">🏷️ বারকোড</button>
       </div>
     </h3>
     <div id="shop-product-list"></div>
   </div>
-
 
   <!-- 🚀 নতুন: ইউনিফাইড ক্যাটালগ রিকোয়েস্ট ফর্ম -->
 <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
@@ -1064,26 +1062,12 @@
           <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
         </div>
 
-        <!-- 🚀 নতুন: রিকোয়েস্ট রিভিউ (ক্যাটাগরি ও প্রোডাক্ট) -->
-<h4 style="font-size: 14px; margin-top: 20px; margin-bottom: 10px; color: var(--mp-warning); display: flex; align-items: center; gap: 5px;">
-    🔔 রিকোয়েস্ট রিভিউ (ক্যাটাগরি ও প্রোডাক্ট)
-</h4>
-
-<div style="max-height: 400px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; background: #f8f9fa;">
-    
-    <!-- ক্যাটাগরি রিকোয়েস্ট লিস্ট -->
-    <div style="font-size: 12px; font-weight: bold; color: #555; margin-bottom: 5px;">🗂️ নতুন ক্যাটাগরি</div>
-    <div id="admin-cat-req-list" style="margin-bottom: 15px;">
-        <div style="font-size: 12px; color: #999;">কোনো ক্যাটাগরি রিকোয়েস্ট নেই।</div>
-    </div>
-
-    <!-- প্রোডাক্ট রিকোয়েস্ট লিস্ট -->
-    <div style="font-size: 12px; font-weight: bold; color: #555; margin-bottom: 5px;">📦 নতুন প্রোডাক্ট</div>
-    <div id="admin-prod-req-list">
-        <div style="font-size: 12px; color: #999;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>
-    </div>
-
-</div>
+        <!-- নতুন ক্যাটাগরি রিকোয়েস্ট -->
+        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
+        <div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
+          <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
+        </div>
+      </div>
   
   <!-- 🚀 সার্চ বার -->
   <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
@@ -1407,6 +1391,19 @@
   </div>
 </div>
 
+<!-- Master Catalog Modal (For Shopkeeper to select) -->
+<div id="dlv-catalog-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 85vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-catalog-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary);">🛒 ক্যাটালগ থেকে প্রোডাক্ট বাছুন</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">অ্যাডমিনের দেওয়া লিস্ট থেকে প্রোডাক্ট সিলেক্ট করে আপনার রেট দিন।</p>
+    
+    <div id="catalog-list-container">
+      <!-- Products will load here -->
+      <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
+    </div>
+  </div>
+</div>
 
     <!-- Standalone Custom Product Modal (Shopkeeper) -->
 <div id="dlv-custom-product-modal" class="dlv-modal-overlay">
@@ -1777,9 +1774,17 @@
   let unsubscribeOrders = null;
   let currentImageBase64 = null;
   let uploadedImageUrl = null;
+  let currentUploadContext = null; // 'mp' বা 'add-p'
+  let reqUploadedImgUrl = null;
+  let bulkCategories = []; // ক্যাটাগরি লিস্ট জমা রাখার জন্য
+  let bulkEditorRows = []; // এখানে টেবিলের ডেটা জমা থাকবে
+  let currentBulkRole = 'admin'; // ডিফল্
+  let isAutoDispatchOn = false;
+  let autoDispatchUnsubscribe = null;
+  let calcProduct = null;
+  let currentPcsQty = 1; 
   let allProductsForBarcode = [];
   let globalSettings = {}; // পুরো অ্যাপে ব্যবহারের জন্য গ্লোবাল ভেরিয়েবল
-  let smartCart = []; // কার্টের ডেটা এখানে জমা হবে
   // ImgBB API Key
   const IMGBB_API_KEY = '493904e927fb86161e0a4944d5b28de6'; 
 
@@ -2462,7 +2467,8 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     });
   };
 
- 
+  // ==================== SMART CART LOGIC ====================
+  let smartCart = []; // কার্টের ডেটা এখানে জমা হবে
 
   // ১. কার্টে প্রোডাক্ট অ্যাড করা
   window.addToSmartCart = function(prodId) {
@@ -3989,7 +3995,67 @@ window.saveShopLocation = async function() {
   }
 };
   // ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্কসহ)
-wi
+// ১. অ্যাডমিনের মাস্টার প্রোডাক্ট লোড করা (স্মার্ট সিঙ্ক ও এডিট বাটনসহ)
+window.openAddProductModal = function() {
+  document.getElementById('dlv-catalog-modal').classList.add('active');
+  const list = document.getElementById('catalog-list-container');
+  list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">লোড হচ্ছে...</div>';
+
+  // দোকানদারের নিজের প্রোডাক্টগুলো খোঁজা
+  const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
+  
+  onSnapshot(myProductsQ, (mySnap) => {
+    // দোকানদার আগে থেকে কোন কোন মাস্টার প্রোডাক্ট অ্যাড করেছে, তার ডেটা ম্যাপ
+    const myAddedProducts = {};
+    mySnap.forEach(d => {
+      const p = d.data();
+      if(p.masterProductId) myAddedProducts[p.masterProductId] = { docId: d.id, ...p };
+    });
+
+    // এবার অ্যাডমিনের মাস্টার প্রোডাক্টগুলো লোড করা
+    onSnapshot(collection(db, "master_products"), (masterSnap) => {
+      if(masterSnap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
+        return;
+      }
+      
+      let html = '';
+      masterSnap.forEach(docSnap => {
+        const p = docSnap.data();
+        const masterId = docSnap.id;
+        
+        // চেক করা হচ্ছে দোকানদার এটি আগেই অ্যাড করেছে কি না
+        const isAdded = myAddedProducts[masterId] ? true : false;
+        const myData = myAddedProducts[masterId];
+
+        // ডিফল্ট ইউনিট এবং গ্রেড (যেহেতু নতুন মাস্টার প্রোডাক্টে এগুলো নেই)
+        const displayUnit = p.unit || myData?.unit || 'pcs';
+        const displayGrade = p.grade || myData?.grade || 'A';
+
+        html += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px 10px; border-bottom: 1px solid #eee;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:45px; height:45px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
+                ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
+              </div>
+              <div>
+                <div style="font-size:14px; font-weight:600;">${p.name}</div>
+                <div style="font-size:11px; color:#666;">${displayGrade} | ${displayUnit}</div>
+              </div>
+            </div>
+            
+            <!-- 🚀 এখানে এডিট এবং রেট দিন বাটনের লজিক -->
+            ${isAdded 
+              ? `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick='editShopProduct(${JSON.stringify(myData).replace(/'/g, "&#39;")}, "${masterId}")'>✏️ এডিট</button>`
+              : `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick='selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;")}, "${masterId}")'>➕ রেট দিন</button>`
+            }
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  });
+};
 
 // 🚀 নতুন যোগ করা হলো: দোকানদার তার নিজের দেওয়া রেট এডিট করার জন্য
    
@@ -4999,7 +5065,7 @@ async function autoAssignOrderToWinner(orderId, finalBid) {
   loadAdminBadgeList();
   loadAdminCategories();
   loadCategoriesForDropdowns();
-  loadAdminRequests();
+  loadAdminCategoryRequests();
   loadBarcodeProducts();      
         
   const ordersQ = query(collection(db, "orders"), where("status", "==", "delivered"));
@@ -5039,9 +5105,9 @@ async function autoAssignOrderToWinner(orderId, finalBid) {
     list.innerHTML = html;
   });
 }
-  
-
-  // ১. সেটিংস লোড করা
+    // ==================== SYSTEM SETTINGS LOGIC (PART 1) ====================
+ 
+// ১. সেটিংস লোড করা
   async function loadSystemSettings() {
     try {
       const settingsRef = doc(db, "system_settings", "global_config");
@@ -6641,95 +6707,36 @@ window.clearImageSearch = function() {
     } catch(e) { console.error(e); alert("সাজেশন পাঠাতে সমস্যা হয়েছে!"); }
   };
 
-  // ==================== ADMIN REQUEST REVIEW LOGIC ====================
+  // ৩. অ্যাডমিনের স্ক্রিনে রিকোয়েস্ট লোড করা
+  function loadAdminCategoryRequests() {
+    const list = document.getElementById('admin-category-requests');
+    if (!list) return;
 
-// ১. ক্যাটাগরি ও প্রোডাক্ট রিকোয়েস্ট লোড করা
-// ==================== ADMIN REQUEST REVIEW LOGIC (FIXED) ====================
-let adminCategoriesList = [];
+    onSnapshot(query(collection(db, "category_requests"), orderBy("createdAt", "desc")), (snap) => {
+      if (snap.empty) {
+        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>';
+        return;
+      }
 
-function loadAdminRequests() {
-    // ১. আগে সব ক্যাটাগরি লোড করে রাখা
-    onSnapshot(collection(db, "categories"), (catSnap) => {
-        adminCategoriesList = [];
-        catSnap.forEach(doc => adminCategoriesList.push(doc.data().name));
-
-        // ২. ক্যাটাগরি রিকোয়েস্ট লোড
-        onSnapshot(query(collection(db, "category_requests"), orderBy("createdAt", "desc")), (snap) => {
-            const list = document.getElementById('admin-cat-req-list');
-            if (!list) return;
-            if (snap.empty) {
-                list.innerHTML = '<div style="font-size: 12px; color: #999;">কোনো ক্যাটাগরি রিকোয়েস্ট নেই।</div>';
-                return;
-            }
-            let html = '';
-            snap.forEach(docSnap => {
-                const req = docSnap.data();
-                html += `
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; background: #fff; margin-bottom: 5px; border-radius: 4px;">
-                    <div>
-                      <div style="font-size: 13px; font-weight: 600; color: var(--mp-primary);">${req.categoryName}</div>
-                      <div style="font-size: 11px; color: #666;">দোকান: ${req.shopName}</div>
-                    </div>
-                    <div style="display: flex; gap: 5px;">
-                      <button onclick="approveCategory('${docSnap.id}', '${req.categoryName}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
-                      <button onclick="rejectCategory('${docSnap.id}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
-                    </div>
-                  </div>
-                `;
-            });
-            list.innerHTML = html;
-        });
-
-        // ৩. প্রোডাক্ট রিকোয়েস্ট লোড
-        onSnapshot(query(collection(db, "product_requests"), orderBy("createdAt", "desc")), (snap) => {
-            const list = document.getElementById('admin-prod-req-list');
-            if (!list) return;
-            if (snap.empty) {
-                list.innerHTML = '<div style="font-size: 12px; color: #999;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>';
-                return;
-            }
-            
-            let html = '';
-            snap.forEach(docSnap => {
-                const req = docSnap.data();
-                
-                // 🚀 ড্রপডাউনে ক্যাটাগরি লিস্ট তৈরি
-                let catOptions = '<option value="" disabled selected>ক্যাটাগরি সিলেক্ট করুন</option>';
-                adminCategoriesList.forEach(cat => {
-                    let isSelected = (cat === req.category) ? 'selected' : ''; // যদি রিকোয়েস্টের সময় ক্যাটাগরি দেওয়া থাকে
-                    catOptions += `<option value="${cat}" ${isSelected}>${cat}</option>`;
-                });
-
-                html += `
-                  <div style="padding: 10px; border: 1px solid #eee; border-radius: 6px; background: #fff; margin-bottom: 10px;">
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                      <div style="width: 40px; height: 40px; border-radius: 6px; background: #f0f2f5; overflow: hidden;">
-                        ${req.image ? `<img src="${req.image}" style="width:100%; height:100%; object-fit:cover;">` : '📦'}
-                      </div>
-                      <div style="flex: 1;">
-                        <div style="font-size: 14px; font-weight: bold;">${req.productName}</div>
-                        <div style="font-size: 11px; color: #666;">রিকোয়েস্টকারী: ${req.shopName}</div>
-                      </div>
-                    </div>
-                    
-                    <div style="margin-top: 8px;">
-                      <label style="font-size: 11px; color: #555;">ক্যাটাগরি সেট করুন:</label>
-                      <select id="prod-req-cat-${docSnap.id}" class="dlv-input" style="padding: 4px; font-size: 12px; margin-top: 3px;">
-                        ${catOptions}
-                      </select>
-                    </div>
-
-                    <div style="display: flex; gap: 5px; margin-top: 8px;">
-                      <button onclick="approveProductRequest('${docSnap.id}', '${req.productName}', '${req.image || ''}')" style="flex: 2; background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px; font-size:12px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ করুন</button>
-                      <button onclick="rejectProductRequest('${docSnap.id}')" style="flex: 1; background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:6px; font-size:12px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
-                    </div>
-                  </div>
-                `;
-            });
-            list.innerHTML = html;
-        });
+      let html = '';
+      snap.forEach(docSnap => {
+        const req = docSnap.data();
+        html += `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--mp-primary);">${req.categoryName}</div>
+              <div style="font-size: 11px; color: #666;">দোকান: ${req.shopName}</div>
+            </div>
+            <div style="display: flex; gap: 5px;">
+              <button onclick="approveCategory('${docSnap.id}', '${req.categoryName}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
+              <button onclick="rejectCategory('${docSnap.id}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
+            </div>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
     });
-}
+  }
 
   // ৪. অ্যাডমিন কর্তৃক রিকোয়েস্ট অ্যাপ্রুভ করা
   window.approveCategory = async function(reqId, catName) {
@@ -6808,16 +6815,7 @@ function loadAdminRequests() {
     });
   }
 
-
-  // ==================== SMART CUSTOMER CALCULATOR (FIXED) ====================
-  let calcProduct = null;
-  let currentPcsQty = 1; 
-
-  
- 
-
-
-  // ১. বারকোড ড্রপডাউনে প্রোডাক্ট লোড করা
+ // ১. বারকোড ড্রপডাউনে প্রোডাক্ট লোড করা
    // ==================== BARCODE PRODUCT LOADING (FIXED) ====================
   function loadBarcodeProducts() {
     const select = document.getElementById('bc-product-select');
@@ -7155,9 +7153,6 @@ function loadAdminRequests() {
   };
 
 // ==================== AUTO DISPATCH LOGIC (SMART ASSIGN) ====================
-let isAutoDispatchOn = false;
-let autoDispatchUnsubscribe = null;
-
 // ১. অটো-ডিসপ্যাচ টগল অন/অফ করা (ডেটাবেসে সেভ হবে)
 window.toggleAutoDispatch = async function(isChecked) {
   isAutoDispatchOn = isChecked;
@@ -7402,9 +7397,6 @@ async function assignClosestDeliveryBoy(orderId, order) {
 
 
 // ==================== BULK EDITOR UI LOGIC (PART 1) ====================
-let bulkEditorRows = []; // এখানে টেবিলের ডেটা জমা থাকবে
-let currentBulkRole = 'admin'; // ডিফল্ট
-
 // ১. বাল্ক এডিটর ওপেন করা
 window.openBulkEditor = function() {
   currentBulkRole = userRole; // 'admin' অথবা 'shopkeeper'
@@ -7478,8 +7470,7 @@ window.checkBulkTableEmpty = function() {
   }
 };
 
-// ==================== BULK EDITOR LOGIC (PART 3) ====================
-let bulkCategories = []; // ক্যাটাগরি লিস্ট জমা রাখার জন্য
+
 
 // ১. ছবি সিলেক্ট করার লজিক (AI Zero-Click)
 window.handleBulkImages = function(event) {
@@ -8051,8 +8042,6 @@ window.submitOfflineSpeed = async function() {
   }
 };
 
-// ==================== CATALOG REQUEST LOGIC (PART 2) ====================
-let reqUploadedImgUrl = null;
 
 // ১. ফর্ম টগল (প্রোডাক্ট নাকি ক্যাটাগরি)
   window.toggleReqForm = function() {
@@ -8185,176 +8174,6 @@ window.submitCatalogRequest = async function() {
   }
 };
 
-// ক্যাটাগরি অ্যাপ্রুভ
-window.approveCategory = async function(reqId, catName) {
-  if (!confirm(`"${catName}" ক্যাটাগরিটি অ্যাপ্রুভ করবেন?`)) return;
-  try {
-    await addDoc(collection(db, "categories"), { name: catName, createdAt: serverTimestamp() });
-    await deleteDoc(doc(db, "category_requests", reqId));
-    alert("ক্যাটাগরি অ্যাপ্রুভ হয়েছে!");
-  } catch(e) { console.error(e); alert("সমস্যা হয়েছে!"); }
-};
-
-// ক্যাটাগরি রিজেক্ট (আপনার আগের কোডটিই থাকবে)
-window.rejectCategory = async function(reqId) {
-  if (!confirm("আপনি কি এই রিকোয়েস্টটি বাতিল করতে চান?")) return;
-  try {
-    await deleteDoc(doc(db, "category_requests", reqId));
-    alert("রিকোয়েস্ট বাতিল হয়েছে!");
-  } catch(e) { alert("সমস্যা হয়েছে!"); }
-};
-  
-// 🚀 প্রোডাক্ট রিকোয়েস্ট অ্যাপ্রুভ এবং AI ভেক্টর জেনারেশন
-window.approveProductRequest = async function(reqId, prodName, prodImg) {
-  const selectedCat = document.getElementById(`prod-req-cat-${reqId}`).value;
-  if (!selectedCat) return alert("দয়া করে ক্যাটাগরি সিলেক্ট করুন!");
-
-  if (!confirm(`"${prodName}" কে মাস্টার প্রোডাক্ট হিসেবে অ্যাপ্রুভ করবেন?`)) return;
-  
-  const btn = event.target;
-  btn.innerText = "⏳ AI প্রসেসিং...";
-  btn.disabled = true;
-
-  let generatedVectorStr = "";
-
-  try {
-    // 🚀 ১. AI ভেক্টর জেনারেশন (যদি ছবি থাকে)
-    if (prodImg && window.CLIPVisionModelWithProjection) {
-      try {
-        if (!window.clipProcessor) {
-          window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
-          window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
-        }
-        const image = await window.RawImage.fromURL(prodImg);
-        const image_inputs = await window.clipProcessor(image);
-        const { image_embeds } = await window.clipVisionModel(image_inputs);
-        const vectorArray = Array.from(image_embeds.data).slice(0, 256);
-        generatedVectorStr = JSON.stringify(vectorArray);
-      } catch (err) { 
-        console.warn("Vector Generation Failed:", err); 
-      }
-    }
-
-    // 🚀 ২. মাস্টার প্রোডাক্ট তৈরি
-    await addDoc(collection(db, "master_products"), {
-      name: prodName,
-      category: selectedCat,
-      image: prodImg,
-      imageVector: generatedVectorStr, // ভেক্টর সেভ
-      createdAt: serverTimestamp()
-    });
-    
-    // 🚀 ৩. রিকোয়েস্ট ডিলিট
-    await deleteDoc(doc(db, "product_requests", reqId));
-    alert("✅ প্রোডাক্ট অ্যাপ্রুভ হয়েছে এবং মাস্টার লিস্টে যুক্ত হয়েছে!");
-    
-  } catch(e) { 
-    console.error(e); 
-    alert("সমস্যা হয়েছে!"); 
-  } finally {
-    btn.innerText = "✅ অ্যাপ্রুভ করুন";
-    btn.disabled = false;
-  }
-};
-// 🚀 প্রোডাক্ট রিকোয়েস্ট রিজেক্ট
-window.rejectProductRequest = async function(reqId) {
-  if (!confirm("আপনি কি এই প্রোডাক্ট রিকোয়েস্টটি বাতিল করতে চান?")) return;
-  try {
-    await deleteDoc(doc(db, "product_requests", reqId));
-    alert("প্রোডাক্ট রিকোয়েস্ট বাতিল হয়েছে!");
-  } catch(e) { alert("সমস্যা হয়েছে!"); }
-};
-
-// ==================== NEW PRODUCT LIST BUTTONS LOGIC ====================
-
-// 🚀 ১. + Add বাটনের জন্য (নতুন ফোর্স ওপেনার)
-  window.openAddProductModal = function() {
-    const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
-    
-    onSnapshot(myProductsQ, (mySnap) => {
-      const myAddedProducts = {};
-      mySnap.forEach(d => {
-        const p = d.data();
-        if(p.masterProductId) myAddedProducts[p.masterProductId] = { docId: d.id, ...p };
-      });
-
-      onSnapshot(collection(db, "master_products"), (masterSnap) => {
-        // 🚀 ওভারলে তৈরি করা (যা Z-index এর বাধা মানে না)
-        let overlay = document.getElementById('new-catalog-overlay');
-        if(!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'new-catalog-overlay';
-            overlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999999; display:flex; flex-direction:column; padding:15px; box-sizing:border-box;";
-            document.body.appendChild(overlay);
-        }
-        
-        let html = `
-            <div style="background:#fff; border-radius:10px; width:100%; max-width:500px; margin:0 auto; height:90vh; display:flex; flex-direction:column; overflow:hidden;">
-                <div style="background:var(--mp-primary); color:white; padding:15px; display:flex; justify-content:space-between; align-items:center;">
-                    <h3 style="margin:0; font-size:16px;">🛒 ক্যাটালগ থেকে প্রোডাক্ট বাছুন</h3>
-                    <button onclick="document.getElementById('new-catalog-overlay').remove()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
-                </div>
-                <div style="flex:1; overflow-y:auto; padding:10px;">
-        `;
-
-        if(masterSnap.empty) {
-            html += '<div style="text-align:center; color:#999; padding:20px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
-        } else {
-            masterSnap.forEach(docSnap => {
-                const p = docSnap.data();
-                const masterId = docSnap.id;
-                const isAdded = myAddedProducts[masterId] ? true : false;
-                const myData = myAddedProducts[masterId];
-
-                let safeMyDataStr = "{}";
-                if(myData) safeMyDataStr = JSON.stringify(myData).replace(/'/g, "&#39;").replace(/"/g, '&quot;');
-
-                html += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid #eee;">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <div style="width:45px; height:45px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
-                                ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
-                            </div>
-                            <div>
-                                <div style="font-size:14px; font-weight:600;">${p.name}</div>
-                                <div style="font-size:11px; color:#666;">${p.category}</div>
-                            </div>
-                        </div>
-                        
-                        ${isAdded 
-                            ? `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick='document.getElementById("new-catalog-overlay").remove(); editShopProduct(${safeMyDataStr}, "${masterId}")'>✏️ এডিট</button>`
-                            : `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick='document.getElementById("new-catalog-overlay").remove(); selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;").replace(/"/g, '&quot;')}, "${masterId}")'>➕ রেট দিন</button>`
-                        }
-                    </div>
-                `;
-            });
-        }
-
-        html += `</div></div>`;
-        overlay.innerHTML = html;
-      });
-    });
-  };
-
-// 🚀 ২. বাল্ক এডিটর বাটনের জন্য
-window.openNewBulkEditor = function() {
-  // আপনার পুরোনো বাল্ক এডিটর ফাংশনটি এখানে কল হবে
-  if(typeof window.openBulkEditor === 'function') {
-      window.openBulkEditor();
-  } else {
-      alert("বাল্ক এডিটর ফাংশনটি পাওয়া যায়নি।");
-  }
-};
-
-// 🚀 ৩. বারকোড বাটনের জন্য
-window.openNewBarcodeCenter = function() {
-  // আপনার পুরোনো বারকোড ফাংশনটি এখানে কল হবে
-  if(typeof window.scrollToBarcodeCenter === 'function') {
-      window.scrollToBarcodeCenter();
-  } else {
-      alert("বারকোড সেন্টার ফাংশনটি পাওয়া যায়নি।");
-  }
-};
 </script>
 
 <!-- Live Tracking Modal (Customer) -->
