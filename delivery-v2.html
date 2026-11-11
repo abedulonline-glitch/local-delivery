@@ -712,9 +712,9 @@
     <h3 style="justify-content: space-between;">
       📦 আমার প্রোডাক্ট লিস্ট
       <div style="display: flex; gap: 5px;">
-      <button class="mp-btn mp-btn-primary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px;" onclick="forceOpenCatalog()">+ Add</button>
-        <button class="mp-btn" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px; background: #7b1fa2; color: white;" onclick="openBulkEditor()">📦 বাল্ক</button>
-        <button class="mp-btn" style="width: auto; padding: 6px 10px; margin: 0; font-size: 12px; background: #f9a825; color: #000; font-weight: bold;" onclick="scrollToBarcodeCenter()">🏷️ বারকোড</button>
+      <button class="mp-btn mp-btn-primary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px;" onclick="openNewAddProduct()">+ Add</button>
+<button class="mp-btn" style="width: auto; padding: 6px 12px; margin: 0; font-size: 12px; background: #7b1fa2; color: white;" onclick="openNewBulkEditor()">📦 বাল্ক</button>
+<button class="mp-btn" style="width: auto; padding: 6px 10px; margin: 0; font-size: 12px; background: #f9a825; color: #000; font-weight: bold;" onclick="openNewBarcodeCenter()">🏷️ বারকোড</button>
       </div>
     </h3>
     <div id="shop-product-list"></div>
@@ -8266,9 +8266,10 @@ window.rejectProductRequest = async function(reqId) {
   } catch(e) { alert("সমস্যা হয়েছে!"); }
 };
 
-// ==================== FORCE OPEN CATALOG (NO Z-INDEX BUG) ====================
-window.forceOpenCatalog = function() {
-  // ১. ডেটা লোড করা
+// ==================== NEW PRODUCT LIST BUTTONS LOGIC ====================
+
+// 🚀 ১. + Add বাটনের জন্য (নতুন ফোর্স ওপেনার)
+window.openNewAddProduct = function() {
   const myProductsQ = query(collection(db, "products"), where("shopId", "==", currentUser.uid));
   
   onSnapshot(myProductsQ, (mySnap) => {
@@ -8279,71 +8280,81 @@ window.forceOpenCatalog = function() {
     });
 
     onSnapshot(collection(db, "master_products"), (masterSnap) => {
-      if(masterSnap.empty) {
-        alert("অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।");
-        return;
-      }
-      
-      // ২. একটি ওভারলে ডিভ তৈরি করা
-      let overlay = document.getElementById('force-catalog-overlay');
+      // ওভারলে তৈরি
+      let overlay = document.getElementById('new-catalog-overlay');
       if(!overlay) {
           overlay = document.createElement('div');
-          overlay.id = 'force-catalog-overlay';
-          // 🚀 এখানে Z-index: 99999999 ব্যবহার করা হলো যাতে এটি সবার উপরে থাকে
-          overlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999999; display:flex; flex-direction:column; padding:15px; box-sizing:border-box;";
+          overlay.id = 'new-catalog-overlay';
+          overlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; display:flex; flex-direction:column; padding:15px; box-sizing:border-box;";
           document.body.appendChild(overlay);
       }
       
       let html = `
           <div style="background:#fff; border-radius:10px; width:100%; max-width:500px; margin:0 auto; height:90vh; display:flex; flex-direction:column; overflow:hidden;">
               <div style="background:var(--mp-primary); color:white; padding:15px; display:flex; justify-content:space-between; align-items:center;">
-                  <h3 style="margin:0; font-size:16px;">🛒 ক্যাটালগ থেকে প্রোডাক্ট বাছুন</h3>
-                  <button onclick="document.getElementById('force-catalog-overlay').remove()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
+                  <h3 style="margin:0; font-size:16px;">🛒 ক্যাটালগ থেকে বাছুন</h3>
+                  <button onclick="document.getElementById('new-catalog-overlay').remove()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
               </div>
               <div style="flex:1; overflow-y:auto; padding:10px;">
       `;
 
-      masterSnap.forEach(docSnap => {
-          const p = docSnap.data();
-          const masterId = docSnap.id;
-          const isAdded = myAddedProducts[masterId] ? true : false;
-          const myData = myAddedProducts[masterId];
+      if(masterSnap.empty) {
+          html += '<div style="text-align:center; color:#999; padding:20px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
+      } else {
+          masterSnap.forEach(docSnap => {
+              const p = docSnap.data();
+              const masterId = docSnap.id;
+              const isAdded = myAddedProducts[masterId] ? true : false;
+              const myData = myAddedProducts[masterId];
 
-          const displayUnit = p.unit || myData?.unit || 'pcs';
-          const displayGrade = p.grade || myData?.grade || 'A';
+              let safeMyDataStr = "{}";
+              if(myData) safeMyDataStr = JSON.stringify(myData).replace(/'/g, "&#39;").replace(/"/g, '&quot;');
 
-          let safeMyDataStr = "{}";
-          if(myData) {
-              safeMyDataStr = JSON.stringify(myData).replace(/'/g, "&#39;").replace(/"/g, '&quot;');
-          }
-
-          html += `
-              <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid #eee;">
-                  <div style="display:flex; align-items:center; gap:10px;">
-                      <div style="width:45px; height:45px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
-                          ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
+              html += `
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid #eee;">
+                      <div style="display:flex; align-items:center; gap:10px;">
+                          <div style="width:45px; height:45px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
+                              ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
+                          </div>
+                          <div>
+                              <div style="font-size:14px; font-weight:600;">${p.name}</div>
+                              <div style="font-size:11px; color:#666;">${p.category}</div>
+                          </div>
                       </div>
-                      <div>
-                          <div style="font-size:14px; font-weight:600;">${p.name}</div>
-                          <div style="font-size:11px; color:#666;">${displayGrade} | ${displayUnit}</div>
-                      </div>
+                      
+                      ${isAdded 
+                          ? `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick='document.getElementById("new-catalog-overlay").remove(); editShopProduct(${safeMyDataStr}, "${masterId}")'>✏️ এডিট</button>`
+                          : `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick='document.getElementById("new-catalog-overlay").remove(); selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;").replace(/"/g, '&quot;')}, "${masterId}")'>➕ রেট দিন</button>`
+                      }
                   </div>
-                  
-                  ${isAdded 
-                      ? `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#fff3e0; color:#e65100; font-size:12px; border:1px solid #e65100;" onclick='document.getElementById("force-catalog-overlay").remove(); editShopProduct(${safeMyDataStr}, "${masterId}")'>✏️ এডিট</button>`
-                      : `<button class="mp-btn" style="width:auto; margin:0; padding:6px 12px; background:#e8f0fe; color:var(--mp-primary); font-size:12px;" onclick='document.getElementById("force-catalog-overlay").remove(); selectMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;").replace(/"/g, '&quot;')}, "${masterId}")'>➕ রেট দিন</button>`
-                  }
-              </div>
-          `;
-      });
+              `;
+          });
+      }
 
-      html += `
-              </div>
-          </div>
-      `;
+      html += `</div></div>`;
       overlay.innerHTML = html;
     });
   });
+};
+
+// 🚀 ২. বাল্ক এডিটর বাটনের জন্য
+window.openNewBulkEditor = function() {
+  // আপনার পুরোনো বাল্ক এডিটর ফাংশনটি এখানে কল হবে
+  if(typeof window.openBulkEditor === 'function') {
+      window.openBulkEditor();
+  } else {
+      alert("বাল্ক এডিটর ফাংশনটি পাওয়া যায়নি।");
+  }
+};
+
+// 🚀 ৩. বারকোড বাটনের জন্য
+window.openNewBarcodeCenter = function() {
+  // আপনার পুরোনো বারকোড ফাংশনটি এখানে কল হবে
+  if(typeof window.scrollToBarcodeCenter === 'function') {
+      window.scrollToBarcodeCenter();
+  } else {
+      alert("বারকোড সেন্টার ফাংশনটি পাওয়া যায়নি।");
+  }
 };
 </script>
 
