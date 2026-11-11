@@ -1776,8 +1776,9 @@
   let unsubscribeOrders = null;
   let currentImageBase64 = null;
   let uploadedImageUrl = null;
-  let currentUploadContext = null; // 'mp' বা 'add-p'
-  
+  let allProductsForBarcode = [];
+  let globalSettings = {}; // পুরো অ্যাপে ব্যবহারের জন্য গ্লোবাল ভেরিয়েবল
+  let smartCart = []; // কার্টের ডেটা এখানে জমা হবে
   // ImgBB API Key
   const IMGBB_API_KEY = '493904e927fb86161e0a4944d5b28de6'; 
 
@@ -2460,8 +2461,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     });
   };
 
-  // ==================== SMART CART LOGIC ====================
-  let smartCart = []; // কার্টের ডেটা এখানে জমা হবে
+ 
 
   // ১. কার্টে প্রোডাক্ট অ্যাড করা
   window.addToSmartCart = function(prodId) {
@@ -5038,8 +5038,7 @@ async function autoAssignOrderToWinner(orderId, finalBid) {
     list.innerHTML = html;
   });
 }
-    // ==================== SYSTEM SETTINGS LOGIC (PART 1) ====================
-  let globalSettings = {}; // পুরো অ্যাপে ব্যবহারের জন্য গ্লোবাল ভেরিয়েবল
+  
 
   // ১. সেটিংস লোড করা
   async function loadSystemSettings() {
@@ -6815,8 +6814,7 @@ function loadAdminRequests() {
 
   
  
-  // ==================== BARCODE GENERATOR LOGIC (PART 3) ====================
-  let allProductsForBarcode = [];
+
 
   // ১. বারকোড ড্রপডাউনে প্রোডাক্ট লোড করা
    // ==================== BARCODE PRODUCT LOADING (FIXED) ====================
