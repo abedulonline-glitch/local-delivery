@@ -2978,7 +2978,6 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
       loadShopBadgeStatus();
       loadShopNewOrders();
       loadCategoriesForDropdowns();
-           // 🚀 শপকিপার লোড হলে প্রোডাক্ট ফর্ম এবং ক্যাটাগরি লোড করা
       loadCategoriesForRequest();
   
         // 🚀 নতুন যোগ করা হলো: পেজ রিফ্রেশে টগলের স্টেটাস লোড করা
@@ -6649,6 +6648,10 @@ window.clearImageSearch = function() {
       // দোকানদারের কাস্টম প্রোডাক্ট ড্রপডাউন
       const cpSelect = document.getElementById('cp-category');
       if(cpSelect) cpSelect.innerHTML = options;
+
+      // 🚀 নতুন: দোকানদারের আইটেম সাজেশন ড্রপডাউন
+      const suggestSelect = document.getElementById('shop-suggest-category');
+      if(suggestSelect) suggestSelect.innerHTML = options;
     });
   }
 
