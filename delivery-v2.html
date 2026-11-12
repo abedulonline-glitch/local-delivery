@@ -1036,29 +1036,71 @@
   </div>
 </div>
 
-  <!-- অ্যাড ম্যানেজমেন্ট সেকশন -->
-  <div class="mp-card" style="border-left: 4px solid #f9a825;">
-    <h3>📢 অ্যাড ম্যানেজমেন্ট</h3>
-    <div class="dlv-form-group" style="margin-bottom:10px;">
-      <select id="admin-ad-type" class="dlv-input" onchange="toggleAdInputType()">
-        <option value="image">🖼️ ইমেজ (সরাসরি আপলোড)</option>
-        <option value="video">🎥 ভিডিও (YouTube লিংক)</option>
+<!-- 📢 অ্যাড ম্যানেজমেন্ট সেকশন -->
+<div class="mp-card" style="border-left: 4px solid #f9a825;">
+  <h3>📢 স্মার্ট টার্গেটেড অ্যাড ম্যানেজার</h3>
+  <p style="font-size: 12px; color: #666; margin-bottom: 15px;">নির্দিষ্ট রোল, পিনকোড বা ফোন নম্বর অনুযায়ী কাস্টমাইজড অ্যাড তৈরি করুন।</p>
+  
+  <!-- অ্যাড টাইপ -->
+  <div class="dlv-form-group">
+    <label>অ্যাডের ধরন</label>
+    <select id="admin-ad-type" class="dlv-input" onchange="toggleAdInputType()">
+      <option value="image">🖼️ ইমেজ (সরাসরি আপলোড)</option>
+      <option value="text">📝 টেক্সট মেসেজ (শুধু লেখা)</option>
+      <option value="video">🎥 ভিডিও (YouTube লিংক)</option>
+    </select>
+  </div>
+
+  <!-- ইমেজ আপলোড ও ভিডিও লিংক -->
+  <div id="ad-image-upload-area" style="margin-bottom: 10px;">
+    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+      <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'ad')">📷 ক্যামেরা</button>
+      <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'ad')">🖼️ গ্যালারি</button>
+    </div>
+    <img id="ad-image-preview" style="width: 100%; height: 100px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
+    <input type="file" id="ad-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'ad')">
+  </div>
+  <div id="ad-video-url-area" class="dlv-form-group mp-hidden" style="margin-bottom: 10px;">
+    <input type="text" id="admin-ad-url" class="dlv-input" placeholder="YouTube ভিডিও লিংক পেস্ট করুন...">
+  </div>
+
+  <!-- 🚀 নতুন: টেক্সট মেসেজ এরিয়া -->
+  <div id="ad-text-area" class="dlv-form-group mp-hidden" style="margin-bottom: 10px;">
+    <input type="text" id="admin-ad-text" class="dlv-input" placeholder="যেমন: আজ ১৫টি ডেলিভারি করলে ₹৫০ বোনাস!">
+  </div>
+
+  <!-- 🚀 নতুন: টার্গেটিং সেকশন -->
+  <div style="background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+    <h4 style="font-size: 12px; margin-bottom: 8px; color: var(--mp-primary);">🎯 অ্যাড টার্গেটিং</h4>
+    
+    <div class="dlv-form-group" style="margin-bottom: 8px;">
+      <label style="font-size: 11px;">কাকে দেখানো হবে?</label>
+      <select id="admin-ad-target-role" class="dlv-input" style="padding: 6px;">
+        <option value="all">👥 সবাই (All)</option>
+        <option value="customer">👤 কাস্টমার</option>
+        <option value="delivery">🛵 ডেলিভারি বয়</option>
+        <option value="shopkeeper">🏪 দোকানদার</option>
       </select>
     </div>
-    <div id="ad-image-upload-area" style="margin-bottom: 10px;">
-      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'ad')">📷 ক্যামেরা</button>
-        <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'ad')">🖼️ গ্যালারি</button>
-      </div>
-      <img id="ad-image-preview" style="width: 100%; height: 100px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
-      <input type="file" id="ad-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'ad')">
+
+    <div class="dlv-form-group" style="margin-bottom: 8px;">
+      <label style="font-size: 11px;">পিনকোড (ঐচ্ছিক)</label>
+      <input type="text" id="admin-ad-pincode" class="dlv-input" style="padding: 6px;" placeholder="যেমন: 721139 (ফাঁকা রাখলে সব পিনে যাবে)">
     </div>
-    <div id="ad-video-url-area" class="dlv-form-group mp-hidden" style="margin-bottom: 10px;">
-      <input type="text" id="admin-ad-url" class="dlv-input" placeholder="YouTube ভিডিও লিংক পেস্ট করুন...">
+
+    <div class="dlv-form-group" style="margin-bottom: 0;">
+      <label style="font-size: 11px;">ফোন নম্বর (ঐচ্ছিক)</label>
+      <input type="tel" id="admin-ad-phone" class="dlv-input" style="padding: 6px;" placeholder="যেমন: 9876543210 (ফাঁকা রাখলে সবার জন্য)">
     </div>
-    <button class="mp-btn mp-btn-primary" style="margin-bottom: 15px; padding: 8px;" onclick="saveAd()">+ অ্যাড যোগ করুন</button>
-    <div id="admin-ad-list"></div>
   </div>
+
+  <!-- অ্যাড সেভ বাটন -->
+  <button class="mp-btn mp-btn-primary" style="margin-bottom: 15px; padding: 8px;" onclick="saveAd()">+ স্মার্ট অ্যাড যোগ করুন</button>
+  
+  <!-- অ্যাড লিস্ট -->
+  <h4 style="font-size: 13px; margin-bottom: 8px; border-top: 1px dashed #ccc; padding-top: 10px;">সক্রিয় অ্যাডসমূহ</h4>
+  <div id="admin-ad-list"></div>
+</div>
 
   <!-- প্রিমিয়াম ও ভেরিফাইড ব্যাজ ম্যানেজমেন্ট -->
   <div class="mp-card" style="border-left: 4px solid #f9a825;">
