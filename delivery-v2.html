@@ -4711,7 +4711,30 @@ else if ((order.status === 'assigned' || order.status === 'picked_up') && order.
     }
   };
 
-// ==================== SMART DELAY & OFFLINE LOGIC (PART 2) ====================
+// ডেলিভারি বয়ের লাইভ লোকেশন ট্র্যাকার
+window.startLiveLocationTracking = function(orderId) {
+    if(window.locationTrackingTimer) clearInterval(window.locationTrackingTimer);
+    
+    window.locationTrackingTimer = setInterval(() => {
+        const orderRef = doc(db, "orders", orderId);
+        getDoc(orderRef).then(snap => {
+            if(snap.exists()) {
+                const data = snap.data();
+                // যদি অফলাইন মোড চালু না থাকে এবং অর্ডার ডেলিভারি না হয়ে থাকে
+                if(!data.isOfflineTracking && data.status !== 'delivered' && (data.status === 'picked_up' || data.status === 'assigned')) {
+                    navigator.geolocation.getCurrentPosition(position => {
+                        updateDoc(orderRef, {
+                            boyLat: position.coords.latitude,
+                            boyLng: position.coords.longitude
+                        });
+                    }, err => console.log("Location error:", err));
+                }
+            }
+        });
+    }, 10000); // প্রতি ১০ সেকেন্ডে আপডেট
+};
+  
+  // ==================== SMART DELAY & OFFLINE LOGIC (PART 2) ====================
 
 // ১. ডিলে রিপোর্ট মডাল ওপেন করা
 window.openDelayModal = function(orderId) {
