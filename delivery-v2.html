@@ -720,57 +720,15 @@
     <div id="shop-product-list"></div>
   </div>
 
-  <!-- 🚀 নতুন: ইউনিফাইড ক্যাটালগ রিকোয়েস্ট ফর্ম -->
-<div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
-  <h3>💡 নতুন আইটেম বা ক্যাটাগরি সাজেস্ট করুন</h3>
-  <p style="font-size: 12px; color: #666; margin-bottom: 15px;">আপনার কাঙ্ক্ষিত পণ্য আমাদের ক্যাটালগে নেই? অ্যাডমিনের কাছে সাজেস্ট করুন।</p>
-  
-  <div class="dlv-form-group">
-    <label>আপনি কী সাজেস্ট করতে চান?</label>
-    <select id="req-type" class="dlv-input" onchange="toggleReqForm()">
-      <option value="product">📦 নতুন প্রোডাক্ট</option>
-      <option value="category">🗂️ নতুন ক্যাটাগরি</option>
-    </select>
-  </div>
-
-  <!-- নতুন ক্যাটাগরির জন্য ফর্ম (প্রথমে হাইড থাকবে) -->
-  <div id="req-cat-form" class="mp-hidden">
-    <div class="dlv-form-group">
-      <label>নতুন ক্যাটাগরির নাম</label>
-      <input type="text" id="req-new-cat-name" class="dlv-input" placeholder="যেমন: ডেইরি ফার্ম">
+  <!-- 🚀 দোকানদারের ক্যাটাগরি সাজেশন সেকশন -->
+  <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
+    <h3>💡 নতুন ক্যাটাগরি সাজেশন</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">আপনার কাঙ্ক্ষিত ক্যাটাগরি না থাকলে অ্যাডমিনকে সাজেস্ট করুন।</p>
+    <div style="display: flex; gap: 8px;">
+      <input type="text" id="shop-cat-suggestion" class="dlv-input" placeholder="ক্যাটাগরির নাম..." style="flex: 1;">
+      <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 0 15px;" onclick="sendCategorySuggestion()">📩 পাঠান</button>
     </div>
   </div>
-
-  <!-- নতুন প্রোডাক্টের জন্য ফর্ম -->
-  <div id="req-prod-form">
-    <div class="dlv-form-group">
-      <label>প্রোডাক্টের নাম *</label>
-      <input type="text" id="req-prod-name" class="dlv-input" placeholder="যেমন: আমুল মাখন">
-    </div>
-
-    <div class="dlv-form-group">
-      <label>ক্যাটাগরি *</label>
-      <!-- ড্রপডাউনে ডাইনামিক ক্যাটাগরি এবং নতুন ক্যাটাগরি যোগের অপশন -->
-      <select id="req-prod-cat" class="dlv-input" onchange="handleReqCatChange(this.value)">
-        <!-- JS দিয়ে অপশন লোড হবে -->
-      </select>
-      <!-- নতুন ক্যাটাগরি টাইপ করার ইনপুট (প্রথমে হাইড) -->
-      <input type="text" id="req-new-cat-inline" class="dlv-input mp-hidden" placeholder="নতুন ক্যাটাগরির নাম লিখুন" style="margin-top: 5px;">
-    </div>
-
-    <div class="dlv-form-group">
-      <label>প্রোডাক্টের ছবি (ঐচ্ছিক)</label>
-      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'req-prod')">📷 ক্যামেরা</button>
-        <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'req-prod')">🖼️ গ্যালারি</button>
-      </div>
-      <img id="req-prod-img-preview" style="width: 100%; height: 100px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
-      <input type="file" id="req-prod-img-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'req-prod')">
-    </div>
-  </div>
-
-  <button class="mp-btn mp-btn-primary" onclick="submitCatalogRequest()">📩 অ্যাডমিনের কাছে পাঠান</button>
-</div>
   
   <!-- দোকানের খাতা -->
   <div class="mp-card">
@@ -4753,30 +4711,7 @@ else if ((order.status === 'assigned' || order.status === 'picked_up') && order.
     }
   };
 
-// ডেলিভারি বয়ের লাইভ লোকেশন ট্র্যাকার
-window.startLiveLocationTracking = function(orderId) {
-    if(window.locationTrackingTimer) clearInterval(window.locationTrackingTimer);
-    
-    window.locationTrackingTimer = setInterval(() => {
-        const orderRef = doc(db, "orders", orderId);
-        getDoc(orderRef).then(snap => {
-            if(snap.exists()) {
-                const data = snap.data();
-                // যদি অফলাইন মোড চালু না থাকে এবং অর্ডার ডেলিভারি না হয়ে থাকে
-                if(!data.isOfflineTracking && data.status !== 'delivered' && (data.status === 'picked_up' || data.status === 'assigned')) {
-                    navigator.geolocation.getCurrentPosition(position => {
-                        updateDoc(orderRef, {
-                            boyLat: position.coords.latitude,
-                            boyLng: position.coords.longitude
-                        });
-                    }, err => console.log("Location error:", err));
-                }
-            }
-        });
-    }, 10000); // প্রতি ১০ সেকেন্ডে আপডেট
-};
-  
-  // 🚀 নতুন ফাংশন: বিজয়ী ডেলিভারি বয়কে অটোমেটিক অ্যাসাইন করা
+// 🚀 নতুন ফাংশন: বিজয়ী ডেলিভারি বয়কে অটোমেটিক অ্যাসাইন করা
 async function autoAssignOrderToWinner(orderId, finalBid) {
   try {
     const orderRef = doc(db, "orders", orderId);
@@ -4791,8 +4726,7 @@ async function autoAssignOrderToWinner(orderId, finalBid) {
           deliveryCharge: finalBid,
           assignedAt: serverTimestamp()
         });
-       window.startLiveLocationTracking(orderId);
-      // সাউন্ড বাজানো যেতে পারে
+        // সাউন্ড বাজানো যেতে পারে
         const audio = document.getElementById('dlv-notify-sound');
         if(audio) audio.play().catch(e => {});
     }
@@ -6090,123 +6024,51 @@ window.searchPinUsers = async function() {
     }, 15000); // ১৫ সেকেন্ড
   };
 
-  // ==================== SMART TRACKING & AI LOGIC (PART 4) ====================
-let routeLine = null;
-
-window.openTrackModal = function(orderId) {
-  document.getElementById('dlv-track-modal').classList.add('active');
-  
-  // ম্যাপ রিসেট
-  if(liveTrackMap) { liveTrackMap.remove(); liveTrackMap = null; }
-  if(trackInterval) { clearInterval(trackInterval); trackInterval = null; }
-
-  setTimeout(() => {
-    liveTrackMap = L.map('live-track-map').setView([22.5726, 88.3639], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-    }).addTo(liveTrackMap);
-  }, 200);
-
-  onSnapshot(doc(db, "orders", orderId), (docSnap) => {
-    if(!docSnap.exists() || !liveTrackMap) return;
-    const order = docSnap.data();
-
-    // ১. ডেলিভারি বয়ের প্রোফাইল আপডেট
-    document.getElementById('track-boy-name').innerText = order.deliveryBoyName || 'ডেলিভারি বয়';
+  // ২. কাস্টমারের জন্য ম্যাপ ওপেন করা
+  window.openTrackModal = function(orderId, boyLat, boyLng, custLat, custLng) {
+    currentTrackOrderId = orderId;
+    document.getElementById('dlv-track-modal').classList.add('active');
     
-    // ২. ডিলে রিপোর্ট মেসেজ
-    const delayBox = document.getElementById('track-delay-box');
-    if (order.delayTime && order.delayReason) {
-        delayBox.classList.remove('mp-hidden');
-        delayBox.innerHTML = `⚠️ <b>দেরি হচ্ছে:</b> ${order.delayReason} এর কারণে ডেলিভারি বয় ${order.delayTime} মিনিট দেরি করছে।`;
-    } else {
-        delayBox.classList.add('mp-hidden');
-    }
+    // ডিফল্ট লোকেশন (যদি না থাকে)
+    const dLat = boyLat || 22.5726;
+    const dLng = boyLng || 88.3639;
+    const cLat = custLat || 22.5726;
+    const cLng = custLng || 88.3639;
 
-    // ৩. ম্যাপে দোকান ও কাস্টমারের লোকেশন বসানো
-    if (order.shopLat && order.shopLng && !document.getElementById('shop-marker-track')) {
-        L.marker([order.shopLat, order.shopLng], {
-            icon: L.divIcon({ html: '<div id="shop-marker-track" style="font-size:20px;">🏪</div>', className: 'custom-icon', iconSize: [30, 30] })
-        }).addTo(liveTrackMap).bindPopup("দোকান");
-    }
-    if (order.lat && order.lng && !document.getElementById('cust-marker-track')) {
-        L.marker([order.lat, order.lng], {
-            icon: L.divIcon({ html: '<div id="cust-marker-track" style="font-size:20px;">🏠</div>', className: 'custom-icon', iconSize: [30, 30] })
-        }).addTo(liveTrackMap).bindPopup("আপনার বাড়ি");
-        
+    setTimeout(() => {
+      // ম্যাপ তৈরি
+      if (!liveTrackMap) {
+        liveTrackMap = L.map('live-track-map').setView([dLat, dLng], 14);
+      // 🚀 আপনার পুরোনো L.tileLayer(...) লাইনটি মুছে নিচেরটি বসান
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+}).addTo(liveTrackMap);
+        // কাস্টমার মার্কার (🏠)
+        customerMarker = L.marker([cLat, cLng], {
+          icon: L.divIcon({ html: '<div style="font-size:24px;">🏠</div>', className: 'custom-icon', iconSize: [30, 30] })
+        }).addTo(liveTrackMap).bindPopup("আপনার লোকেশন");
+
+        // ডেলিভারি বয় মার্কার (🛵)
+        deliveryMarker = L.marker([dLat, dLng], {
+          icon: L.divIcon({ html: '<div style="font-size:24px;">🛵</div>', className: 'custom-icon', iconSize: [30, 30] })
+        }).addTo(liveTrackMap).bindPopup("ডেলিভারি বয়");
+
         // ম্যাপকে দুইজনের মাঝখানে ফিট করা
-        const bounds = L.latLngBounds([[order.shopLat || order.lat, order.shopLng || order.lng], [order.lat, order.lng]]);
+        const bounds = L.latLngBounds([[dLat, dLng], [cLat, cLng]]);
         liveTrackMap.fitBounds(bounds, { padding: [50, 50] });
+      }
+      liveTrackMap.invalidateSize();
+    }, 300);
+  };
+
+  window.closeTrackModal = function() {
+    document.getElementById('dlv-track-modal').classList.remove('active');
+    if(liveTrackMap) {
+      liveTrackMap.remove();
+      liveTrackMap = null;
     }
-
-    // ৪. 🚀 AI ট্র্যাকিং এবং ডেলিভারি বয়ের পজিশন আপডেট লজিক
-    if(trackInterval) clearInterval(trackInterval);
-    
-    trackInterval = setInterval(() => {
-        let currentLat, currentLng;
-
-        if (order.isOfflineTracking) {
-            // 🔋 অফলাইন মোড: AI গাণিতিক হিসাব
-            const speed = order.fakeSpeed || 20;
-            const startLat = order.shopLat;
-            const startLng = order.shopLng;
-            const endLat = order.lat;
-            const endLng = order.lng;
-
-            if(startLat && endLat) {
-                // দূরত্ব বের করা (Haversine Formula - কিমি)
-                const R = 6371; 
-                const dLat = (endLat - startLat) * Math.PI / 180;
-                const dLon = (endLng - startLng) * Math.PI / 180;
-                const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(startLat * Math.PI / 180) * Math.cos(endLat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-                const totalDistance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-                // কত সময় পার হয়েছে (সেকেন্ডে)
-                const startTime = order.trackingUpdatedAt ? order.trackingUpdatedAt.toMillis() : Date.now();
-                const timePassedSec = (Date.now() - startTime) / 1000;
-                
-                // অতিক্রান্ত দূরত্ব = (গতি * সময়) / 3600
-                let coveredDistance = (speed * timePassedSec) / 3600;
-                let progress = Math.min(coveredDistance / totalDistance, 1); // ০ থেকে ১ এর মধ্যে
-
-                // ইন্টারপোলেশন করে বর্তমান পজিশন বের করা
-                currentLat = startLat + (endLat - startLat) * progress;
-                currentLng = startLng + (endLng - startLng) * progress;
-
-                // ETA আপডেট
-                let remainingDist = totalDistance - coveredDistance;
-                let remainingTimeMins = Math.max(0, Math.ceil((remainingDist / speed) * 60));
-                document.getElementById('track-eta').innerText = `~ ${remainingTimeMins} মিনিট (AI)`;
-            }
-        } else {
-            // 🟢 অনলাইন মোড: আসল লোকেশন
-            currentLat = order.boyLat;
-            currentLng = order.boyLng;
-            document.getElementById('track-eta').innerText = `~ ১০ মিনিট (লাইভ)`;
-        }
-
-        // ৫. ম্যাপে ডেলিভারি বয়ের মার্কার আপডেট
-        if (currentLat && currentLng) {
-            if(deliveryMarker) {
-                deliveryMarker.setLatLng([currentLat, currentLng]);
-            } else {
-                deliveryMarker = L.marker([currentLat, currentLng], {
-                    icon: L.divIcon({ html: '<div style="font-size:24px;">🛵</div>', className: 'custom-icon', iconSize: [30, 30] })
-                }).addTo(liveTrackMap);
-            }
-        }
-    }, 3000); // প্রতি ৩ সেকেন্ডে আপডেট হবে
-  });
-};
-
-window.closeTrackModal = function() {
-  document.getElementById('dlv-track-modal').classList.remove('active');
-  if(liveTrackMap) { liveTrackMap.remove(); liveTrackMap = null; }
-  if(trackInterval) { clearInterval(trackInterval); trackInterval = null; }
-  deliveryMarker = null;
-};
-
-
+  };
 
   // ৩. কাস্টমারের অর্ডার লিস্টে ট্র্যাকিং আপডেট (onSnapshot)
   // আপনার openCustomerOrdersModal ফাংশনে onSnapshot এর ভেতরে নিচের লজিকটি বসাতে হবে।
@@ -7959,242 +7821,29 @@ window.handleCSVUpload = function(event) {
     }
   };
 
-// ==================== SMART DELAY & OFFLINE LOGIC (PART 2) ====================
-
-// ১. ডিলে রিপোর্ট মডাল ওপেন করা
-window.openDelayModal = function(orderId) {
-  document.getElementById('delay-order-id').value = orderId;
-  document.getElementById('dlv-delay-modal').classList.add('active');
-};
-
-// ২. ডিলে রিপোর্ট সাবমিট করা
-window.submitDelayReport = async function() {
-  const orderId = document.getElementById('delay-order-id').value;
-  const reason = document.getElementById('delay-reason').value;
-  const delayTime = parseInt(document.getElementById('delay-time').value);
-
-  if(!orderId) return;
-
-  const btn = document.querySelector('#dlv-delay-modal .mp-btn-primary');
-  btn.innerText = "⏳ আপডেট হচ্ছে..."; btn.disabled = true;
-
-  try {
-    await updateDoc(doc(db, "orders", orderId), {
-      delayReason: reason,
-      delayTime: delayTime,
-      delayUpdatedAt: serverTimestamp()
-    });
-    
-    document.getElementById('dlv-delay-modal').classList.remove('active');
-    alert(`✅ কাস্টমারকে জানানো হয়েছে যে ${reason} এর কারণে ${delayTime} মিনিট দেরি হবে।`);
-  } catch(e) {
-    console.error(e);
-    alert("আপডেট পাঠাতে সমস্যা হয়েছে!");
-  } finally {
-    btn.innerText = "আপডেট পাঠান"; btn.disabled = false;
-  }
-};
-
-// ৩. অফলাইন/স্পিড মডাল ওপেন করা
-window.openSpeedModal = function(orderId) {
-  document.getElementById('speed-order-id').value = orderId;
-  document.getElementById('dlv-speed-modal').classList.add('active');
-};
-
-// ৪. অফলাইন ট্র্যাকিং চালু করা (স্পিড সাবমিট)
-window.submitOfflineSpeed = async function() {
-  const orderId = document.getElementById('speed-order-id').value;
-  const speed = parseFloat(document.getElementById('offline-speed').value);
-
-  if(!orderId) return;
-
-  const btn = document.querySelector('#dlv-speed-modal .mp-btn-success');
-  btn.innerText = "⏳ প্রসেস হচ্ছে..."; btn.disabled = true;
-
-  try {
-    // 🚀 এখানে ডেটাবেসে isOfflineTracking সত্য এবং speed সেভ করা হচ্ছে
-    await updateDoc(doc(db, "orders", orderId), {
-      isOfflineTracking: true,
-      fakeSpeed: speed,
-      trackingUpdatedAt: serverTimestamp()
-    });
-    
-    document.getElementById('dlv-speed-modal').classList.remove('active');
-    alert(`✅ অফলাইন ট্র্যাকিং চালু হলো! কাস্টমার এখন AI ট্র্যাকিং দেখতে পাবে (গড় স্পিড: ${speed} কিমি/ঘণ্টা)।`);
-    
-    // 🚀 ট্র্যাকিং চালু করার পর ফোনের আসল লোকেশন বন্ধ করার জন্য কোড
-    // (ব্রাউজার লেভেলে এটি সরাসরি বন্ধ করা যায় না, তবে আমরা ডেটাবেস আপডেট বন্ধ করে দেব)
-    
-  } catch(e) {
-    console.error(e);
-    alert("আপডেট পাঠাতে সমস্যা হয়েছে!");
-  } finally {
-    btn.innerText = "অফলাইন ট্র্যাকিং চালু করুন"; btn.disabled = false;
-  }
-};
-
-// ==================== CATALOG REQUEST LOGIC (PART 2) ====================
-let reqUploadedImgUrl = null;
-
-// ১. ফর্ম টগল (প্রোডাক্ট নাকি ক্যাটাগরি)
-window.toggleReqForm = function() {
-  const type = document.getElementById('req-type').value;
-  const catForm = document.getElementById('req-cat-form');
-  const prodForm = document.getElementById('req-prod-form');
-
-  if (type === 'category') {
-    catForm.classList.remove('mp-hidden');
-    prodForm.classList.add('mp-hidden');
-  } else {
-    catForm.classList.add('mp-hidden');
-    prodForm.classList.remove('mp-hidden');
-    loadCategoriesForRequest(); // ক্যাটাগরি লিস্ট লোড
-  }
-};
-
-// ২. ড্রপডাউনে ক্যাটাগরি লোড করা (নতুন ক্যাটাগরি অপশন সহ)
-function loadCategoriesForRequest() {
-  const select = document.getElementById('req-prod-cat');
-  select.innerHTML = '<option value="" disabled selected>ক্যাটাগরি সিলেক্ট করুন...</option>';
-  
-  // ডেটাবেস থেকে ক্যাটাগরি আনা
-  onSnapshot(collection(db, "categories"), (snap) => {
-    select.innerHTML = '<option value="" disabled selected>ক্যাটাগরি সিলেক্ট করুন...</option>';
-    snap.forEach(doc => {
-      select.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`;
-    });
-    // 🚀 একদম নিচে নতুন ক্যাটাগরি যোগ করার অপশন
-    select.innerHTML += `<option value="new_category" style="color:var(--mp-primary); font-weight:bold;">➕ নতুন ক্যাটাগরি যোগ করুন...</option>`;
-  });
-}
-
-// ৩. নতুন ক্যাটাগরি সিলেক্ট করলে টেক্সট বক্স দেখানো
-window.handleReqCatChange = function(val) {
-  const newCatInput = document.getElementById('req-new-cat-inline');
-  if (val === 'new_category') {
-    newCatInput.classList.remove('mp-hidden');
-    newCatInput.focus();
-  } else {
-    newCatInput.classList.add('mp-hidden');
-    newCatInput.value = '';
-  }
-};
-
-// ৪. ছবি আপলোড হ্যান্ডেল করা (আপনার আগের pickImageSource এবং handleImageSelect এর সাথে কানেক্ট করতে হবে)
-// (নোট: যেহেতু আপনার আগে থেকেই cropper.js আছে, সেখানে req-prod কনটেক্সট হ্যান্ডেল করতে হবে)
-// এখানে শুধু আপলোড হওয়া ছবির URL ট্র্যাক করব।
-// (অাপনার আগের saveCroppedImage ফাংশনে currentUploadContext === 'req-prod' হলে এখানে URL সেট করবেন)
-
-// ৫. ফর্ম সাবমিট করা
-window.submitCatalogRequest = async function() {
-  const type = document.getElementById('req-type').value;
-
-  try {
-    if (type === 'category') {
-      // শুধু নতুন ক্যাটাগরি রিকোয়েস্ট
-      const catName = document.getElementById('req-new-cat-name').value.trim();
-      if (!catName) return alert("ক্যাটাগরির নাম দিন!");
-
-      await addDoc(collection(db, "category_requests"), {
-        categoryName: catName,
-        shopId: currentUser.uid,
-        shopName: globalUserData.name,
-        status: 'pending',
-        createdAt: serverTimestamp()
-      });
-      alert("✅ নতুন ক্যাটাগরি সাজেশন পাঠানো হয়েছে!");
-      document.getElementById('req-new-cat-name').value = '';
-
-    } else {
-      // নতুন প্রোডাক্ট রিকোয়েস্ট
-      const prodName = document.getElementById('req-prod-name').value.trim();
-      let selectedCat = document.getElementById('req-prod-cat').value;
-      const newCatInline = document.getElementById('req-new-cat-inline').value.trim();
-
-      if (!prodName) return alert("প্রোডাক্টের নাম দিন!");
-      if (!selectedCat) return alert("ক্যাটাগরি সিলেক্ট করুন!");
-
-      // যদি নতুন ক্যাটাগরি লিখে থাকে
-      if (selectedCat === 'new_category') {
-        if (!newCatInline) return alert("নতুন ক্যাটাগরির নাম লিখুন!");
-        
-        // ১. নতুন ক্যাটাগরি রিকোয়েস্ট পাঠানো
-        await addDoc(collection(db, "category_requests"), {
-          categoryName: newCatInline,
-          shopId: currentUser.uid,
-          shopName: globalUserData.name,
-          status: 'pending',
-          createdAt: serverTimestamp()
-        });
-        // প্রোডাক্টের ক্যাটাগরি হিসেবে নতুন নামটি সেট করা
-        selectedCat = newCatInline; 
-      }
-
-      // ২. প্রোডাক্ট রিকোয়েস্ট পাঠানো
-      await addDoc(collection(db, "product_requests"), {
-        productName: prodName,
-        category: selectedCat,
-        image: reqUploadedImgUrl || null, // ছবি থাকলে
-        shopId: currentUser.uid,
-        shopName: globalUserData.name,
-        status: 'pending',
-        createdAt: serverTimestamp()
-      });
-
-      alert("✅ নতুন প্রোডাক্ট সাজেশন পাঠানো হয়েছে! অ্যাডমিন অ্যাপ্রুভ করলে এটি আপনার ক্যাটালগে যুক্ত হবে।");
-      
-      // ফর্ম রিসেট
-      document.getElementById('req-prod-name').value = '';
-      document.getElementById('req-prod-cat').value = '';
-      document.getElementById('req-new-cat-inline').classList.add('mp-hidden');
-      document.getElementById('req-prod-img-preview').style.display = 'none';
-      reqUploadedImgUrl = null;
-    }
-  } catch(e) {
-    console.error(e);
-    alert("সাবমিট করতে সমস্যা হয়েছে!");
-  }
-};
-
 </script>
 
 <!-- Live Tracking Modal (Customer) -->
 <div id="dlv-track-modal" class="dlv-modal-overlay">
-  <div class="dlv-modal-content" style="max-height: 90vh; padding: 15px; overflow-y: auto;">
+  <div class="dlv-modal-content" style="max-height: 85vh; padding: 15px;">
     <span class="dlv-modal-close" onclick="closeTrackModal()">&times;</span>
-    <h3 style="margin-bottom: 15px; color: var(--mp-primary); text-align: center;">📍 লাইভ অর্ডার ট্র্যাকিং</h3>
+    <h3 style="margin-bottom: 10px; color: var(--mp-primary);">📍 লাইভ অর্ডার ট্র্যাকিং</h3>
     
-    <!-- 🚀 ডেলিভারি বয়ের প্রোফাইল কার্ড (ছবি ও রেটিং) -->
-    <div style="display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #eee;">
-        <img id="track-boy-img" src="https://via.placeholder.com/50?text=User" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--mp-primary);">
-        <div style="flex: 1;">
-            <div id="track-boy-name" style="font-size: 15px; font-weight: bold; color: #333;">ডেলিভারি বয়</div>
-            <div style="font-size: 12px; color: #666; margin-top: 2px;">
-                ⭐ <span id="track-boy-rating">4.8</span> রেটিং | 🛵 ডেলিভারি পার্টনার
-            </div>
-        </div>
-        <button class="mp-btn" style="width: auto; margin: 0; padding: 6px 12px; background: #0f9d58; color: white; font-size: 12px;" onclick="alert('ইন-অ্যাপ কল ফিচারটি পরবর্তী আপডেটে আসছে!')">📞 কল</button>
-    </div>
-
-    <!-- 🚀 AI ডিলে ও স্ট্যাটাস নোটিফিকেশন বক্স -->
-    <div id="track-delay-box" class="mp-hidden" style="background: #fef7e0; color: #b06000; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: bold; margin-bottom: 15px; border: 1px solid #ffe082; text-align: center;">
-        <!-- JS দিয়ে মেসেজ বসবে -->
-    </div>
-
-    <!-- 🚀 ETA এবং AI ট্র্যাকিং স্ট্যাটাস -->
-    <div style="background: #e8f0fe; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-size: 13px; color: #555; font-weight: bold;">⏱️ আনুমানিক সময়:</span>
+    <!-- ETA Info -->
+    <div style="background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 13px; color: #555;">আনুমানিক সময় (ETA):</span>
       <span id="track-eta" style="font-size: 16px; font-weight: bold; color: var(--mp-primary);">-- মিনিট</span>
     </div>
 
     <!-- Map Container -->
-    <div id="live-track-map" style="height: 250px; width: 100%; border-radius: 10px; border: 1px solid #ccc; z-index: 1; margin-bottom: 10px;"></div>
+    <div id="live-track-map" style="height: 300px; width: 100%; border-radius: 10px; border: 1px solid #ccc; z-index: 1;"></div>
     
-    <div style="font-size: 11px; color: #666; text-align: center; background: #f0f2f5; padding: 6px; border-radius: 6px;">
-      🤖 আমাদের AI ট্র্যাকিং ৯৯% নিখুঁতভাবে ডেলিভারি বয়ের অবস্থান অনুমান করে।
+    <div style="margin-top: 10px; font-size: 12px; color: #666; text-align: center;">
+      🛵 ডেলিভারি বয় আপনার দিকে এগিয়ে আসছেন...
     </div>
   </div>
-</div>  
+</div>
+  
 
 <!-- 🚀 Modern POS Billing Modal -->
 <div id="dlv-pos-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#f0f2f5; z-index:10005; flex-direction:column;">
