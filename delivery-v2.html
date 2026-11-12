@@ -8085,35 +8085,22 @@ window.handleCSVUpload = function(event) {
 
     <!-- 🚀 ETA এবং AI ট্র্যাকিং স্ট্যাটাস -->
     <div style="background: #e8f0fe; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-size: 13px; color: #555; font-weight: bold;">⏱️ আনুমানিক সময়:</span>
+      <span style="font-size: 13px; color: #555; font-weight: bold;">⏱️ আনুমানিক সময় (ETA):</span>
       <span id="track-eta" style="font-size: 16px; font-weight: bold; color: var(--mp-primary);">-- মিনিট</span>
     </div>
 
     <!-- Map Container -->
     <div id="live-track-map" style="height: 250px; width: 100%; border-radius: 10px; border: 1px solid #ccc; z-index: 1; margin-bottom: 10px;"></div>
     
-    <div style="font-size: 11px; color: #666; text-align: center; background: #f0f2f5; padding: 6px; border-radius: 6px;">
-      🤖 আমাদের AI ট্র্যাকিং ৯৯% নিখুঁতভাবে ডেলিভারি বয়ের অবস্থান অনুমান করে।
+    <!-- 🚀 ম্যাপের নিচের স্ট্যাটাস টেক্সট -->
+    <div style="font-size: 12px; color: #666; text-align: center; background: #f0f2f5; padding: 8px; border-radius: 6px;">
+      <div style="margin-bottom: 4px;">🛵 ডেলিভারি বয় আপনার দিকে এগিয়ে আসছেন...</div>
+      <div style="font-size: 11px; color: #1a73e8;">🤖 আমাদের AI ট্র্যাকিং ৯৯% নিখুঁতভাবে ডেলিভারি বয়ের অবস্থান অনুমান করে।</div>
     </div>
   </div>
 </div>
-    <!-- ETA Info -->
-    <div style="background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-size: 13px; color: #555;">আনুমানিক সময় (ETA):</span>
-      <span id="track-eta" style="font-size: 16px; font-weight: bold; color: var(--mp-primary);">-- মিনিট</span>
-    </div>
 
-    <!-- Map Container -->
-    <div id="live-track-map" style="height: 300px; width: 100%; border-radius: 10px; border: 1px solid #ccc; z-index: 1;"></div>
-    
-    <div style="margin-top: 10px; font-size: 12px; color: #666; text-align: center;">
-      🛵 ডেলিভারি বয় আপনার দিকে এগিয়ে আসছেন...
-    </div>
-  </div>
-</div>
-  
-
-<!-- 🚀 Modern POS Billing Modal -->
+  <!-- 🚀 Modern POS Billing Modal -->
 <div id="dlv-pos-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#f0f2f5; z-index:10005; flex-direction:column;">
   
   <!-- POS Topbar -->
