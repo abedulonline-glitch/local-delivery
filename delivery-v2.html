@@ -4794,12 +4794,15 @@ async function autoAssignOrderToWinner(orderId, finalBid) {
     // চেক করা হচ্ছে অর্ডারটি এখনো bidding অবস্থায় আছে কি না (যাতে একাধিকবার আপডেট না হয়)
     if(orderSnap.exists() && orderSnap.data().status === 'bidding') {
         await updateDoc(orderRef, {
-          status: "assigned",
-          deliveryBoyId: currentUser.uid,
-          deliveryBoyName: globalUserData.name || 'Delivery Boy',
-          deliveryCharge: finalBid,
-          assignedAt: serverTimestamp()
-        });
+  status: "assigned",
+  deliveryBoyId: currentUser.uid,
+  deliveryBoyName: globalUserData.name || 'Delivery Boy',
+  deliveryCharge: finalBid,
+  assignedAt: serverTimestamp()
+});
+
+// 🚀 নতুন: লোকেশন ট্র্যাকিং শুরু করা
+window.startLiveLocationTracking(orderId);
         // সাউন্ড বাজানো যেতে পারে
         const audio = document.getElementById('dlv-notify-sound');
         if(audio) audio.play().catch(e => {});
@@ -6099,12 +6102,18 @@ window.searchPinUsers = async function() {
   };
 
   
- window.openTrackModal = function(orderId) {
-  document.getElementById('dlv-track-modal').classList.add('active');
-  const mapDiv = document.getElementById('live-track-map');
+ // ==================== SMART TRACKING & AI LOGIC (PART 4) ====================
+let liveTrackMap = null;
+let trackInterval = null;
+let deliveryMarker = null;
+let routeLine = null;
 
+window.openTrackModal = function(orderId) {
+  document.getElementById('dlv-track-modal').classList.add('active');
+  
   // ম্যাপ রিসেট
   if(liveTrackMap) { liveTrackMap.remove(); liveTrackMap = null; }
+  if(trackInterval) { clearInterval(trackInterval); trackInterval = null; }
 
   setTimeout(() => {
     liveTrackMap = L.map('live-track-map').setView([22.5726, 88.3639], 13);
@@ -6113,16 +6122,14 @@ window.searchPinUsers = async function() {
     }).addTo(liveTrackMap);
   }, 200);
 
-  // 🚀 লাইভ লিসেনার (ডেটাবেস থেকে ডেলিভারি বয়ের আপডেট শোনা)
   onSnapshot(doc(db, "orders", orderId), (docSnap) => {
-    if(!docSnap.exists()) return;
+    if(!docSnap.exists() || !liveTrackMap) return;
     const order = docSnap.data();
 
-    // ১. ডেলিভারি বয়ের ছবি, নাম এবং রেটিং লোড করা
-    // (এখানে ডেটাবেস থেকে ডেলিভারি বয়ের ডেটা আনতে হবে, আপাতত ডিফল্ট দেখাচ্ছি)
+    // ১. ডেলিভারি বয়ের প্রোফাইল আপডেট
     document.getElementById('track-boy-name').innerText = order.deliveryBoyName || 'ডেলিভারি বয়';
     
-    // ২. 🚀 ডিলে রিপোর্ট থাকলে মেসেজ দেখানো
+    // ২. ডিলে রিপোর্ট মেসেজ
     const delayBox = document.getElementById('track-delay-box');
     if (order.delayTime && order.delayReason) {
         delayBox.classList.remove('mp-hidden');
@@ -6131,62 +6138,88 @@ window.searchPinUsers = async function() {
         delayBox.classList.add('mp-hidden');
     }
 
-    // ৩. 🚀 AI ট্র্যাকিং এবং ETA ক্যালকুলেশন
-    let etaText = "-- মিনিট";
-    if (order.isOfflineTracking) {
-        // যদি ডেলিভারি বয় অফলাইন ট্র্যাকিং চালু করে
-        const speed = order.fakeSpeed || 20;
-        // এখানে দূরত্ব বের করে (হ্যাভারসিন ফর্মুলা) সময় বের করতে হবে, আপাতত ডেমো হিসেবে ১৫ মিনিট দেখানো হচ্ছে
-        etaText = `~ ১৫ মিনিট (AI গতি: ${speed} কিমি/ঘণ্টা)`;
-        
-        if(!document.getElementById('ai-tracking-warning')) {
-            const mapContainer = document.getElementById('live-track-map').parentElement;
-            mapContainer.insertAdjacentHTML('beforeend', `<div id="ai-tracking-warning" style="font-size:11px; color:#1a73e8; text-align:center; margin-top:5px;">🤖 ডেলিভারি বয়ের নেটওয়ার্ক সমস্যা, AI ট্র্যাকিং চলছে...</div>`);
-        }
-    } else {
-        // যদি অনলাইন থাকে
-        etaText = `~ ১০ মিনিট (লাইভ)`;
+    // ৩. ম্যাপে দোকান ও কাস্টমারের লোকেশন বসানো
+    if (order.shopLat && order.shopLng && !document.getElementById('shop-marker-track')) {
+        L.marker([order.shopLat, order.shopLng], {
+            icon: L.divIcon({ html: '<div id="shop-marker-track" style="font-size:20px;">🏪</div>', className: 'custom-icon', iconSize: [30, 30] })
+        }).addTo(liveTrackMap).bindPopup("দোকান");
     }
-    document.getElementById('track-eta').innerText = etaText;
+    if (order.lat && order.lng && !document.getElementById('cust-marker-track')) {
+        L.marker([order.lat, order.lng], {
+            icon: L.divIcon({ html: '<div id="cust-marker-track" style="font-size:20px;">🏠</div>', className: 'custom-icon', iconSize: [30, 30] })
+        }).addTo(liveTrackMap).bindPopup("আপনার বাড়ি");
+        
+        // ম্যাপকে দুইজনের মাঝখানে ফিট করা
+        const bounds = L.latLngBounds([[order.shopLat || order.lat, order.shopLng || order.lng], [order.lat, order.lng]]);
+        liveTrackMap.fitBounds(bounds, { padding: [50, 50] });
+    }
 
-    // ৪. ম্যাপে মার্কার বসানো
-    if(liveTrackMap) {
-        if (order.shopLat && order.shopLng) {
-            L.marker([order.shopLat, order.shopLng], {
-                icon: L.divIcon({ html: '<div style="font-size:20px;">🏪</div>', className: 'custom-icon', iconSize: [30, 30] })
-            }).addTo(liveTrackMap).bindPopup("দোকান");
+    // ৪. 🚀 AI ট্র্যাকিং এবং ডেলিভারি বয়ের পজিশন আপডেট লজিক
+    if(trackInterval) clearInterval(trackInterval);
+    
+    trackInterval = setInterval(() => {
+        let currentLat, currentLng;
+
+        if (order.isOfflineTracking) {
+            // 🔋 অফলাইন মোড: AI গাণিতিক হিসাব
+            const speed = order.fakeSpeed || 20;
+            const startLat = order.shopLat;
+            const startLng = order.shopLng;
+            const endLat = order.lat;
+            const endLng = order.lng;
+
+            if(startLat && endLat) {
+                // দূরত্ব বের করা (Haversine Formula - কিমি)
+                const R = 6371; 
+                const dLat = (endLat - startLat) * Math.PI / 180;
+                const dLon = (endLng - startLng) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(startLat * Math.PI / 180) * Math.cos(endLat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+                const totalDistance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+                // কত সময় পার হয়েছে (সেকেন্ডে)
+                const startTime = order.trackingUpdatedAt ? order.trackingUpdatedAt.toMillis() : Date.now();
+                const timePassedSec = (Date.now() - startTime) / 1000;
+                
+                // অতিক্রান্ত দূরত্ব = (গতি * সময়) / 3600
+                let coveredDistance = (speed * timePassedSec) / 3600;
+                let progress = Math.min(coveredDistance / totalDistance, 1); // ০ থেকে ১ এর মধ্যে
+
+                // ইন্টারপোলেশন করে বর্তমান পজিশন বের করা
+                currentLat = startLat + (endLat - startLat) * progress;
+                currentLng = startLng + (endLng - startLng) * progress;
+
+                // ETA আপডেট
+                let remainingDist = totalDistance - coveredDistance;
+                let remainingTimeMins = Math.max(0, Math.ceil((remainingDist / speed) * 60));
+                document.getElementById('track-eta').innerText = `~ ${remainingTimeMins} মিনিট (AI)`;
+            }
+        } else {
+            // 🟢 অনলাইন মোড: আসল লোকেশন
+            currentLat = order.boyLat;
+            currentLng = order.boyLng;
+            document.getElementById('track-eta').innerText = `~ ১০ মিনিট (লাইভ)`;
         }
-        if (order.lat && order.lng) {
-            L.marker([order.lat, order.lng], {
-                icon: L.divIcon({ html: '<div style="font-size:20px;">🏠</div>', className: 'custom-icon', iconSize: [30, 30] })
-            }).addTo(liveTrackMap).bindPopup("আপনার বাড়ি");
+
+        // ৫. ম্যাপে ডেলিভারি বয়ের মার্কার আপডেট
+        if (currentLat && currentLng) {
+            if(deliveryMarker) {
+                deliveryMarker.setLatLng([currentLat, currentLng]);
+            } else {
+                deliveryMarker = L.marker([currentLat, currentLng], {
+                    icon: L.divIcon({ html: '<div style="font-size:24px;">🛵</div>', className: 'custom-icon', iconSize: [30, 30] })
+                }).addTo(liveTrackMap);
+            }
         }
-        
-        // ডেলিভারি বয়ের মার্কার (সবশেষে যেন সবার উপরে থাকে)
-        if (order.boyLat && order.boyLng) {
-            L.marker([order.boyLat, order.boyLng], {
-                icon: L.divIcon({ html: '<div style="font-size:24px;">🛵</div>', className: 'custom-icon', iconSize: [30, 30] })
-            }).addTo(liveTrackMap).bindPopup("ডেলিভারি বয়");
-        }
-        
-        // ম্যাপকে ফিট করা
-        const bounds = L.latLngBounds([]);
-        if (order.shopLat) bounds.extend([order.shopLat, order.shopLng]);
-        if (order.lat) bounds.extend([order.lat, order.lng]);
-        if (order.boyLat) bounds.extend([order.boyLat, order.boyLng]);
-        if (bounds.isValid()) liveTrackMap.fitBounds(bounds, { padding: [30, 30] });
-    }
+    }, 3000); // প্রতি ৩ সেকেন্ডে আপডেট হবে
   });
-}; 
+};
 
-
-  window.closeTrackModal = function() {
-    document.getElementById('dlv-track-modal').classList.remove('active');
-    if(liveTrackMap) {
-      liveTrackMap.remove();
-      liveTrackMap = null;
-    }
-  };
+window.closeTrackModal = function() {
+  document.getElementById('dlv-track-modal').classList.remove('active');
+  if(liveTrackMap) { liveTrackMap.remove(); liveTrackMap = null; }
+  if(trackInterval) { clearInterval(trackInterval); trackInterval = null; }
+  deliveryMarker = null;
+};
 
   // ৩. কাস্টমারের অর্ডার লিস্টে ট্র্যাকিং আপডেট (onSnapshot)
   // আপনার openCustomerOrdersModal ফাংশনে onSnapshot এর ভেতরে নিচের লজিকটি বসাতে হবে।
