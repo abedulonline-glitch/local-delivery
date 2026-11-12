@@ -571,14 +571,9 @@
 
 <!-- ==================== SHOPKEEPER DASHBOARD ==================== -->
 <div id="dlv-view-shopkeeper" class="mp-hidden">
-  <!-- 🚀 দোকানদারের জন্য অ্যাড সেকশন -->
-  <div class="dlv-ad-banner" id="shop-ad-container" style="display: none; margin-bottom: 15px; border-radius: 10px; overflow: hidden; position: relative;">
-    <span class="dlv-ad-badge" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px;">Sponsored</span>
-    <div id="shop-ad-content" style="width: 100%; height: 100%;"></div>
-  </div>
-
   <div class="dlv-dashboard-title">দোকানদার ড্যাশবোর্ড</div>
-    <!-- 🚀 SaaS Standalone Mode & Delivery Settings -->
+
+  <!-- 🚀 SaaS Standalone Mode & Delivery Settings -->
   <div class="mp-card" style="border-left: 4px solid #7b1fa2;">
     <h3>⚙️ স্টোর সেটিংস</h3>
     
@@ -766,13 +761,7 @@
     
     <!-- ==================== DELIVERY BOY DASHBOARD ==================== -->
     <div id="dlv-view-delivery" class="mp-hidden">
-  <!-- 🚀 ডেলিভারি বয়ের জন্য অ্যাড সেকশন -->
-  <div class="dlv-ad-banner" id="delivery-ad-container" style="display: none; margin-bottom: 15px; border-radius: 10px; overflow: hidden; position: relative;">
-    <span class="dlv-ad-badge" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px;">Sponsored</span>
-    <div id="delivery-ad-content" style="width: 100%; height: 100%;"></div>
-  </div>
-  
-  <div class="dlv-dashboard-title">ডেলিভারি বয় ড্যাশবোর্ড</div>
+      <div class="dlv-dashboard-title">ডেলিভারি বয় ড্যাশবোর্ড</div>
       <div class="dlv-status-toggle">
         <div>
           <span>আমার স্ট্যাটাস:</span>
@@ -805,13 +794,6 @@
 
 <!-- ==================== MANAGER DASHBOARD ==================== -->
 <div id="dlv-view-manager" class="mp-hidden">
-  <!-- 🚀 ম্যানেজারের জন্য অ্যাড সেকশন -->
-  <div class="dlv-ad-banner" id="manager-ad-container" style="display: none; margin-bottom: 15px; border-radius: 10px; overflow: hidden; position: relative;">
-    <span class="dlv-ad-badge" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px;">Sponsored</span>
-    <div id="manager-ad-content" style="width: 100%; height: 100%;"></div>
-  </div>
-  
-  <audio id="mgr-notify-sound" ...></audio>
   <!-- 🚀 নতুন অর্ডারের জন্য সাউন্ড ফাইল -->
   <audio id="mgr-notify-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
   
@@ -896,14 +878,8 @@
     
     <!-- ==================== ADMIN DASHBOARD ==================== -->
 <div id="dlv-view-admin" class="mp-hidden">
-  <!-- 🚀 অ্যাডমিনের জন্য অ্যাড সেকশন -->
-  <div class="dlv-ad-banner" id="admin-ad-container" style="display: none; margin-bottom: 15px; border-radius: 10px; overflow: hidden; position: relative;">
-    <span class="dlv-ad-badge" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px;">Sponsored</span>
-    <div id="admin-ad-content" style="width: 100%; height: 100%;"></div>
-  </div>
-
   <div class="dlv-dashboard-title">👑 অ্যাডমিন কন্ট্রোল প্যানেল</div>
-
+  
   <!-- রেভিনিউ সামারি -->
   <div class="dlv-wallet-header" style="background: linear-gradient(135deg, #1a73e8, #4285f4);">
     <div>
@@ -2905,9 +2881,7 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
         profileIconEl.style.display = 'block';
       }
     }
-     loadTopAds();
-   }
-     
+
     // ৫. টপবারে ওয়ালেট আপডেট (সব রোলের জন্য)
     updateTopbarWallet(userData.walletBalance);
 
@@ -5609,92 +5583,38 @@ function loadAdminAds() {
   };
 
   // ৪. কাস্টমারের টপবারে অ্যাড দেখানোর লজিক (আগের ফাংশনটি আপডেট করা হলো)
-
-// ==================== SMART TARGETED ADS LOADER ====================
-function loadTopAds() {
-  // রোল অনুযায়ী কন্টেইনার নির্ধারণ করা
-  let containerId = '';
-  let contentId = '';
-
-  if (userRole === 'customer') {
-      containerId = 'top-ad-container'; // আপনার পুরোনো কাস্টমার কন্টেইনার
-      contentId = 'ad-content';
-  } else if (userRole === 'delivery') {
-      containerId = 'delivery-ad-container';
-      contentId = 'delivery-ad-content';
-  } else if (userRole === 'shopkeeper') {
-      containerId = 'shop-ad-container';
-      contentId = 'shop-ad-content';
-  } else if (userRole === 'manager') {
-      containerId = 'manager-ad-container';
-      contentId = 'manager-ad-content';
-  } else if (userRole === 'admin') {
-      containerId = 'admin-ad-container';
-      contentId = 'admin-ad-content';
-  }
-
-  const container = document.getElementById(containerId);
-  const content = document.getElementById(contentId);
-  if (!container || !content) return;
-
-  onSnapshot(collection(db, "ads"), (snap) => {
-    if (snap.empty) {
-      container.style.display = 'none';
-      return;
-    }
-    
-    let validAds = [];
-    const userPin = globalUserData.pinCode || '';
-    const userPhone = globalUserData.phone || '';
-
-    snap.forEach(docSnap => {
-      const ad = docSnap.data();
+  function loadTopAds() {
+    onSnapshot(collection(db, "ads"), (snap) => {
+      if (snap.empty) {
+        document.getElementById('top-ad-container').style.display = 'none';
+        return;
+      }
       
-      // টার্গেটিং ফিল্টার
-      let isRoleMatch = (ad.targetRole === 'all' || ad.targetRole === userRole);
-      let isPinMatch = (!ad.targetPincode || ad.targetPincode === userPin);
-      let isPhoneMatch = (!ad.targetPhone || ad.targetPhone === userPhone);
-
-      if (isRoleMatch && isPinMatch && isPhoneMatch) {
-          validAds.push(ad);
+      const container = document.getElementById('top-ad-container');
+      const content = document.getElementById('ad-content');
+      container.style.display = 'flex';
+      
+      const ads = [];
+      snap.forEach(doc => ads.push(doc.data()));
+      
+      // র‍্যান্ডম একটি অ্যাড সিলেক্ট করা (যাতে প্রতিবার পেজ রিফ্রেশে নতুন অ্যাড আসে)
+      const ad = ads[Math.floor(Math.random() * ads.length)];
+      
+      if (ad.type === 'video') {
+        let vidId = '';
+        if(ad.url.includes('youtube.com/watch')) vidId = ad.url.split('v=')[1]?.split('&')[0];
+        else if(ad.url.includes('youtu.be/')) vidId = ad.url.split('youtu.be/')[1]?.split('?')[0];
+        
+        if(vidId) {
+          content.innerHTML = `<iframe src="https://www.youtube.com/embed/${vidId}?autoplay=0&controls=0" allowfullscreen></iframe>`;
+        } else {
+          content.innerHTML = `<div style="padding:20px; font-size:12px;">ভিডিও লিংকটি সঠিক নয়</div>`;
+        }
+      } else {
+        content.innerHTML = `<img src="${ad.url}" onerror="this.src='https://via.placeholder.com/400x120?text=Ad+Image'">`;
       }
     });
-
-    if (validAds.length === 0) {
-      container.style.display = 'none';
-      return;
-    }
-
-    container.style.display = 'flex';
-    
-    // র‍্যান্ডম একটি অ্যাড সিলেক্ট করা
-    const ad = validAds[Math.floor(Math.random() * validAds.length)];
-    
-    if (ad.type === 'text') {
-        // টেক্সট অ্যাড
-        content.innerHTML = `
-          <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #f9a825, #ffcc80); display: flex; justify-content: center; align-items: center; padding: 15px; text-align: center;">
-            <h4 style="color: #000; font-size: 14px; font-weight: bold; margin: 0;">${ad.text}</h4>
-          </div>
-        `;
-    } else if (ad.type === 'video') {
-      // ভিডিও অ্যাড
-      let vidId = '';
-      if(ad.url.includes('youtube.com/watch')) vidId = ad.url.split('v=')[1]?.split('&')[0];
-      else if(ad.url.includes('youtu.be/')) vidId = ad.url.split('youtu.be/')[1]?.split('?')[0];
-      
-      if(vidId) {
-        content.innerHTML = `<iframe src="https://www.youtube.com/embed/${vidId}?autoplay=0&controls=0" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>`;
-      } else {
-        content.innerHTML = `<div style="padding:20px; font-size:12px;">ভিডিও লিংকটি সঠিক নয়</div>`;
-      }
-    } else {
-      // ইমেজ অ্যাড
-      content.innerHTML = `<img src="${ad.url}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://via.placeholder.com/400x120?text=Ad+Image'">`;
-    }
-  });
-}
-  
+  }
   window.changeUserRole = async function(uid, newRole) {
     if (!newRole) return;
     if(!confirm(`রোল পরিবর্তন করে "${newRole}" করবেন?`)) return;
