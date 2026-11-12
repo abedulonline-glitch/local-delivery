@@ -6045,14 +6045,14 @@ window.searchPinUsers = async function() {
   if (!cropperInstance) return;
   
   const statusEl = document.getElementById('crop-status');
-  statusEl.innerText = "আপলোড হচ্ছে..."; 
-  statusEl.style.color = "#0f9d58";
+  statusEl.innerText = "⏳ আপলোড হচ্ছে..."; 
+  statusEl.style.color = "#f9a825";
 
   try {
-    // 🚀 আগের মতোই Base64 পদ্ধতি ব্যবহার করা হলো (যা আপনার ফোনে কাজ করছিল)
+    // ১. ইমেজ ক্রপ করা
     const canvas = cropperInstance.getCroppedCanvas({
-      maxWidth: 600,  // সাইজ আরেকটু কমানো হলো যাতে দ্রুত আপলোড হয়
-      maxHeight: 600,
+      maxWidth: 800, 
+      maxHeight: 800,
     });
     
     const base64Image = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
@@ -6060,18 +6060,26 @@ window.searchPinUsers = async function() {
     const formData = new FormData();
     formData.append("image", base64Image);
 
+    // 🚀 ২. টাইমআউট (Timeout) সেট করা হলো (২০ সেকেন্ড)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+
     // ImgBB তে আপলোড
     const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { 
       method: "POST", 
-      body: formData 
+      body: formData,
+      signal: controller.signal // টাইমআউট সিগন্যাল যুক্ত
     });
+    clearTimeout(timeoutId); // সফল হলে টাইমআউট বাতিল
     
     const data = await response.json();
     
     if (data.success) {
-      // 🚀 সফলভাবে আপলোড হলে কোন জায়গায় যাবে তা চেক করা
+      const uploadedUrl = data.data.url;
+
+      // ৩. কোন জায়গা থেকে আপলোড হচ্ছে তার ওপর ভিত্তি করে ইমেজ দেখানো
       if (currentUploadContext === 'reg') {
-        regProfilePicUrl = data.data.url; 
+        regProfilePicUrl = uploadedUrl; 
         const img = document.getElementById('reg-profile-img');
         const icon = document.getElementById('reg-profile-icon');
         if(img && icon) {
@@ -6081,7 +6089,7 @@ window.searchPinUsers = async function() {
         }
       } 
       else if (currentUploadContext === 'edit-profile') {
-        editProfilePicUrl = data.data.url;
+        editProfilePicUrl = uploadedUrl;
         const img = document.getElementById('ep-preview-img');
         const icon = document.getElementById('ep-preview-icon');
         if(img && icon) {
@@ -6091,7 +6099,8 @@ window.searchPinUsers = async function() {
         }
       }
       else {
-        uploadedImageUrl = data.data.url;
+        // প্রোডাক্ট, অ্যাড বা ক্যাটাগরি ইমেজের জন্য
+        uploadedImageUrl = uploadedUrl;
         
         let previewId;
         if (currentUploadContext === 'mp') previewId = 'mp-image-preview';
@@ -6107,8 +6116,11 @@ window.searchPinUsers = async function() {
         }
       }
       
-      statusEl.innerText = "সফল!";
-      closeCropModal();
+      statusEl.innerText = "✅ সফল!";
+      statusEl.style.color = "#0f9d58";
+      
+      // একটু অপেক্ষা করে মডাল বন্ধ করা
+      setTimeout(() => { closeCropModal(); }, 500);
       
     } else {
       console.error("ImgBB Error:", data);
@@ -6116,8 +6128,13 @@ window.searchPinUsers = async function() {
     }
   } catch (e) {
     console.error(e);
-    alert("ছবি আপলোডে সমস্যা! ইন্টারনেট কানেকশন চেক করুন বা আবার চেষ্টা করুন।"); 
-    statusEl.innerText = "ব্যর্থ!"; 
+    // টাইমআউট বা অন্য কোনো এরর হলে
+    if (e.name === 'AbortError') {
+      alert("ছবি আপলোডে অনেক সময় লাগছে! ইন্টারনেট কানেকশন চেক করুন।");
+    } else {
+      alert("ছবি আপলোডে সমস্যা হয়েছে! আবার চেষ্টা করুন।");
+    }
+    statusEl.innerText = "❌ ব্যর্থ!"; 
     statusEl.style.color = "red";
   }
 };
