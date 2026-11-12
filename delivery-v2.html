@@ -6094,37 +6094,7 @@ window.searchPinUsers = async function() {
     } catch (e) { alert("রেটিং সেভ হয়নি!"); }
   };
 
-  // ==================== PART 4: LIVE TRACKING & ETA ====================
-  let liveTrackMap = null;
-  let trackInterval = null;
-  let currentTrackOrderId = null;
-  let deliveryMarker = null;
-  let customerMarker = null;
-
-  // ১. ডেলিভারি বয়ের লোকেশন ট্র্যাকিং শুরু করা
-  window.startLocationUpdates = function(orderId) {
-    // আগের কোনো ট্র্যাকিং চললে সেটি বন্ধ করা
-    if (window.locationUpdateInterval) clearInterval(window.locationUpdateInterval);
-
-    // প্রতি ১৫ সেকেন্ড পর পর লোকেশন আপডেট হবে
-    window.locationUpdateInterval = setInterval(() => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-          try {
-            // ডেটাবেসে ডেলিভারি বয়ের বর্তমান লোকেশন আপডেট
-            await updateDoc(doc(db, "orders", orderId), {
-              boyLat: position.coords.latitude,
-              boyLng: position.coords.longitude,
-              lastLocationUpdate: serverTimestamp()
-            });
-            console.log("Location Updated");
-          } catch(e) { console.log("Location update failed", e); }
-        }, (error) => console.log("GPS Error:", error), { enableHighAccuracy: true });
-      }
-    }, 15000); // ১৫ সেকেন্ড
-  };
-
-  
+ 
  // ==================== SMART TRACKING & AI LOGIC (PART 4) ====================
 let liveTrackMap = null;
 let trackInterval = null;
