@@ -5468,78 +5468,112 @@ window.startLiveLocationTracking(orderId);
   }
   
   // অ্যাড টাইপ পরিবর্তন হলে ইনপুট চেঞ্জ করা
-  window.toggleAdInputType = function() {
-    const type = document.getElementById('admin-ad-type').value;
-    if (type === 'image') {
-      document.getElementById('ad-image-upload-area').classList.remove('mp-hidden');
-      document.getElementById('ad-video-url-area').classList.add('mp-hidden');
-    } else {
-      document.getElementById('ad-image-upload-area').classList.add('mp-hidden');
-      document.getElementById('ad-video-url-area').classList.remove('mp-hidden');
-    }
-  };
+  // অ্যাড টাইপ অনুযায়ী ইনপুট শো/হাইড করা
+window.toggleAdInputType = function() {
+  const type = document.getElementById('admin-ad-type').value;
   
-  // ==================== AD MANAGEMENT LOGIC ====================
-  // ১. নতুন অ্যাড সেভ করা (ইমেজ আপলোডসহ)
-  window.saveAd = async function() {
-    const type = document.getElementById('admin-ad-type').value;
-    let finalUrl = '';
-    
-    if (type === 'image') {
-      if (!uploadedImageUrl) {
-        return alert("দয়া করে প্রথমে একটি ছবি আপলোড ও ক্রপ করুন!");
-      }
-      finalUrl = uploadedImageUrl;
-    } else {
-      finalUrl = document.getElementById('admin-ad-url').value.trim();
-      if (!finalUrl) return alert("দয়া করে ভিডিও লিংক পেস্ট করুন!");
-    }
-    
-    try {
-      await addDoc(collection(db, "ads"), {
-        type: type,
-        url: finalUrl,
-        createdAt: serverTimestamp()
-      });
-      
-      // রিসেট
-      document.getElementById('admin-ad-url').value = '';
-      document.getElementById('ad-image-preview').style.display = 'none';
-      uploadedImageUrl = null; // গ্লোবাল ভেরিয়েবল রিসেট
-      
-      alert("অ্যাড সফলভাবে যুক্ত হয়েছে!");
-    } catch(e) {
-      console.error(e);
-      alert("অ্যাড যুক্ত করতে সমস্যা হয়েছে!");
-    }
-  };
+  // সব সেকশন হাইড করা
+  document.getElementById('ad-image-upload-area').classList.add('mp-hidden');
+  document.getElementById('ad-video-url-area').classList.add('mp-hidden');
+  document.getElementById('ad-text-area').classList.add('mp-hidden');
 
-  // ২. অ্যাডমিন প্যানেলে অ্যাড লিস্ট লোড ও ডিলিট করা
-  function loadAdminAds() {
-    const list = document.getElementById('admin-ad-list');
-    if(!list) return;
+  if (type === 'image') {
+    document.getElementById('ad-image-upload-area').classList.remove('mp-hidden');
+  } else if (type === 'video') {
+    document.getElementById('ad-video-url-area').classList.remove('mp-hidden');
+  } else if (type === 'text') {
+    document.getElementById('ad-text-area').classList.remove('mp-hidden');
+  }
+};
 
-    onSnapshot(collection(db, "ads"), (snap) => {
-      if(snap.empty) {
-        list.innerHTML = '<div style="font-size:12px; color:#999;">কোনো অ্যাড নেই।</div>';
-        return;
-      }
-      let html = '';
-      snap.forEach(docSnap => {
-        const ad = docSnap.data();
-        html += `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; padding:8px; border-radius:6px; margin-bottom:5px;">
-            <div style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;">
-              ${ad.type === 'video' ? '🎥' : '🖼️'} ${ad.url}
-            </div>
+  // নতুন অ্যাড সেভ করা
+window.saveAd = async function() {
+  const type = document.getElementById('admin-ad-type').value;
+  const targetRole = document.getElementById('admin-ad-target-role').value;
+  const targetPincode = document.getElementById('admin-ad-pincode').value.trim();
+  const targetPhone = document.getElementById('admin-ad-phone').value.trim();
+  let finalUrl = '';
+  let finalText = '';
+
+  // ভ্যালিডেশন
+  if (type === 'image') {
+    if (!uploadedImageUrl) return alert("দয়া করে একটি ছবি আপলোড করুন!");
+    finalUrl = uploadedImageUrl;
+  } else if (type === 'video') {
+    finalUrl = document.getElementById('admin-ad-url').value.trim();
+    if (!finalUrl) return alert("দয়া করে ভিডিও লিংক দিন!");
+  } else if (type === 'text') {
+    finalText = document.getElementById('admin-ad-text').value.trim();
+    if (!finalText) return alert("দয়া করে অ্যাডের টেক্সট মেসেজটি লিখুন!");
+  }
+  
+  try {
+    await addDoc(collection(db, "ads"), {
+      type: type,
+      url: finalUrl || null,
+      text: finalText || null,
+      targetRole: targetRole,
+      targetPincode: targetPincode || null,
+      targetPhone: targetPhone || null,
+      createdAt: serverTimestamp()
+    });
+    
+    // ফর্ম রিসেট
+    document.getElementById('admin-ad-url').value = '';
+    document.getElementById('admin-ad-text').value = '';
+    document.getElementById('admin-ad-pincode').value = '';
+    document.getElementById('admin-ad-phone').value = '';
+    document.getElementById('ad-image-preview').style.display = 'none';
+    uploadedImageUrl = null; 
+    
+    alert("✅ স্মার্ট অ্যাড সফলভাবে যুক্ত হয়েছে!");
+  } catch(e) {
+    console.error(e);
+    alert("অ্যাড যুক্ত করতে সমস্যা হয়েছে!");
+  }
+};
+
+  
+// অ্যাডমিন প্যানেলে অ্যাড লিস্ট ও ডিলিট
+function loadAdminAds() {
+  const list = document.getElementById('admin-ad-list');
+  if(!list) return;
+
+  onSnapshot(query(collection(db, "ads"), orderBy("createdAt", "desc")), (snap) => {
+    if(snap.empty) {
+      list.innerHTML = '<div style="font-size:12px; color:#999; text-align:center;">কোনো অ্যাড নেই।</div>';
+      return;
+    }
+    let html = '';
+    snap.forEach(docSnap => {
+      const ad = docSnap.data();
+      
+      // টার্গেট টেক্সট তৈরি
+      let targetText = `👥 ${ad.targetRole === 'all' ? 'সবাই' : ad.targetRole}`;
+      if(ad.targetPincode) targetText += ` | 📍 ${ad.targetPincode}`;
+      if(ad.targetPhone) targetText += ` | 📞 ${ad.targetPhone}`;
+
+      let contentText = ad.type === 'text' ? `📝 "${ad.text}"` : `🔗 ${ad.url}`;
+
+      html += `
+        <div style="display:flex; flex-direction:column; gap:5px; background:#f8f9fa; padding:10px; border-radius:6px; margin-bottom:8px; border:1px solid #eee;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-size:12px; font-weight:bold; color:var(--mp-primary);">${ad.type.toUpperCase()}</div>
             <button onclick="deleteAd('${docSnap.id}')" style="background:none; border:none; color:red; font-size:16px; cursor:pointer;">🗑️</button>
           </div>
-        `;
-      });
-      list.innerHTML = html;
+          <div style="font-size:11px; color:#333; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            ${contentText}
+          </div>
+          <div style="font-size:10px; color:#e65100; background:#fff3e0; padding:2px 6px; border-radius:4px; align-self:flex-start;">
+            🎯 ${targetText}
+          </div>
+        </div>
+      `;
     });
-  }
-
+    list.innerHTML = html;
+  });
+}
+  
   // ৩. অ্যাড ডিলিট করা
   window.deleteAd = async function(id) {
     if(!confirm("এই অ্যাডটি ডিলিট করবেন?")) return;
