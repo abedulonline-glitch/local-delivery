@@ -266,6 +266,21 @@
     <div id="auth-login-form">
       <h2 style="color: var(--mp-primary); margin-bottom: 20px;">🛵 Delivery App Login</h2>
       
+    <!-- কাস্টমার/দোকানদার লগইন (ফোন নাম্বার) -->
+<div id="phone-login-section">
+  <div class="dlv-form-group">
+    <select id="login-master-category" class="dlv-input" style="margin-bottom: 10px;">
+      <option value="grocery">🛒 মুদি ও নিত্যপণ্য</option>
+      <option value="restaurant">🍔 রেস্টুরেন্ট</option>
+      <option value="marble">🧱 মার্বেল ও টাইলস</option>
+      <option value="clothes">👗 পোশাক</option>
+    </select>
+  </div>
+  <div class="dlv-form-group">
+    <input type="tel" id="login-phone" class="dlv-input" placeholder="১০ ডিজিটের মোবাইল নাম্বার" maxlength="10" style="margin-bottom: 10px;">
+  </div>
+  <button class="mp-btn mp-btn-primary" onclick="handleLogin()" id="login-btn">লগইন করুন</button>
+</div>
       <!-- কাস্টমার/দোকানদার লগইন (ফোন নাম্বার) -->
       <div id="phone-login-section">
         <div class="dlv-form-group">
@@ -314,6 +329,24 @@
         <input type="tel" id="reg-phone" class="dlv-input" placeholder="১০ ডিজিটের মোবাইল নাম্বার" maxlength="10" style="margin-bottom: 10px;">
       </div>
 
+  <div class="dlv-form-group">
+  <input type="text" id="reg-name" class="dlv-input" placeholder="আপনার নাম" style="margin-bottom: 10px;">
+</div>
+<div class="dlv-form-group">
+  <input type="tel" id="reg-phone" class="dlv-input" placeholder="১০ ডিজিটের মোবাইল নাম্বার" maxlength="10" style="margin-bottom: 10px;">
+</div>
+
+<!-- 🚀 নতুন যোগ করা হলো: মাস্টার ক্যাটাগরি সিলেকশন -->
+<div class="dlv-form-group" id="reg-master-cat-section">
+  <label style="text-align: left; display: block; font-size: 12px; color: #555; font-weight: bold;">আপনার ব্যবসার ধরন *</label>
+  <select id="reg-master-category" class="dlv-input">
+    <option value="grocery">🛒 মুদি ও নিত্যপণ্য</option>
+    <option value="restaurant">🍔 রেস্টুরেন্ট</option>
+    <option value="marble">🧱 মার্বেল ও টাইলস</option>
+    <option value="clothes">👗 পোশাক</option>
+  </select>
+</div>
+      
       <!-- 🚀 প্রোফেশনাল প্রোফাইল ছবি আপলোডার -->
 <div class="dlv-form-group" style="text-align: center; margin-bottom: 20px;">
   <div id="reg-profile-preview-container" 
@@ -707,6 +740,12 @@
         </div>
       </div>
   
+ <!-- 🚀 নতুন: পাইকারি বাজার (B2B) বাটন -->
+<div class="mp-card" style="background: linear-gradient(135deg, #7b1fa2, #9c27b0); color: white; text-align: center; cursor: pointer; margin-bottom: 14px;" onclick="openB2BMarket()">
+  <div style="font-size: 30px; margin-bottom: 5px;">📦</div>
+  <h3 style="color: white; justify-content: center; margin: 0;">পাইকারি বাজার (B2B)</h3>
+  <p style="font-size: 12px; opacity: 0.9; margin-top: 5px;">হোলসেলারদের কাছ থেকে কম দামে মাল কিনুন</p>
+</div>
   <!-- প্রোডাক্ট লিস্ট -->
   <div class="mp-card">
     <h3 style="justify-content: space-between;">
@@ -2125,18 +2164,21 @@ if (fileInput && fileInput.files && fileInput.files.length > 0) {
       }
       
       // ৩. ফায়ারস্টোরে ডেটা সেভ
-      await setDoc(doc(db, "users", user.uid), {
-        name: name,
-        phone: phone, // আসল ফোন নাম্বারটি সেভ করা হলো
-        email: fakeEmail, // সিস্টেমের জন্য
-        role: registerRole,
-        walletBalance: 0,
-        isManager: registerRole === 'manager' ? true : false,
-        profilePic: regProfilePicUrl || null,
-        lat: regLat || null,
-        lng: regLng || null,
-        createdAt: serverTimestamp()
-      });
+const masterCat = document.getElementById('reg-master-category').value;
+
+await setDoc(doc(db, "users", user.uid), {
+  name: name,
+  phone: phone,
+  email: fakeEmail,
+  role: registerRole,
+  masterCategory: masterCat, // 🚀 নতুন ফিল্ড
+  walletBalance: 0,
+  isManager: registerRole === 'manager' ? true : false,
+  profilePic: regProfilePicUrl || null,
+  lat: regLat || null,
+  lng: regLng || null,
+  createdAt: serverTimestamp()
+});
 
       alert("সফলভাবে রেজিস্ট্রেশন সম্পন্ন হয়েছে!");
     } catch (error) {
