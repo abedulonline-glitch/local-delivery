@@ -590,11 +590,11 @@
 <div id="dlv-view-wholesaler" class="mp-hidden">
   <div class="dlv-dashboard-title">📦 হোলসেলার ড্যাশবোর্ড</div>
   
-  <div class="mp-card" style="background: linear-gradient(135deg, #7b1fa2, #9c27b0); color: white; text-align: center; cursor: pointer; margin-bottom: 14px;" onclick="openWholesaleAddModal()">
-    <div style="font-size: 30px; margin-bottom: 5px;">➕</div>
-    <h3 style="color: white; justify-content: center; margin: 0;">নতুন পাইকারি প্রোডাক্ট যোগ করুন</h3>
-    <p style="font-size: 12px; opacity: 0.9; margin-top: 5px;">দোকানদারদের কাছে বাল্ক মাল বিক্রি করুন</p>
-  </div>
+  <div class="mp-card" style="background: linear-gradient(135deg, #7b1fa2, #9c27b0); color: white; text-align: center; cursor: pointer; margin-bottom: 14px;" onclick="openWholesaleCatalog()">
+  <div style="font-size: 30px; margin-bottom: 5px;">➕</div>
+  <h3 style="color: white; justify-content: center; margin: 0;">নতুন পাইকারি প্রোডাক্ট যোগ করুন</h3>
+  <p style="font-size: 12px; opacity: 0.9; margin-top: 5px;">অ্যাডমিনের ক্যাটালগ থেকে মাল বাছাই করে বাল্ক রেট দিন</p>
+</div>
   
   <div class="mp-card">
     <h3>📋 আমার প্রোডাক্ট লিস্ট</h3>
@@ -1484,6 +1484,36 @@
   </div>
 </div>
 
+<!-- 🚀 Wholesale Set Price Modal -->
+<div id="dlv-wholesale-set-price-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-wholesale-set-price-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: #4a148c;" id="wsp-title">রেট ও স্টক দিন</h3>
+    
+    <input type="hidden" id="wsp-master-id">
+    <input type="hidden" id="wsp-name">
+    <input type="hidden" id="wsp-category">
+    <input type="hidden" id="wsp-image">
+
+    <div class="dlv-form-group">
+      <label>পাইকারি দাম (₹) *</label>
+      <input type="number" id="wsp-price" class="dlv-input" placeholder="যেমন: 2500">
+    </div>
+    
+    <div class="dlv-form-group">
+      <label>মিনিমাম অর্ডার (বস্তা/পিস) *</label>
+      <input type="number" id="wsp-min-order" class="dlv-input" placeholder="যেমন: 1">
+    </div>
+    
+    <div class="dlv-form-group">
+      <label>স্টক (পরিমাণ) *</label>
+      <input type="number" id="wsp-stock" class="dlv-input" placeholder="যেমন: 50">
+    </div>
+    
+    <button class="mp-btn mp-btn-success" onclick="saveWholesaleShopProduct()" style="background: #7b1fa2;">💾 সেভ করুন</button>
+  </div>
+</div>
+    
     <!-- Standalone Custom Product Modal (Shopkeeper) -->
 <div id="dlv-custom-product-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
@@ -4159,7 +4189,45 @@ window.openAddProductModal = function() {
   });
 };
 
-// 🚀 নতুন যোগ করা হলো: দোকানদার তার নিজের দেওয়া রেট এডিট করার জন্য
+// হোলসেলারদের জন্য ক্যাটালগ ওপেন করা
+window.openWholesaleCatalog = function() {
+  document.getElementById('dlv-catalog-modal').classList.add('active');
+  const list = document.getElementById('catalog-list-container');
+  list.innerHTML = '<div style="text-align: center; color: #999;">লোড হচ্ছে...</div>';
+
+  // অ্যাডমিনের মাস্টার প্রোডাক্টগুলো লোড করা
+  onSnapshot(collection(db, "master_products"), (snapshot) => {
+    if(snapshot.empty) {
+      list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">অ্যাডমিন এখনো কোনো প্রোডাক্ট যোগ করেনি।</div>';
+      return;
+    }
+    
+    let html = '';
+    snapshot.forEach(docSnap => {
+      const p = docSnap.data();
+      const masterId = docSnap.id;
+
+      html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; border-bottom: 1px solid #eee;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:40px; height:40px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
+              ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;">` : '📦'}
+            </div>
+            <div>
+              <div style="font-size:13px; font-weight:600;">${p.name}</div>
+              <div style="font-size:11px; color:#666;">${p.category}</div>
+            </div>
+          </div>
+          
+          <button class="mp-btn" style="width:auto; margin:0; padding:6px 10px; background:#f3e5f5; color:#4a148c; font-size:11px;" onclick='selectWholesaleMasterProduct(${JSON.stringify(p).replace(/'/g, "&#39;")}, "${masterId}")'>রেট দিন</button>
+        </div>
+      `;
+    });
+    list.innerHTML = html;
+  });
+};
+  
+  // 🚀 নতুন যোগ করা হলো: দোকানদার তার নিজের দেওয়া রেট এডিট করার জন্য
    
 window.editShopProduct = function(myData, masterId) {
   selectedMasterProduct = { ...myData, masterId: masterId };
@@ -5213,21 +5281,22 @@ window.startLiveLocationTracking(orderId);
       let roleText = u.role ? u.role.toUpperCase() : 'NO ROLE';
       
       userHtml += `
-        <div style="border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <div style="font-size: 14px; font-weight: 600;">${u.name || 'Unknown User'}</div>
-            <div style="font-size: 11px; color: #666;">${roleText}</div>
-          </div>
-          <select onchange="changeUserRole('${docSnap.id}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; background: white;">
-            <option value="" disabled selected>রোল দিন</option>
-            <option value="shopkeeper" ${u.role === 'shopkeeper' ? 'selected' : ''}>দোকানদার</option>
-            <option value="delivery" ${u.role === 'delivery' ? 'selected' : ''}>ডেলিভারি বয়</option>
-            <option value="customer" ${u.role === 'customer' ? 'selected' : ''}>কাস্টমার</option>
-            <option value="manager" ${u.role === 'manager' ? 'selected' : ''}>ম্যানেজার</option>
-            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>অ্যাডমিন</option>
-          </select>
-        </div>
-      `;
+  <div style="border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <div style="font-size: 14px; font-weight: 600;">${u.name || 'Unknown User'}</div>
+      <div style="font-size: 11px; color: #666;">${roleText}</div>
+    </div>
+    <select onchange="changeUserRole('${docSnap.id}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; background: white;">
+      <option value="" disabled selected>রোল দিন</option>
+      <option value="shopkeeper" ${u.role === 'shopkeeper' ? 'selected' : ''}>দোকানদার</option>
+      <option value="delivery" ${u.role === 'delivery' ? 'selected' : ''}>ডেলিভারি বয়</option>
+      <option value="customer" ${u.role === 'customer' ? 'selected' : ''}>কাস্টমার</option>
+      <option value="manager" ${u.role === 'manager' ? 'selected' : ''}>ম্যানেজার</option>
+      <option value="wholesaler" ${u.role === 'wholesaler' ? 'selected' : ''}>হোলসেলার (পাইকারি)</option> <!-- 🚀 নতুন যোগ করা হলো -->
+      <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>অ্যাডমিন</option>
+    </select>
+  </div>
+`;
     });
     
     document.getElementById('admin-total-shops').innerText = shops;
@@ -8328,6 +8397,58 @@ window.renderB2BProducts = function(searchText) {
     `;
   });
   grid.innerHTML = html;
+};
+
+// ১. মাস্টার প্রোডাক্ট সিলেক্ট করা
+window.selectWholesaleMasterProduct = function(productData, masterId) {
+  document.getElementById('wsp-master-id').value = masterId;
+  document.getElementById('wsp-name').value = productData.name;
+  document.getElementById('wsp-category').value = productData.category;
+  document.getElementById('wsp-image').value = productData.image || '';
+  
+  document.getElementById('wsp-title').innerText = `${productData.name} - রেট দিন`;
+  
+  // ফর্ম রিসেট
+  document.getElementById('wsp-price').value = '';
+  document.getElementById('wsp-min-order').value = '1';
+  document.getElementById('wsp-stock').value = '';
+  
+  document.getElementById('dlv-catalog-modal').classList.remove('active');
+  document.getElementById('dlv-wholesale-set-price-modal').classList.add('active');
+};
+
+// ২. হোলসেলার প্রোডাক্ট সেভ করা
+window.saveWholesaleShopProduct = async function() {
+  const masterId = document.getElementById('wsp-master-id').value;
+  const name = document.getElementById('wsp-name').value;
+  const category = document.getElementById('wsp-category').value;
+  const image = document.getElementById('wsp-image').value;
+  const price = parseFloat(document.getElementById('wsp-price').value) || 0;
+  const minOrder = parseFloat(document.getElementById('wsp-min-order').value) || 1;
+  const stock = parseFloat(document.getElementById('wsp-stock').value) || 0;
+
+  if(price <= 0 || stock <= 0) return alert("সঠিক দাম এবং স্টক দিন!");
+
+  try {
+    await addDoc(collection(db, "products"), {
+      shopId: currentUser.uid,
+      shopName: globalUserData.name || 'Wholesaler',
+      masterProductId: masterId,
+      name: name,
+      category: category,
+      image: image,
+      price: price,
+      minOrderQty: minOrder,
+      stock: stock,
+      productType: 'wholesale', // 🚀 এটিই মূল ফিল্টার
+      createdAt: serverTimestamp()
+    });
+    
+    alert("✅ পাইকারি প্রোডাক্ট সেভ হয়েছে!");
+    document.getElementById('dlv-wholesale-set-price-modal').classList.remove('active');
+  } catch(e) { 
+    console.error(e); alert("সেভ করতে সমস্যা হয়েছে!"); 
+  }
 };
 
 </script>
