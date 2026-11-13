@@ -586,7 +586,63 @@
 </div>
     </div>
 
-<!-- ==================== SHOPKEEPER DASHBOARD ==================== -->
+<!-- ==================== WHOLESALER DASHBOARD ==================== -->
+<div id="dlv-view-wholesaler" class="mp-hidden">
+  <div class="dlv-dashboard-title">📦 হোলসেলার ড্যাশবোর্ড</div>
+  
+  <div class="mp-card" style="background: linear-gradient(135deg, #7b1fa2, #9c27b0); color: white; text-align: center; cursor: pointer; margin-bottom: 14px;" onclick="openWholesaleAddModal()">
+    <div style="font-size: 30px; margin-bottom: 5px;">➕</div>
+    <h3 style="color: white; justify-content: center; margin: 0;">নতুন পাইকারি প্রোডাক্ট যোগ করুন</h3>
+    <p style="font-size: 12px; opacity: 0.9; margin-top: 5px;">দোকানদারদের কাছে বাল্ক মাল বিক্রি করুন</p>
+  </div>
+  
+  <div class="mp-card">
+    <h3>📋 আমার প্রোডাক্ট লিস্ট</h3>
+    <div id="wholesaler-product-list"></div>
+  </div>
+</div>
+
+<!-- 🚀 B2B (দোকানদারের জন্য পাইকারি বাজার) মডাল -->
+<div id="dlv-b2b-market-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto; max-width: 600px;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-b2b-market-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: #7b1fa2;">📦 পাইকারি বাজার (B2B)</h3>
+    <input type="text" id="b2b-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." oninput="renderB2BProducts(this.value)" style="margin-bottom: 15px;">
+    <div id="b2b-product-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+  </div>
+</div>
+
+<!-- 🚀 হোলসেলার প্রোডাক্ট অ্যাড মডাল -->
+<div id="dlv-wholesale-add-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-wholesale-add-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: #7b1fa2;">📦 নতুন পাইকারি প্রোডাক্ট</h3>
+    
+    <div class="dlv-form-group">
+      <label>প্রোডাক্টের নাম *</label>
+      <input type="text" id="wp-name" class="dlv-input" placeholder="যেমন: মিনিকেট চাল (৫০ কেজি বস্তা)">
+    </div>
+    
+    <div class="dlv-form-group">
+      <label>পাইকারি দাম (₹) *</label>
+      <input type="number" id="wp-price" class="dlv-input" placeholder="যেমন: 2500">
+    </div>
+    
+    <div class="dlv-form-group">
+      <label>মিনিমাম অর্ডার (বস্তা/পিস) *</label>
+      <input type="number" id="wp-min-order" class="dlv-input" placeholder="যেমন: 1">
+    </div>
+    
+    <div class="dlv-form-group">
+      <label>স্টক (পরিমাণ) *</label>
+      <input type="number" id="wp-stock" class="dlv-input" placeholder="যেমন: 50">
+    </div>
+    
+    <button class="mp-btn mp-btn-primary" onclick="saveWholesaleProduct()" style="background: #7b1fa2;">💾 সেভ করুন</button>
+  </div>
+</div>
+    
+    <!-- ==================== SHOPKEEPER DASHBOARD ==================== -->
 <div id="dlv-view-shopkeeper" class="mp-hidden">
   <div class="dlv-dashboard-title">দোকানদার ড্যাশবোর্ড</div>
 
@@ -2902,164 +2958,169 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
     }
   };
 
-  // ============================================================
-  // ROLE BASED UI SETUP
-  // ============================================================
-   function setupUIForRole(role, userData) {
-    mainApp.classList.remove('mp-hidden');
-    document.getElementById('dlv-user-role').innerText = role.toUpperCase();
-    
-    // নামের পাশে স্কুটির আইকনটি সরিয়ে ফেলা হলো (যেহেতু আমরা আলাদা প্রোফাইল পিক দেখাবো)
-    document.getElementById('dlv-topbar-title').innerText = userData.name || 'Delivery System';
 
-    // 🚀 টপবারে প্রোফাইল পিক লোড করা
-    const profilePicEl = document.getElementById('topbar-profile-pic');
-    const profileIconEl = document.getElementById('topbar-profile-icon');
-    
-    if (profilePicEl && profileIconEl) {
-      if (userData.profilePic) {
-        profilePicEl.src = userData.profilePic;
-        profilePicEl.style.display = 'block';
-        profileIconEl.style.display = 'none';
-      } else {
-        profilePicEl.style.display = 'none';
-        profileIconEl.style.display = 'block';
-      }
+  // ============================================================
+// ROLE BASED UI SETUP
+// ============================================================
+function setupUIForRole(role, userData) {
+  mainApp.classList.remove('mp-hidden');
+  document.getElementById('dlv-user-role').innerText = role.toUpperCase();
+  
+  document.getElementById('dlv-topbar-title').innerText = userData.name || 'Delivery System';
+
+  // 🚀 টপবারে প্রোফাইল পিক লোড করা
+  const profilePicEl = document.getElementById('topbar-profile-pic');
+  const profileIconEl = document.getElementById('topbar-profile-icon');
+  
+  if (profilePicEl && profileIconEl) {
+    if (userData.profilePic) {
+      profilePicEl.src = userData.profilePic;
+      profilePicEl.style.display = 'block';
+      profileIconEl.style.display = 'none';
+    } else {
+      profilePicEl.style.display = 'none';
+      profileIconEl.style.display = 'block';
     }
+  }
 
-    // ৫. টপবারে ওয়ালেট আপডেট (সব রোলের জন্য)
-    updateTopbarWallet(userData.walletBalance);
+  // ৫. টপবারে ওয়ালেট আপডেট (সব রোলের জন্য)
+  updateTopbarWallet(userData.walletBalance);
 
-    // 🚀 বারকোড সেকশন কন্ট্রোল (শুধু অ্যাডমিন এবং স্ট্যান্ডঅ্যালোন/প্ল্যান থাকা দোকানদার)
-    const barcodeSection = document.getElementById('barcode-section-wrapper');
-    if (barcodeSection) {
-      if (role === 'admin') {
+  // 🚀 বারকোড সেকশন কন্ট্রোল (শুধু অ্যাডমিন এবং স্ট্যান্ডঅ্যালোন/প্ল্যান থাকা দোকানদার)
+  const barcodeSection = document.getElementById('barcode-section-wrapper');
+  if (barcodeSection) {
+    if (role === 'admin') {
+      barcodeSection.classList.remove('mp-hidden');
+      loadBarcodeProducts(); 
+    } else if (role === 'shopkeeper') {
+      if (userData.isStandalone === true || userData.isBarcodeActive === true) {
         barcodeSection.classList.remove('mp-hidden');
-        loadBarcodeProducts(); // অ্যাডমিনের জন্য প্রোডাক্ট লোড
-      } else if (role === 'shopkeeper') {
-        // 🚀 শর্ত: নিজস্ব স্টোর মোড (isStandalone) অথবা বারকোড প্ল্যান (isBarcodeActive) থাকতে হবে
-        if (userData.isStandalone === true || userData.isBarcodeActive === true) {
-          barcodeSection.classList.remove('mp-hidden');
-          loadBarcodeProducts(); // দোকানদারের নিজস্ব প্রোডাক্ট লোড
-        } else {
-          barcodeSection.classList.add('mp-hidden');
-        }
+        loadBarcodeProducts(); 
       } else {
         barcodeSection.classList.add('mp-hidden');
       }
-    }
-
-    // Hide all views (এখানে 'manager' যোগ করা হয়েছে)
-    ['customer', 'shopkeeper', 'delivery', 'admin', 'manager'].forEach(r => {
-      const view = document.getElementById(`dlv-view-${r}`);
-      if (view) view.classList.add('mp-hidden');
-    });
-
-    // Show active view
-    const activeView = document.getElementById(`dlv-view-${role}`);
-    if (activeView) activeView.classList.remove('mp-hidden');
-     
-  // Load role-specific data
-    if (role === 'customer') {
-      // ১. ফায়ারবেস থেকে সেভ করা অ্যাড্রেস লোড করা
-      if (userData.addresses && Array.isArray(userData.addresses)) {
-        customerAddresses = userData.addresses;
-        if(customerAddresses.length > 0) {
-          const latest = customerAddresses[customerAddresses.length - 1];
-          const el = document.getElementById('customer-saved-address');
-          if(el) {
-            el.innerHTML = `
-              <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border-left: 3px solid var(--mp-primary);">
-                <b>${latest.type === 'Home' ? '🏠 বাড়ি' : latest.type === 'Office' ? '🏢 অফিস' : '📍 অন্যান্য'}</b><br>
-                ${latest.text} ${latest.landmark ? `(${latest.landmark})` : ''}
-              </div>
-            `;
-          }
-          // লোকেশন আপডেট
-          if (latest.lat && latest.lng) {
-            customerLat = latest.lat;
-            customerLng = latest.lng;
-          }
-        }
-      }
-
-      // ২. কাস্টমারের লোকেশন অটোমেটিক আপডেট করা (যদি আগে থেকে সেভ না থাকে)
-      if (!userData.lat || !userData.lng) {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(async (position) => {
-            try {
-              const lat = position.coords.latitude;
-              const lng = position.coords.longitude;
-              
-              // ডেটাবেসে সেভ করা
-              await updateDoc(doc(db, "users", currentUser.uid), { lat: lat, lng: lng });
-              
-              // লোকাল ভেরিয়েবল আপডেট
-              globalUserData.lat = lat;
-              globalUserData.lng = lng;
-              customerLat = lat;
-              customerLng = lng;
-              
-              console.log("Customer location updated automatically.");
-              filterCustomerProducts(); // প্রোডাক্ট লিস্ট রিফ্রেশ করা
-            } catch(e) { console.log("Location save error:", e); }
-          }, (error) => {
-             console.log("Location permission denied.");
-          }, { enableHighAccuracy: true });
-        }
-      } else {
-        // যদি আগে থেকেই লোকেশন সেভ থাকে
-        customerLat = userData.lat;
-        customerLng = userData.lng;
-      }
-
-      // ৩. অন্যান্য কাস্টমার ডেটা লোড
-      renderCustomerProducts();
-      loadTopAds(); 
-      if (userData) {
-        document.getElementById('cst-wallet-balance').innerText = `₹${(userData.walletBalance || 0).toFixed(2)}`;
-        document.getElementById('cst-khata-due').innerText = `₹${(userData.khataDue || 0).toFixed(2)}`;
-      }
-      
-       } else if (role === 'shopkeeper') {
-      renderShopProducts();
-      loadShopTotalDue();
-      loadShopBadgeStatus();
-      loadShopNewOrders();
-      loadCategoriesForDropdowns();
-      
-      // 🚀 নতুন যোগ করা হলো: পেজ রিফ্রেশে টগলের স্টেটাস লোড করা
-      const freeDelToggle = document.getElementById('toggle-shop-free-delivery');
-      if (freeDelToggle) freeDelToggle.checked = globalUserData.freeDelivery || false;
-      
-  // 🚀 নতুন যোগ করা হলো: পেজ রিফ্রেশে বাল্ক ডিসকাউন্ট টগলের স্টেটাস সেট করা
-      const bulkToggle = document.getElementById('toggle-bulk-discount');
-      if (bulkToggle) {
-        bulkToggle.checked = globalUserData.isBulkDiscountActive || false;
-      }
-
-      // 🚀 স্টোর লোকেশন স্ট্যাটাস আপডেট
-      if (userData.lat && userData.lng) {
-        const locText = document.getElementById('shop-location-text');
-        if(locText) locText.innerHTML = `<span style="color:var(--mp-success);">✅ লোকেশন সেট করা আছে</span>`;
-      }
-      
-    } else if (role === 'delivery') {
-      document.getElementById('dlv-offline-msg').style.display = 'block';
-      document.getElementById('dlv-live-orders-container').style.display = 'none';
-      
-    } else if (role === 'admin') {
-      loadAdminDashboardUI();
-      
-    } else if (role === 'manager') {
-      // 🚀 ম্যানেজার ভিউ চেক
-      const managerView = document.getElementById('dlv-view-manager');
-      if (managerView) {
-        managerView.classList.remove('mp-hidden');
-        loadManagerDashboard(userData); // 🚀 ম্যানেজার ড্যাশবোর্ড লোড করা
-      }
+    } else {
+      barcodeSection.classList.add('mp-hidden');
     }
   }
+
+  // 🚀 Hide all views (এখানে 'wholesaler' যোগ করা হলো)
+  ['customer', 'shopkeeper', 'delivery', 'admin', 'manager', 'wholesaler'].forEach(r => {
+    const view = document.getElementById(`dlv-view-${r}`);
+    if (view) view.classList.add('mp-hidden');
+  });
+
+  // Show active view
+  const activeView = document.getElementById(`dlv-view-${role}`);
+  if (activeView) activeView.classList.remove('mp-hidden');
+   
+  // ==========================================
+  // Load role-specific data
+  // ==========================================
+  
+  if (role === 'customer') {
+    // ১. ফায়ারবেস থেকে সেভ করা অ্যাড্রেস লোড করা
+    if (userData.addresses && Array.isArray(userData.addresses)) {
+      customerAddresses = userData.addresses;
+      if(customerAddresses.length > 0) {
+        const latest = customerAddresses[customerAddresses.length - 1];
+        const el = document.getElementById('customer-saved-address');
+        if(el) {
+          el.innerHTML = `
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; border-left: 3px solid var(--mp-primary);">
+              <b>${latest.type === 'Home' ? '🏠 বাড়ি' : latest.type === 'Office' ? '🏢 অফিস' : '📍 অন্যান্য'}</b><br>
+              ${latest.text} ${latest.landmark ? `(${latest.landmark})` : ''}
+            </div>
+          `;
+        }
+        if (latest.lat && latest.lng) {
+          customerLat = latest.lat;
+          customerLng = latest.lng;
+        }
+      }
+    }
+
+    // ২. কাস্টমারের লোকেশন অটোমেটিক আপডেট করা
+    if (!userData.lat || !userData.lng) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          try {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            await updateDoc(doc(db, "users", currentUser.uid), { lat: lat, lng: lng });
+            
+            globalUserData.lat = lat;
+            globalUserData.lng = lng;
+            customerLat = lat;
+            customerLng = lng;
+            
+            console.log("Customer location updated automatically.");
+            filterCustomerProducts(); 
+          } catch(e) { console.log("Location save error:", e); }
+        }, (error) => {
+           console.log("Location permission denied.");
+        }, { enableHighAccuracy: true });
+      }
+    } else {
+      customerLat = userData.lat;
+      customerLng = userData.lng;
+    }
+
+    // ৩. অন্যান্য কাস্টমার ডেটা লোড
+    renderCustomerProducts();
+    loadTopAds(); 
+    if (userData) {
+      document.getElementById('cst-wallet-balance').innerText = `₹${(userData.walletBalance || 0).toFixed(2)}`;
+      document.getElementById('cst-khata-due').innerText = `₹${(userData.khataDue || 0).toFixed(2)}`;
+    }
+    
+  } else if (role === 'shopkeeper') {
+    renderShopProducts();
+    loadShopTotalDue();
+    loadShopBadgeStatus();
+    loadShopNewOrders();
+    loadCategoriesForDropdowns();
+    
+    // 🚀 পেজ রিফ্রেশে টগলের স্টেটাস লোড করা
+    const freeDelToggle = document.getElementById('toggle-shop-free-delivery');
+    if (freeDelToggle) freeDelToggle.checked = globalUserData.freeDelivery || false;
+    
+    const bulkToggle = document.getElementById('toggle-bulk-discount');
+    if (bulkToggle) {
+      bulkToggle.checked = globalUserData.isBulkDiscountActive || false;
+    }
+
+    // 🚀 স্টোর লোকেশন স্ট্যাটাস আপডেট
+    if (userData.lat && userData.lng) {
+      const locText = document.getElementById('shop-location-text');
+      if(locText) locText.innerHTML = `<span style="color:var(--mp-success);">✅ লোকেশন সেট করা আছে</span>`;
+    }
+    
+  } else if (role === 'delivery') {
+    document.getElementById('dlv-offline-msg').style.display = 'block';
+    document.getElementById('dlv-live-orders-container').style.display = 'none';
+    
+  } else if (role === 'admin') {
+    loadAdminDashboardUI();
+    
+  } else if (role === 'manager') {
+    const managerView = document.getElementById('dlv-view-manager');
+    if (managerView) {
+      managerView.classList.remove('mp-hidden');
+      loadManagerDashboard(userData); 
+    }
+  } else if (role === 'wholesaler') {
+    // 🚀 নতুন: হোলসেলার ভিউ লোড করা
+    const wholesalerView = document.getElementById('dlv-view-wholesaler');
+    if (wholesalerView) wholesalerView.classList.remove('mp-hidden');
+    loadWholesalerProducts(); // হোলসেলারের নিজের প্রোডাক্ট লিস্ট লোড
+  }
+
+  // 🚀 প্রতিটি রোলের জন্য অ্যাড লোড করা
+  loadTopAds();
+}
+  
   // ============================================================
   // CUSTOMER FUNCTIONS
   // ============================================================
@@ -8153,6 +8214,114 @@ window.handleCSVUpload = function(event) {
       alert("ভেরিফাই করতে সমস্যা হয়েছে!");
     }
   };
+
+// ==================== B2B & WHOLESALER LOGIC (PART 4) ====================
+let allWholesaleProducts = [];
+
+// ১. হোলসেলার প্রোডাক্ট অ্যাড মডাল ওপেন
+window.openWholesaleAddModal = function() {
+  document.getElementById('dlv-wholesale-add-modal').classList.add('active');
+};
+
+// ২. হোলসেলার প্রোডাক্ট সেভ করা
+window.saveWholesaleProduct = async function() {
+  const name = document.getElementById('wp-name').value.trim();
+  const price = parseFloat(document.getElementById('wp-price').value) || 0;
+  const minOrder = parseInt(document.getElementById('wp-min-order').value) || 1;
+  const stock = parseInt(document.getElementById('wp-stock').value) || 0;
+  
+  if(!name || price <= 0 || stock <= 0) return alert("সব তথ্য সঠিকভাবে দিন!");
+
+  try {
+    await addDoc(collection(db, "products"), {
+      name: name,
+      price: price,
+      minOrderQty: minOrder,
+      stock: stock,
+      shopId: currentUser.uid,
+      shopName: globalUserData.name || 'Wholesaler',
+      productType: 'wholesale', // 🚀 এটিই মূল ফিল্টার
+      createdAt: serverTimestamp()
+    });
+    alert("✅ পাইকারি প্রোডাক্ট সেভ হয়েছে!");
+    document.getElementById('dlv-wholesale-add-modal').classList.remove('active');
+    document.getElementById('wp-name').value = '';
+    document.getElementById('wp-price').value = '';
+    document.getElementById('wp-min-order').value = '';
+    document.getElementById('wp-stock').value = '';
+  } catch(e) { 
+    console.error(e); alert("সেভ করতে সমস্যা হয়েছে!"); 
+  }
+};
+
+// ৩. হোলসেলারের নিজের প্রোডাক্ট লিস্ট লোড করা
+window.loadWholesalerProducts = function() {
+  const list = document.getElementById('wholesaler-product-list');
+  if(!list) return;
+  
+  const q = query(collection(db, "products"), where("shopId", "==", currentUser.uid), where("productType", "==", "wholesale"));
+  onSnapshot(q, (snap) => {
+    if(snap.empty) {
+      list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো পাইকারি প্রোডাক্ট নেই।</div>';
+      return;
+    }
+    let html = '';
+    snap.forEach(docSnap => {
+      const p = docSnap.data();
+      html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
+          <div>
+            <div style="font-size: 13px; font-weight: bold;">${p.name}</div>
+            <div style="font-size: 11px; color: #666;">মিনিমাম: ${p.minOrderQty} | স্টক: ${p.stock}</div>
+          </div>
+          <div style="font-size: 14px; font-weight: bold; color: #7b1fa2;">₹${p.price}</div>
+        </div>
+      `;
+    });
+    list.innerHTML = html;
+  });
+};
+
+// ৪. দোকানদারের B2B বাজার ওপেন (হোলসেলারদের প্রোডাক্ট দেখা)
+window.openB2BMarket = function() {
+  document.getElementById('dlv-b2b-market-modal').classList.add('active');
+  const grid = document.getElementById('b2b-product-grid');
+  grid.innerHTML = '<div style="text-align: center; color: #999; grid-column: 1/-1;">লোড হচ্ছে...</div>';
+
+  onSnapshot(query(collection(db, "products"), where("productType", "==", "wholesale")), (snap) => {
+    allWholesaleProducts = [];
+    snap.forEach(docSnap => {
+      allWholesaleProducts.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    renderB2BProducts('');
+  });
+};
+
+// ৫. B2B প্রোডাক্ট রেন্ডার
+window.renderB2BProducts = function(searchText) {
+  const grid = document.getElementById('b2b-product-grid');
+  const q = searchText.toLowerCase().trim();
+  const filtered = allWholesaleProducts.filter(p => p.name.toLowerCase().includes(q));
+
+  if(filtered.length === 0) {
+    grid.innerHTML = '<div style="text-align: center; color: #999; grid-column: 1/-1;">কোনো পাইকারি প্রোডাক্ট পাওয়া যায়নি।</div>';
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(p => {
+    html += `
+      <div style="border: 1px solid #eee; border-radius: 8px; padding: 10px; background: white;">
+        <div style="font-size: 13px; font-weight: bold; margin-bottom: 5px;">${p.name}</div>
+        <div style="font-size: 11px; color: #666; margin-bottom: 5px;">🏪 ${p.shopName}</div>
+        <div style="font-size: 11px; color: #7b1fa2; font-weight: bold; margin-bottom: 8px;">মিনিমাম অর্ডার: ${p.minOrderQty} পিস/বস্তা</div>
+        <div style="font-size: 16px; font-weight: bold; color: var(--mp-danger); margin-bottom: 8px;">₹${p.price}</div>
+        <button class="mp-btn mp-btn-primary" style="margin: 0; padding: 6px; font-size: 11px; background: #7b1fa2;" onclick="alert('B2B কার্ট সিস্টেম পরবর্তী আপডেটে আসছে!')">অর্ডার করুন</button>
+      </div>
+    `;
+  });
+  grid.innerHTML = html;
+};
 
 </script>
 
