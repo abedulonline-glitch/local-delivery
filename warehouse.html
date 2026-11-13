@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏢 ওয়্যারহাউজ ম্যানেজমেন্ট</title>
+<!-- আপনার মূল CSS ও JS ফাইলগুলো ইমপোর্ট করুন -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<!-- Fuse.js সার্চের জন্য -->
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+
+<style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; }
+    .mp-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .mp-btn { border: none; padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 10px; }
+    .mp-btn-primary { background: #1a73e8; color: white; }
+    .mp-btn-success { background: #0f9d58; color: white; }
+    .mp-btn-danger { background: #d93025; color: white; }
+    .dlv-input { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+    .search-box { position: relative; margin-bottom: 15px; }
+    .search-box input { padding-left: 35px; }
+    .search-icon { position: absolute; left: 10px; top: 10px; font-size: 18px; color: #666; }
+    .stock-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .stock-table th { background: #e8f0fe; color: #1a73e8; padding: 10px; text-align: left; }
+    .stock-table td { padding: 10px; border-bottom: 1px solid #eee; }
+    .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+    .badge-ok { background: #e6f4ea; color: #0f9d58; }
+    .badge-low { background: #fce8e6; color: #d93025; }
+</style>
+</head>
+<body>
+
+<div id="warehouse-app" style="max-width: 800px; margin: 0 auto;">
+    <!-- হেডার -->
+    <div class="mp-card" style="background: #1a73e8; color: white; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="margin: 0; font-size: 18px;">🏢 ওয়্যারহাউজ প্যানেল</h2>
+            <div style="font-size: 12px; opacity: 0.9;">স্টক ম্যানেজমেন্ট সিস্টেম</div>
+        </div>
+        <button class="mp-btn" style="width: auto; margin: 0; background: rgba(255,255,255,0.2); color: white;" onclick="window.location.href='delivery-v2.html'">⬅️ ফিরে যান</button>
+    </div>
+
+    <!-- ম্যানেজারের জন্য স্টক অ্যাড সেকশন -->
+    <div id="manager-only-section" class="mp-card" style="display: none; border-left: 4px solid #0f9d58;">
+        <h3 style="margin-bottom: 10px;">➕ নতুন স্টক যোগ করুন (শুধু ম্যানেজার)</h3>
+        <div style="display: grid; gap: 10px; grid-template-columns: 1fr 1fr;">
+            <select id="add-warehouse" class="dlv-input">
+                <option value="G-1">গোডাউন G-1</option>
+                <option value="G-2">গোডাউন G-2</option>
+                <option value="G-3">গোডাউন G-3</option>
+            </select>
+            <input type="text" id="add-rack" class="dlv-input" placeholder="র‍্যাক (যেমন: Rack-2)">
+            <input type="text" id="add-distance" class="dlv-input" placeholder="দূরত্ব (যেমন: 12')">
+            <select id="add-side" class="dlv-input">
+                <option value="Front">ফ্রন্ট</option>
+                <option value="Left">বাম</option>
+                <option value="Right">ডান</option>
+            </select>
+            <input type="text" id="add-product-name" class="dlv-input" placeholder="প্রোডাক্টের নাম" style="grid-column: 1/-1;">
+            <input type="number" id="add-quantity" class="dlv-input" placeholder="পরিমাণ (বক্স/পিস)">
+        </div>
+        <button class="mp-btn mp-btn-success" style="margin-top: 10px;" onclick="addNewStock()">💾 স্টক সেভ করুন</button>
+    </div>
+
+    <!-- সার্চ সেকশন -->
+    <div class="mp-card">
+        <h3>🔍 স্টক সার্চ করুন</h3>
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="stock-search-input" class="dlv-input" placeholder="প্রোডাক্টের নাম, ট্যাগ বা সাইজ দিয়ে সার্চ করুন..." oninput="searchStock(this.value)">
+        </div>
+        <div id="search-results-container"></div>
+    </div>
+
+    <!-- ম্যানেজার ডেসপ্যাচ অ্যাপ্রুভাল সেকশন -->
+    <div id="dispatch-approval-section" class="mp-card" style="display: none; border-left: 4px solid #f9a825;">
+        <h3>📥 ডেসপ্যাচ অ্যাপ্রুভাল (ম্যানেজার)</h3>
+        <div id="dispatch-requests-list"></div>
+    </div>
+</div>
+
+<script>
+    // 🚀 ফায়ারবেস কনফিগ (আপনার আগের কনফিগ এখানে বসান)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBth-4UlBlHFaIm-4vi6Q7G_OIH640l9qM",
+      authDomain: "local-delivery-app-59c61.firebaseapp.com",
+      projectId: "local-delivery-app-59c61",
+      storageBucket: "local-delivery-app-59c61.firebasestorage.app",
+      messagingSenderId: "564563629552",
+      appId: "1:564563629552:web:19fc32c620958f0b0af935",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    let currentUser = null;
+    let userRole = null;
+    let fuse = null;
+    let allStockData = [];
+
+    // ১. ইউজার লগইন চেক ও রোল সেট
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            const userSnap = await db.collection("users").doc(user.uid).get();
+            if (userSnap.exists) {
+                userRole = userSnap.data().role;
+                if (userRole === 'manager' || userRole === 'admin') {
+                    document.getElementById('manager-only-section').style.display = 'block';
+                    document.getElementById('dispatch-approval-section').style.display = 'block';
+                    loadDispatchRequests();
+                }
+                loadStockData();
+            }
+        } else {
+            window.location.href = 'delivery-v2.html';
+        }
+    });
+
+    // ২. স্টক ডেটা লোড করা
+    function loadStockData() {
+        db.collection("inventory_stock").onSnapshot((snap) => {
+            allStockData = [];
+            snap.forEach(doc => {
+                allStockData.push({ id: doc.id, ...doc.data() });
+            });
+            initFuseSearch();
+            renderStockTable(allStockData);
+        });
+    }
+
+    // ৩. Fuse.js সার্চ ইনিশিয়ালাইজ
+    function initFuseSearch() {
+        fuse = new Fuse(allStockData, {
+            keys: ['productName', 'warehouse', 'rack', 'side'],
+            threshold: 0.4
+        });
+    }
+
+    // ৪. সার্চ হ্যান্ডলার
+    function searchStock(query) {
+        if (!query.trim()) {
+            renderStockTable(allStockData);
+            return;
+        }
+        const results = fuse.search(query);
+        const filtered = results.map(r => r.item);
+        renderStockTable(filtered);
+    }
+
+    // ৫. স্টক টেবিল রেন্ডার
+    function renderStockTable(data) {
+        const container = document.getElementById('search-results-container');
+        if (data.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#999;">কোনো স্টক পাওয়া যায়নি।</div>';
+            return;
+        }
+
+        let html = `<table class="stock-table">
+            <thead>
+                <tr>
+                    <th>প্রোডাক্ট</th>
+                    <th>লোকেশন</th>
+                    <th>পরিমাণ</th>
+                    <th>অ্যাকশন</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        data.forEach(item => {
+            const isLow = item.quantity < 10;
+            html += `
+                <tr>
+                    <td><b>${item.productName}</b></td>
+                    <td>G: ${item.warehouse} | ${item.rack} | ${item.distance} | ${item.side}</td>
+                    <td><span class="badge ${isLow ? 'badge-low' : 'badge-ok'}">${item.quantity} Box</span></td>
+                    <td>
+                        ${userRole === 'manager' ? `<button class="mp-btn" style="width:auto; margin:0; padding:4px 8px; font-size:11px; background:#fce8e6; color:#d93025;" onclick="deleteStock('${item.id}')">🗑️</button>` : ''}
+                        ${userRole === 'delivery' ? `<button class="mp-btn" style="width:auto; margin:0; padding:4px 8px; font-size:11px; background:#e8f0fe; color:#1a73e8;" onclick="requestDispatch('${item.id}', '${item.productName}', ${item.quantity})">পিক</button>` : ''}
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    // ৬. ম্যানেজার নতুন স্টক অ্যাড করা
+    async function addNewStock() {
+        const productName = document.getElementById('add-product-name').value.trim();
+        const warehouse = document.getElementById('add-warehouse').value;
+        const rack = document.getElementById('add-rack').value.trim();
+        const distance = document.getElementById('add-distance').value.trim();
+        const side = document.getElementById('add-side').value;
+        const quantity = parseFloat(document.getElementById('add-quantity').value) || 0;
+
+        if (!productName || !rack || quantity <= 0) return alert("সব তথ্য সঠিকভাবে দিন!");
+
+        try {
+            await db.collection("inventory_stock").add({
+                productName, warehouse, rack, distance, side, quantity,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert("✅ স্টক সেভ হয়েছে!");
+            document.getElementById('add-product-name').value = '';
+            document.getElementById('add-rack').value = '';
+            document.getElementById('add-distance').value = '';
+            document.getElementById('add-quantity').value = '';
+        } catch(e) {
+            console.error(e);
+            alert("সমস্যা হয়েছে!");
+        }
+    }
+
+    // ৭. ম্যানেজার স্টক ডিলিট করা
+    async function deleteStock(stockId) {
+        if (!confirm("আপনি কি এই স্টকটি ডিলিট করতে চান?")) return;
+        try {
+            await db.collection("inventory_stock").doc(stockId).delete();
+            alert("✅ স্টক ডিলিট হয়েছে!");
+        } catch(e) { alert("সমস্যা হয়েছে!"); }
+    }
+
+    // ৮. ডেলিভারি বয় পিক রিকোয়েস্ট পাঠাবে
+    async function requestDispatch(stockId, productName, availableQty) {
+        const pickedQty = prompt(`"${productName}" থেকে কত পরিমাণ পিক করছেন? (সর্বোচ্চ: ${availableQty})`);
+        if (!pickedQty || isNaN(pickedQty) || pickedQty <= 0 || pickedQty > availableQty) {
+            return alert("সঠিক পরিমাণ লিখুন!");
+        }
+
+        try {
+            await db.collection("dispatch_requests").add({
+                stockId, productName,
+                pickedQty: parseFloat(pickedQty),
+                requestedBy: currentUser.uid,
+                requestedByName: firebase.auth().currentUser.displayName || 'Delivery Boy',
+                status: 'pending',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert("✅ ম্যানেজারের কাছে অ্যাপ্রুভাল রিকোয়েস্ট পাঠানো হয়েছে!");
+        } catch(e) { alert("সমস্যা হয়েছে!"); }
+    }
+
+    // ৯. ম্যানেজার ডেসপ্যাচ রিকোয়েস্ট লোড করবে
+    function loadDispatchRequests() {
+        const list = document.getElementById('dispatch-requests-list');
+        db.collection("dispatch_requests").where("status", "==", "pending").onSnapshot((snap) => {
+            if (snap.empty) {
+                list.innerHTML = '<div style="text-align:center; color:#999;">কোনো পেন্ডিং রিকোয়েস্ট নেই।</div>';
+                return;
+            }
+            let html = '';
+            snap.forEach(doc => {
+                const req = doc.data();
+                html += `
+                    <div style="border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                        <div style="font-weight: bold;">${req.productName} - ${req.pickedQty} পিস</div>
+                        <div style="font-size: 12px; color: #666; margin: 5px 0;">ডেলিভারি বয়: ${req.requestedByName}</div>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="mp-btn mp-btn-success" style="margin: 0; flex: 1; padding: 6px;" onclick="approveDispatch('${doc.id}', '${req.stockId}', ${req.pickedQty})">✅ কনফার্ম</button>
+                            <button class="mp-btn mp-btn-danger" style="margin: 0; flex: 1; padding: 6px;" onclick="rejectDispatch('${doc.id}')">❌ বাতিল</button>
+                        </div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        });
+    }
+
+    // ১০. ম্যানেজার ডেসপ্যাচ অ্যাপ্রুভ করবে (স্টক কমবে)
+    async function approveDispatch(reqId, stockId, qty) {
+        if (!confirm("আপনি কি নিশ্চিত? এটি স্টক থেকে কমিয়ে দেবে।")) return;
+        try {
+            const stockRef = db.collection("inventory_stock").doc(stockId);
+            const stockSnap = await stockRef.get();
+            if (stockSnap.exists) {
+                const newQty = stockSnap.data().quantity - qty;
+                if (newQty < 0) return alert("স্টক পর্যাপ্ত নেই!");
+                await stockRef.update({ quantity: newQty });
+            }
+            await db.collection("dispatch_requests").doc(reqId).update({ status: 'approved' });
+            alert("✅ ডেসপ্যাচ অ্যাপ্রুভ হয়েছে এবং স্টক কমেছে!");
+        } catch(e) { alert("সমস্যা হয়েছে!"); }
+    }
+
+    // ১১. ম্যানেজার ডেসপ্যাচ রিজেক্ট করবে
+    async function rejectDispatch(reqId) {
+        try {
+            await db.collection("dispatch_requests").doc(reqId).update({ status: 'rejected' });
+            alert("❌ রিকোয়েস্ট বাতিল হয়েছে!");
+        } catch(e) { alert("সমস্যা হয়েছে!"); }
+    }
+</script>
+</body>
+</html>
