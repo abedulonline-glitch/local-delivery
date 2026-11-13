@@ -2245,36 +2245,57 @@ await setDoc(doc(db, "users", user.uid), {
    // ==================== AUTH LOGIC (PHONE AS EMAIL) ====================
   const DUMMY_PASSWORD = "Delivery@123"; // সব ইউজারের জন্য এই ফিক্সড পাসওয়ার্ডটি ব্যবহার হবে
 
-  window.handleLogin = async function() {
-    const phone = document.getElementById('login-phone').value.trim();
-    const btn = document.getElementById('login-btn');
-    const errorEl = document.getElementById('login-error');
-    
-    if(!phone || phone.length < 10) {
-      errorEl.innerText = "দয়া করে সঠিক ১০ ডিজিটের মোবাইল নাম্বার দিন!";
-      return;
-    }
-
-    // ফোন নাম্বারকে ইমেইলে কনভার্ট করা হচ্ছে
-    const fakeEmail = `${phone}@delivery.com`;
-    btn.innerText = "অপেক্ষা করুন...";
-    btn.disabled = true;
-
-    try {
-      await signInWithEmailAndPassword(auth, fakeEmail, DUMMY_PASSWORD);
-      // সফল হলে onAuthStateChanged অটো ট্রিগার হবে
-    } catch (error) {
-      console.error(error);
-      if(error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        errorEl.innerText = "এই নাম্বারটি রেজিস্টার্ড নেই! দয়া করে রেজিস্ট্রেশন করুন।";
-      } else {
-        errorEl.innerText = "লগইনে সমস্যা হয়েছে। আবার চেষ্টা করুন।";
-      }
-      btn.innerText = "লগইন করুন";
-      btn.disabled = false;
-    }
-  };
   
+  window.handleLogin = async function() {
+  const phone = document.getElementById('login-phone').value.trim();
+  const selectedCategory = document.getElementById('login-master-category').value; // 🚀 নতুন: সিলেক্ট করা ক্যাটাগরি
+  const btn = document.getElementById('login-btn');
+  const errorEl = document.getElementById('login-error');
+  
+  if(!phone || phone.length < 10) {
+    errorEl.innerText = "দয়া করে সঠিক ১০ ডিজিটের মোবাইল নাম্বার দিন!";
+    return;
+  }
+
+  // ফোন নাম্বারকে ইমেইলে কনভার্ট করা হচ্ছে
+  const fakeEmail = `${phone}@delivery.com`;
+  btn.innerText = "অপেক্ষা করুন...";
+  btn.disabled = true;
+
+  try {
+    // ১. লগইন করা
+    const userCredential = await signInWithEmailAndPassword(auth, fakeEmail, DUMMY_PASSWORD);
+    const user = userCredential.user;
+
+    // 🚀 ২. লগইন সফল হলে ইউজারের ক্যাটাগরি আপডেট করা
+    // (শুধুমাত্র কাস্টমার এবং দোকানদারের ক্ষেত্রে ক্যাটাগরি পরিবর্তন হবে)
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+    
+    if (userSnap.exists()) {
+        const userData = userSnap.data();
+        // যদি ইউজার কাস্টমার বা দোকানদার হয়, তবে ক্যাটাগরি আপডেট হবে
+        if (userData.role === 'customer' || userData.role === 'shopkeeper') {
+            if (userData.masterCategory !== selectedCategory) {
+                await updateDoc(userRef, { masterCategory: selectedCategory });
+                console.log("ক্যাটাগরি আপডেট হয়েছে:", selectedCategory);
+            }
+        }
+    }
+    
+    // onAuthStateChanged অটোমেটিক নতুন ক্যাটাগরি সহ UI লোড করবে
+    
+  } catch (error) {
+    console.error(error);
+    if(error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+      errorEl.innerText = "এই নাম্বারটি রেজিস্টার্ড নেই! দয়া করে রেজিস্ট্রেশন করুন।";
+    } else {
+      errorEl.innerText = "লগইনে সমস্যা হয়েছে। আবার চেষ্টা করুন।";
+    }
+    btn.innerText = "লগইন করুন";
+    btn.disabled = false;
+  }
+};
    // ==================== SMART FEATURES UPDATE ====================
  // ১. ওয়ালেট আপডেট ও টপবার লোড
   function updateTopbarWallet(balance) {
