@@ -8380,27 +8380,35 @@ window.openB2BMarket = function() {
   });
 };
 
-// ৫. B2B প্রোডাক্ট রেন্ডার
 window.renderB2BProducts = function(searchText) {
   const grid = document.getElementById('b2b-product-grid');
   const q = searchText.toLowerCase().trim();
   const filtered = allWholesaleProducts.filter(p => p.name.toLowerCase().includes(q));
 
   if(filtered.length === 0) {
-    grid.innerHTML = '<div style="text-align: center; color: #999; grid-column: 1/-1;">কোনো পাইকারি প্রোডাক্ট পাওয়া যায়নি।</div>';
+    grid.innerHTML = '<div style="text-align: center; color: #999; grid-column: 1/-1; padding: 20px;">কোনো পাইকারি প্রোডাক্ট পাওয়া যায়নি।</div>';
     return;
   }
 
   let html = '';
   filtered.forEach(p => {
     html += `
-      <div style="border: 1px solid #eee; border-radius: 8px; padding: 10px; background: white;">
-        <div style="font-size: 13px; font-weight: bold; margin-bottom: 5px;">${p.name}</div>
-        <div style="font-size: 11px; color: #666; margin-bottom: 5px;">🏪 ${p.shopName}</div>
+      <div style="border: 1px solid #eee; border-radius: 8px; padding: 10px; background: white; display: flex; flex-direction: column; position: relative;">
+        
+        <!-- 🚀 এখানে ছবিটি যোগ করা হলো -->
+        <div style="width: 100%; aspect-ratio: 1/1; background: #f8f9fa; border-radius: 6px; overflow: hidden; margin-bottom: 8px;">
+           ${p.image ? `<img src="${p.image}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
+        </div>
+
+        <div style="font-size: 13px; font-weight: bold; margin-bottom: 4px;">${p.name}</div>
+        <div style="font-size: 11px; color: #666; margin-bottom: 4px;">🏪 ${p.shopName}</div>
         <div style="font-size: 11px; color: #7b1fa2; font-weight: bold; margin-bottom: 8px;">মিনিমাম অর্ডার: ${p.minOrderQty} পিস/বস্তা</div>
-        <div style="font-size: 16px; font-weight: bold; color: var(--mp-danger); margin-bottom: 8px;">₹${p.price}</div>
-        // renderB2BProducts ফাংশনে:
-       <button class="mp-btn mp-btn-primary" style="margin: 0; padding: 6px; font-size: 11px; background: #7b1fa2;" onclick="addWholesaleToCart('${p.id}')">অর্ডার করুন</button> </div>
+        
+        <div style="font-size: 16px; font-weight: bold; color: var(--mp-danger); margin-top: auto; margin-bottom: 8px;">₹${p.price}</div>
+        
+        <!-- 🚀 অর্ডার বাটন (এখানে কোনো কমেন্ট বা বাড়তি লেখা নেই) -->
+        <button class="mp-btn mp-btn-primary" style="margin: 0; padding: 8px; font-size: 12px; background: #7b1fa2; font-weight: bold;" onclick="addWholesaleToCart('${p.id}')">অর্ডার করুন</button>
+      </div>
     `;
   });
   grid.innerHTML = html;
