@@ -1018,12 +1018,13 @@
           <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
         </div>
 
-        <!-- নতুন ক্যাটাগরি রিকোয়েস্ট -->
-        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
-        <div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
-          <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
-        </div>
-      </div>
+        <!-- নতুন ক্যাটাগরি রিকোয়েস্ট 
+
+<!-- 🚀 নতুন: প্রোডাক্ট রিকোয়েস্ট সেকশন -->
+<h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-primary);">📦 নতুন প্রোডাক্ট রিকোয়েস্ট</h4>
+<div id="admin-product-requests" style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
+  <div style="text-align: center; color: #999; font-size: 13px;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>
+</div>
   
   <!-- 🚀 সার্চ বার -->
   <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
@@ -6844,7 +6845,7 @@ window.clearImageSearch = function() {
 };
 
   function loadAdminProductRequests() {
-  const list = document.getElementById('admin-category-requests');
+  const list = document.getElementById('admin-product-requests');
   if (!list) return;
 
   onSnapshot(query(collection(db, "product_requests"), orderBy("createdAt", "desc")), (snap) => {
