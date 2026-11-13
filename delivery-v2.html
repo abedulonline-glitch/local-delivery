@@ -1019,11 +1019,16 @@
         </div>
 
         <!-- নতুন ক্যাটাগরি রিকোয়েস্ট -->
-        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
-        <div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
-          <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
-        </div>
-      </div>
+<h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
+<div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
+  <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
+</div>
+
+<!-- 🚀 নতুন: প্রোডাক্ট রিকোয়েস্ট সেকশন -->
+<h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-primary);">📦 নতুন প্রোডাক্ট রিকোয়েস্ট</h4>
+<div id="admin-product-requests" style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
+  <div style="text-align: center; color: #999; font-size: 13px;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>
+</div>
   
   <!-- 🚀 সার্চ বার -->
   <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
@@ -6844,12 +6849,12 @@ window.clearImageSearch = function() {
 };
 
   function loadAdminProductRequests() {
-  const list = document.getElementById('admin-category-requests');
+  const list = document.getElementById('admin-product-requests');
   if (!list) return;
 
   onSnapshot(query(collection(db, "product_requests"), orderBy("createdAt", "desc")), (snap) => {
     if (snap.empty) {
-      list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>';
+      list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>';
       return;
     }
     let html = '';
@@ -6858,14 +6863,15 @@ window.clearImageSearch = function() {
       html += `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
           <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="${req.image || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">
+            <img src="${req.image || 'https://via.placeholder.com/40'}" style="width: 45px; height: 45px; border-radius: 6px; object-fit: cover; border: 1px solid #ddd;">
             <div>
               <div style="font-size: 13px; font-weight: bold; color: var(--mp-primary);">${req.name}</div>
-              <div style="font-size: 11px; color: #666;">ক্যাটাগরি: ${req.category} | দোকান: ${req.shopName}</div>
+              <div style="font-size: 11px; color: #666;">ক্যাটাগরি: ${req.category}</div>
+              <div style="font-size: 10px; color: #999;">দোকান: ${req.shopName}</div>
             </div>
           </div>
           <div style="display: flex; gap: 5px;">
-            <button onclick="approveProductRequest('${docSnap.id}', '${req.name}', '${req.category}', '${req.image || ''}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
+            <button onclick="approveProductRequest('${docSnap.id}', '${req.name.replace(/'/g, "\\'")}', '${req.category.replace(/'/g, "\\'")}', '${req.image || ''}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
             <button onclick="rejectProductRequest('${docSnap.id}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
           </div>
         </div>
@@ -6874,6 +6880,40 @@ window.clearImageSearch = function() {
     list.innerHTML = html;
   });
 }
+
+  window.approveProductRequest = async function(reqId, name, category, imageUrl) {
+  if (!confirm(`"${name}" প্রোডাক্টটি অ্যাপ্রুভ করবেন?`)) return;
+  
+  try {
+    // ১. AI ভেক্টর জেনারেশন
+    let generatedVectorStr = "";
+    if (imageUrl && window.CLIPVisionModelWithProjection) {
+      try {
+        if (!window.clipProcessor) {
+          window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+          window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+        }
+        const image = await window.RawImage.fromURL(imageUrl);
+        const image_inputs = await window.clipProcessor(image);
+        const { image_embeds } = await window.clipVisionModel(image_inputs);
+        const vectorArray = Array.from(image_embeds.data).slice(0, 256);
+        generatedVectorStr = JSON.stringify(vectorArray); 
+      } catch (error) { console.error("Vector Error:", error); }
+    }
+
+    // ২. মাস্টার প্রোডাক্টে সেভ করা
+    await addDoc(collection(db, "master_products"), {
+      name: name, category: category, image: imageUrl || null, imageVector: generatedVectorStr, createdAt: serverTimestamp()
+    });
+
+    // ৩. রিকোয়েস্ট ডিলিট করা
+    await deleteDoc(doc(db, "product_requests", reqId));
+    alert("✅ প্রোডাক্ট অ্যাপ্রুভ হয়েছে!");
+    
+  } catch(e) { 
+    console.error(e); alert("সমস্যা হয়েছে!"); 
+  }
+};
   
   // ৫. অ্যাডমিন কর্তৃক রিকোয়েস্ট বাতিল করা
   window.rejectCategory = async function(reqId) {
