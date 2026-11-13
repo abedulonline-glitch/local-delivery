@@ -721,14 +721,12 @@
   </div>
 
   <!-- 🚀 দোকানদারের ক্যাটাগরি সাজেশন সেকশন -->
-  <div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
-    <h3>💡 নতুন ক্যাটাগরি সাজেশন</h3>
-    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">আপনার কাঙ্ক্ষিত ক্যাটাগরি না থাকলে অ্যাডমিনকে সাজেস্ট করুন।</p>
-    <div style="display: flex; gap: 8px;">
-      <input type="text" id="shop-cat-suggestion" class="dlv-input" placeholder="ক্যাটাগরির নাম..." style="flex: 1;">
-      <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 0 15px;" onclick="sendCategorySuggestion()">📩 পাঠান</button>
-    </div>
-  </div>
+  <!-- 💡 নতুন প্রোডাক্ট/ক্যাটাগরি রিকোয়েস্ট সেকশন -->
+<div class="mp-card" style="border-left: 4px solid var(--mp-warning);">
+  <h3>💡 নতুন প্রোডাক্ট রিকোয়েস্ট</h3>
+  <p style="font-size: 12px; color: #666; margin-bottom: 10px;">আপনার প্রয়োজনীয় নতুন প্রোডাক্ট অ্যাডমিনের কাছে সাজেস্ট করুন। অ্যাডমিন অ্যাপ্রুভ করলে সেটি সিস্টেমে যুক্ত হবে।</p>
+  <button class="mp-btn mp-btn-primary" onclick="openMasterProductModal()">➕ নতুন প্রোডাক্ট সাজেশন দিন</button>
+</div>
   
   <!-- দোকানের খাতা -->
   <div class="mp-card">
@@ -5131,6 +5129,7 @@ window.startLiveLocationTracking(orderId);
   loadAdminCategories();
   loadCategoriesForDropdowns();
   loadAdminCategoryRequests();
+  loadAdminProductRequests();
   loadBarcodeProducts();      
         
   const ordersQ = query(collection(db, "orders"), where("status", "==", "delivered"));
@@ -5838,47 +5837,51 @@ window.saveMasterProduct = async function() {
   const name = document.getElementById('mp-name').value.trim();
   const category = document.getElementById('mp-category').value;
   
-  // চেক করা হচ্ছে নাম এবং ক্যাটাগরি দেওয়া হয়েছে কি না
   if (!name || !category) return alert("প্রোডাক্টের নাম এবং ক্যাটাগরি অবশ্যই দিতে হবে!");
 
   const btn = document.getElementById('btn-save-mp');
   btn.innerText = "⏳ সেভ হচ্ছে..."; 
   btn.disabled = true;
 
-  let generatedVectorStr = ""; // 🚀 AI ইমেজ ভেক্টর স্ট্রিং হিসেবে সেভ হবে
-
-  // ছবি থাকলে এবং AI মডেল লোড থাকলে ভেক্টর জেনারেট হবে
-  if (uploadedImageUrl && window.CLIPVisionModelWithProjection) {
-    try {
-      btn.innerText = "🧠 AI ভেক্টর তৈরি হচ্ছে..."; 
-      if (!window.clipProcessor) {
-        window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
-        window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
-      }
-      const image = await window.RawImage.fromURL(uploadedImageUrl);
-      const image_inputs = await window.clipProcessor(image);
-      const { image_embeds } = await window.clipVisionModel(image_inputs);
-      
-      // অ্যারে থেকে স্ট্রিং এ কনভার্ট (যাতে ফায়ারবেসে সেভ হতে সমস্যা না হয়)
-      const vectorArray = Array.from(image_embeds.data).slice(0, 256);
-      generatedVectorStr = JSON.stringify(vectorArray); 
-    } catch (error) { 
-      console.error("❌ Vector Generation Error:", error); 
-    }
-  }
-
   try {
-    // 🚀 এখানে শুধু আপনার নির্দেশনা অনুযায়ী ৩টি জিনিস সেভ হচ্ছে
-    await addDoc(collection(db, "master_products"), {
-      name: name, 
-      category: category, 
-      image: uploadedImageUrl || null, // ছবি না দিলে null যাবে
-      imageVector: generatedVectorStr, // AI ভেক্টর
-      createdAt: serverTimestamp()
-    });
+    // 🚀 যদি অ্যাডমিন হয়, তবে সরাসরি মাস্টার প্রোডাক্টে সেভ হবে (AI ভেক্টরসহ)
+    if (userRole === 'admin') {
+        let generatedVectorStr = "";
+        if (uploadedImageUrl && window.CLIPVisionModelWithProjection) {
+          try {
+            btn.innerText = "🧠 AI ভেক্টর তৈরি হচ্ছে..."; 
+            if (!window.clipProcessor) {
+              window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+              window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+            }
+            const image = await window.RawImage.fromURL(uploadedImageUrl);
+            const image_inputs = await window.clipProcessor(image);
+            const { image_embeds } = await window.clipVisionModel(image_inputs);
+            const vectorArray = Array.from(image_embeds.data).slice(0, 256);
+            generatedVectorStr = JSON.stringify(vectorArray); 
+          } catch (error) { console.error("Vector Error:", error); }
+        }
+
+        await addDoc(collection(db, "master_products"), {
+          name: name, category: category, image: uploadedImageUrl || null, imageVector: generatedVectorStr, createdAt: serverTimestamp()
+        });
+        alert("সফলভাবে মাস্টার প্রোডাক্ট সেভ হয়েছে!");
+        
+    } else {
+        // 🚀 যদি দোকানদার হয়, তবে শুধু রিকোয়েস্ট হিসেবে সেভ হবে (AI ভেক্টর ছাড়া)
+        await addDoc(collection(db, "product_requests"), {
+          name: name, 
+          category: category, 
+          image: uploadedImageUrl || null,
+          shopId: currentUser.uid,
+          shopName: globalUserData.name,
+          status: 'pending',
+          createdAt: serverTimestamp()
+        });
+        alert("✅ আপনার সাজেশন অ্যাডমিনের কাছে পাঠানো হয়েছে! অ্যাডমিন অ্যাপ্রুভ করলে এটি সিস্টেমে যুক্ত হবে।");
+    }
     
-    alert("সফলভাবে মাস্টার প্রোডাক্ট সেভ হয়েছে!");
-    closeMasterProductModal(); // সেভ হওয়ার পর মডাল বন্ধ হবে এবং ফর্ম রিসেট হবে
+    closeMasterProductModal(); 
   } catch (e) { 
     console.error("Save Error:", e);
     alert("সেভ করতে সমস্যা হয়েছে! এরর: " + e.message); 
@@ -5887,6 +5890,7 @@ window.saveMasterProduct = async function() {
     btn.disabled = false; 
   }
 };
+  
   window.deleteMasterProduct = async function(id) {
     if(!confirm("ডিলিট করতে চান?")) return;
     try { await deleteDoc(doc(db, "master_products", id)); } catch(e) { alert("ডিলিট সমস্যা!"); }
@@ -6781,51 +6785,96 @@ window.clearImageSearch = function() {
   };
 
   // ৩. অ্যাডমিনের স্ক্রিনে রিকোয়েস্ট লোড করা
-  function loadAdminCategoryRequests() {
-    const list = document.getElementById('admin-category-requests');
-    if (!list) return;
+  window.saveMasterProduct = async function() {
+  const name = document.getElementById('mp-name').value.trim();
+  const category = document.getElementById('mp-category').value;
+  
+  if (!name || !category) return alert("প্রোডাক্টের নাম এবং ক্যাটাগরি অবশ্যই দিতে হবে!");
 
-    onSnapshot(query(collection(db, "category_requests"), orderBy("createdAt", "desc")), (snap) => {
-      if (snap.empty) {
-        list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>';
-        return;
-      }
+  const btn = document.getElementById('btn-save-mp');
+  btn.innerText = "⏳ সেভ হচ্ছে..."; 
+  btn.disabled = true;
 
-      let html = '';
-      snap.forEach(docSnap => {
-        const req = docSnap.data();
-        html += `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
+  try {
+    // 🚀 যদি অ্যাডমিন হয়, তবে সরাসরি মাস্টার প্রোডাক্টে সেভ হবে (AI ভেক্টরসহ)
+    if (userRole === 'admin') {
+        let generatedVectorStr = "";
+        if (uploadedImageUrl && window.CLIPVisionModelWithProjection) {
+          try {
+            btn.innerText = "🧠 AI ভেক্টর তৈরি হচ্ছে..."; 
+            if (!window.clipProcessor) {
+              window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+              window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+            }
+            const image = await window.RawImage.fromURL(uploadedImageUrl);
+            const image_inputs = await window.clipProcessor(image);
+            const { image_embeds } = await window.clipVisionModel(image_inputs);
+            const vectorArray = Array.from(image_embeds.data).slice(0, 256);
+            generatedVectorStr = JSON.stringify(vectorArray); 
+          } catch (error) { console.error("Vector Error:", error); }
+        }
+
+        await addDoc(collection(db, "master_products"), {
+          name: name, category: category, image: uploadedImageUrl || null, imageVector: generatedVectorStr, createdAt: serverTimestamp()
+        });
+        alert("সফলভাবে মাস্টার প্রোডাক্ট সেভ হয়েছে!");
+        
+    } else {
+        // 🚀 যদি দোকানদার হয়, তবে শুধু রিকোয়েস্ট হিসেবে সেভ হবে (AI ভেক্টর ছাড়া)
+        await addDoc(collection(db, "product_requests"), {
+          name: name, 
+          category: category, 
+          image: uploadedImageUrl || null,
+          shopId: currentUser.uid,
+          shopName: globalUserData.name,
+          status: 'pending',
+          createdAt: serverTimestamp()
+        });
+        alert("✅ আপনার সাজেশন অ্যাডমিনের কাছে পাঠানো হয়েছে! অ্যাডমিন অ্যাপ্রুভ করলে এটি সিস্টেমে যুক্ত হবে।");
+    }
+    
+    closeMasterProductModal(); 
+  } catch (e) { 
+    console.error("Save Error:", e);
+    alert("সেভ করতে সমস্যা হয়েছে! এরর: " + e.message); 
+  } finally { 
+    btn.innerText = "💾 সেভ করুন"; 
+    btn.disabled = false; 
+  }
+};
+
+  function loadAdminProductRequests() {
+  const list = document.getElementById('admin-category-requests');
+  if (!list) return;
+
+  onSnapshot(query(collection(db, "product_requests"), orderBy("createdAt", "desc")), (snap) => {
+    if (snap.empty) {
+      list.innerHTML = '<div style="text-align: center; color: #999; font-size: 13px;">কোনো প্রোডাক্ট রিকোয়েস্ট নেই।</div>';
+      return;
+    }
+    let html = '';
+    snap.forEach(docSnap => {
+      const req = docSnap.data();
+      html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="${req.image || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">
             <div>
-              <div style="font-size: 13px; font-weight: 600; color: var(--mp-primary);">${req.categoryName}</div>
-              <div style="font-size: 11px; color: #666;">দোকান: ${req.shopName}</div>
-            </div>
-            <div style="display: flex; gap: 5px;">
-              <button onclick="approveCategory('${docSnap.id}', '${req.categoryName}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
-              <button onclick="rejectCategory('${docSnap.id}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
+              <div style="font-size: 13px; font-weight: bold; color: var(--mp-primary);">${req.name}</div>
+              <div style="font-size: 11px; color: #666;">ক্যাটাগরি: ${req.category} | দোকান: ${req.shopName}</div>
             </div>
           </div>
-        `;
-      });
-      list.innerHTML = html;
+          <div style="display: flex; gap: 5px;">
+            <button onclick="approveProductRequest('${docSnap.id}', '${req.name}', '${req.category}', '${req.image || ''}')" style="background:#e6f4ea; border:none; color:var(--mp-success); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">✅ অ্যাপ্রুভ</button>
+            <button onclick="rejectProductRequest('${docSnap.id}')" style="background:#fce8e6; border:none; color:var(--mp-danger); border-radius:4px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;">❌ বাতিল</button>
+          </div>
+        </div>
+      `;
     });
-  }
-
-  // ৪. অ্যাডমিন কর্তৃক রিকোয়েস্ট অ্যাপ্রুভ করা
-  window.approveCategory = async function(reqId, catName) {
-    if (!confirm(`"${catName}" ক্যাটাগরিটি অ্যাপ্রুভ করবেন?`)) return;
-    try {
-      // মেইন ক্যাটাগরি লিস্টে যোগ করা
-      await addDoc(collection(db, "categories"), {
-        name: catName,
-        createdAt: serverTimestamp()
-      });
-      // রিকোয়েস্ট লিস্ট থেকে মুছে ফেলা
-      await deleteDoc(doc(db, "category_requests", reqId));
-      alert("ক্যাটাগরি অ্যাপ্রুভ হয়েছে!");
-    } catch(e) { console.error(e); alert("সমস্যা হয়েছে!"); }
-  };
-
+    list.innerHTML = html;
+  });
+}
+  
   // ৫. অ্যাডমিন কর্তৃক রিকোয়েস্ট বাতিল করা
   window.rejectCategory = async function(reqId) {
     if (!confirm("আপনি কি এই রিকোয়েস্টটি বাতিল করতে চান?")) return;
