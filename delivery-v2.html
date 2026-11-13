@@ -8344,15 +8344,22 @@ window.loadWholesalerProducts = function() {
     let html = '';
     snap.forEach(docSnap => {
       const p = docSnap.data();
-      html += `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
-          <div>
-            <div style="font-size: 13px; font-weight: bold;">${p.name}</div>
-            <div style="font-size: 11px; color: #666;">মিনিমাম: ${p.minOrderQty} | স্টক: ${p.stock}</div>
-          </div>
-          <div style="font-size: 14px; font-weight: bold; color: #7b1fa2;">₹${p.price}</div>
-        </div>
-      `;
+      // loadWholesalerProducts ফাংশনে:
+html += `
+  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <!-- 🚀 নতুন যোগ করা হলো: ছবি -->
+      <div style="width: 45px; height: 45px; border-radius: 8px; overflow: hidden; background: #f0f2f5;">
+        ${p.image ? `<img src="${p.image}" style="width:100%; height:100%; object-fit:cover;">` : '📦'}
+      </div>
+      <div>
+        <div style="font-size: 13px; font-weight: bold;">${p.name}</div>
+        <div style="font-size: 11px; color: #666;">মিনিমাম: ${p.minOrderQty} | স্টক: ${p.stock}</div>
+      </div>
+    </div>
+    <div style="font-size: 14px; font-weight: bold; color: #7b1fa2;">₹${p.price}</div>
+  </div>
+`;
     });
     list.innerHTML = html;
   });
@@ -8392,8 +8399,8 @@ window.renderB2BProducts = function(searchText) {
         <div style="font-size: 11px; color: #666; margin-bottom: 5px;">🏪 ${p.shopName}</div>
         <div style="font-size: 11px; color: #7b1fa2; font-weight: bold; margin-bottom: 8px;">মিনিমাম অর্ডার: ${p.minOrderQty} পিস/বস্তা</div>
         <div style="font-size: 16px; font-weight: bold; color: var(--mp-danger); margin-bottom: 8px;">₹${p.price}</div>
-        <button class="mp-btn mp-btn-primary" style="margin: 0; padding: 6px; font-size: 11px; background: #7b1fa2;" onclick="alert('B2B কার্ট সিস্টেম পরবর্তী আপডেটে আসছে!')">অর্ডার করুন</button>
-      </div>
+        // renderB2BProducts ফাংশনে:
+       <button class="mp-btn mp-btn-primary" style="margin: 0; padding: 6px; font-size: 11px; background: #7b1fa2;" onclick="addWholesaleToCart('${p.id}')">অর্ডার করুন</button> </div>
     `;
   });
   grid.innerHTML = html;
@@ -8449,6 +8456,44 @@ window.saveWholesaleShopProduct = async function() {
   } catch(e) { 
     console.error(e); alert("সেভ করতে সমস্যা হয়েছে!"); 
   }
+};
+
+window.addWholesaleToCart = function(prodId) {
+  const product = allWholesaleProducts.find(p => p.id === prodId);
+  if(!product) return;
+
+  // 🚀 smartCart-এ অ্যাড করা (কাস্টমার কার্টের ফরম্যাটেই)
+  const existingIndex = smartCart.findIndex(item => item.prodId === prodId);
+  
+  if (existingIndex > -1) {
+    smartCart[existingIndex].qty += product.minOrderQty; // মিনিমাম পরিমাণ বাড়বে
+  } else {
+    smartCart.push({
+      cartItemId: 'cart-' + Date.now(),
+      prodId: product.id,
+      name: product.name,
+      image: product.image,
+      qty: product.minOrderQty, // ডিফল্ট মিনিমাম পরিমাণ (যেমন: ২৫ পিস)
+      selectedBrand: 'Default',
+      selectedSize: 1,
+      selectedUnit: 'bosta', // বস্তা হিসেবে ধরা হলো
+      variants: [],
+      discountTiers: [],
+      extraChargeTiers: [],
+      basePrice: product.price,
+      baseWeight: 1,
+      baseUnit: 'bosta',
+      shopId: product.shopId,
+      shopName: product.shopName,
+      shopLat: 0, shopLng: 0, isShopFree: true, // B2B-তে ডেলিভারি চার্জ অ্যাডমিন নেবে
+      displayShopName: "✅ হোলসেলার"
+    });
+  }
+  
+  // 🚀 কাস্টমারের তৈরি করা কার্ট মডালটিই ওপেন হবে
+  updateSmartCartUI();
+  document.getElementById('dlv-b2b-market-modal').classList.remove('active');
+  document.getElementById('dlv-smart-cart-modal').classList.add('active');
 };
 
 </script>
