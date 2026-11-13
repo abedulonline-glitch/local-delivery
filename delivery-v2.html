@@ -1407,7 +1407,54 @@
   </div>
 </div>
 
-<!-- 🚀 Smart Customer POS / Cart Modal -->
+<!-- 🚀 Smart Order Confirmation Modal -->
+<div id="dlv-order-confirm-modal" class="dlv-modal-overlay">
+  <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <span class="dlv-modal-close" onclick="document.getElementById('dlv-order-confirm-modal').classList.remove('active')">&times;</span>
+    <h3 style="margin-bottom: 15px; color: var(--mp-primary); text-align: center;">🛒 অর্ডার কনফার্ম করুন</h3>
+    
+    <!-- অ্যাড্রেস সেকশন -->
+    <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+        <span style="font-size: 12px; font-weight: bold; color: #555;">📍 ডেলিভারি অ্যাড্রেস:</span>
+        <button onclick="changeAddressFromConfirm()" style="background: #e8f0fe; color: var(--mp-primary); border: none; padding: 3px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">🔄 পরিবর্তন</button>
+      </div>
+      <div id="confirm-address-text" style="font-size: 13px; color: #333; font-weight: 500;">
+        <!-- JS দিয়ে বসবে -->
+      </div>
+    </div>
+
+    <!-- ডেলিভারি টাইম সেকশন -->
+    <div style="background: #fff3e0; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffe082;">
+      <label style="font-size: 12px; font-weight: bold; color: #b06000; margin-bottom: 8px; display: block;">⏱️ ডেলিভারি টাইম:</label>
+      <select id="confirm-delivery-time" class="dlv-input" style="padding: 8px; font-size: 13px; width: 100%; border: 1px solid #ffcc80;" onchange="updateConfirmBill()">
+        <option value="urgent">⚡ আর্জেন্ট (৩০-৪৫ মিনিট)</option>
+        <option value="sameday">☀️ সেম ডে (আজকের মধ্যে)</option>
+        <option value="nextday">📅 নেক্সট ডে (আগামীকাল সকাল)</option>
+      </select>
+    </div>
+
+    <!-- বিল সামারি -->
+    <div style="background: #e8f0fe; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+      <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px;">
+        <span>সাব-টোটাল:</span>
+        <b id="confirm-subtotal">₹0.00</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px;">
+        <span>ডেলিভারি চার্জ:</span>
+        <b id="confirm-delivery-charge">₹0.00</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; color: var(--mp-danger); border-top: 1px dashed #ccc; padding-top: 5px; margin-top: 5px;">
+        <span>সর্বমোট:</span>
+        <span id="confirm-total">₹0.00</span>
+      </div>
+    </div>
+
+    <button class="mp-btn mp-btn-success" onclick="finalizeOrderAndPay()">✅ অর্ডার কনফার্ম করুন</button>
+  </div>
+</div>
+    
+    <!-- 🚀 Smart Customer POS / Cart Modal -->
 <div id="dlv-smart-cart-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content" style="max-height: 90vh; overflow-y: auto;">
     <span class="dlv-modal-close" onclick="document.getElementById('dlv-smart-cart-modal').classList.remove('active')">&times;</span>
@@ -2819,46 +2866,72 @@ let currentCategory = 'all'; // 🚀 এই লাইনটি যোগ কর�
 
   
   // ১. চেকআউট বাটনে ক্লিক করলে
-  window.proceedToCartCheckout = function() {
-    if (smartCart.length === 0) return alert("কার্টে কোনো প্রোডাক্ট নেই!");
+  
+window.proceedToCartCheckout = function() {
+  if (smartCart.length === 0) return alert("কার্টে কোনো প্রোডাক্ট নেই!");
 
-    // ডেলিভারি চার্জ ও টোটাল বের করা
-    const totalEl = document.getElementById('cart-grand-total');
-    if (!totalEl) return console.error("Cart total not found");
-    const finalTotal = parseFloat(totalEl.innerText.replace('₹', ''));
-    
-    // অ্যাড্রেস চেক
-    if (!customerAddresses || customerAddresses.length === 0) {
-      alert("অর্ডার করতে অনুগ্রহ করে একটি ডেলিভারি অ্যাড্রেস সেভ করুন!");
-      openAddressModal();
-      return;
-    }
+  if (!customerAddresses || customerAddresses.length === 0) {
+    alert("অর্ডার করতে অনুগ্রহ করে একটি ডেলিভারি অ্যাড্রেস সেভ করুন!");
+    openAddressModal();
+    return;
+  }
 
-    const deliverySelect = document.getElementById('cart-delivery-time');
-    const deliveryModeText = deliverySelect ? deliverySelect.options[deliverySelect.selectedIndex].text : 'Same Day';
+  // 🚀 নতুন: সরাসরি পেমেন্টে না গিয়ে কনফার্মেশন মডাল ওপেন হবে
+  const latestAddr = customerAddresses[customerAddresses.length - 1];
+  document.getElementById('confirm-address-text').innerHTML = `<b>${latestAddr.type === 'Home' ? '🏠 বাড়ি' : latestAddr.type === 'Office' ? '🏢 অফিস' : '📍 অন্যান্য'}</b> - ${latestAddr.text} ${latestAddr.landmark ? `(${latestAddr.landmark})` : ''}`;
+  
+  // কার্টে সিলেক্ট করা টাইমটি কনফার্মেশন মডালেও সিলেক্ট থাকবে
+  const currentCartTime = document.getElementById('cart-delivery-time').value;
+  document.getElementById('confirm-delivery-time').value = currentCartTime;
 
-    // 🚀 সেফটি চেক: এলিমেন্টগুলো আগে খুঁজে নেওয়া হচ্ছে
-    const payAmountEl = document.getElementById('pay-modal-amount');
-    const payWalletEl = document.getElementById('pay-wallet-bal');
-    const checkoutSummaryEl = document.getElementById('checkout-summary');
+  document.getElementById('dlv-smart-cart-modal').classList.remove('active');
+  document.getElementById('dlv-order-confirm-modal').classList.add('active');
+  
+  updateConfirmBill();
+};
 
-    if (payAmountEl) payAmountEl.innerText = `₹${finalTotal.toFixed(2)}`;
-    if (payWalletEl) payWalletEl.innerText = `₹${(globalUserData.walletBalance || 0).toFixed(2)}`;
-    
-    if (checkoutSummaryEl) {
-      checkoutSummaryEl.innerHTML = `
-        <div style="background:#e8f0fe; padding:10px; border-radius:6px;">
-          <b>📍 ডেলিভারি:</b> ${customerAddresses[customerAddresses.length - 1].text.substring(0, 30)}...<br>
-          <b>⏱️ টাইম:</b> ${deliveryModeText}
-        </div>
-      `;
-    }
-    
-    // মডাল হাইড/শো
-    document.getElementById('dlv-smart-cart-modal').classList.remove('active');
-    document.getElementById('dlv-payment-modal').classList.add('active');
-  };
+// 🚀 নতুন: কনফার্মেশন মডালে বিল আপডেট করা
+window.updateConfirmBill = function() {
+  // কনফার্ম মডালের ডেলিভারি টাইম কার্টের ড্রপডাউনে সিঙ্ক করা
+  const selectedTime = document.getElementById('confirm-delivery-time').value;
+  document.getElementById('cart-delivery-time').value = selectedTime;
+  
+  // কার্টের বিল আপডেট ফাংশন কল করা
+  updateSmartCartUI();
 
+  // নতুন দামগুলো কনফার্ম মডালে বসানো
+  const subtotal = document.getElementById('cart-subtotal').innerText;
+  const deliveryCharge = document.getElementById('cart-delivery-charge').innerText;
+  const total = document.getElementById('cart-grand-total').innerText;
+
+  document.getElementById('confirm-subtotal').innerText = subtotal;
+  document.getElementById('confirm-delivery-charge').innerText = deliveryCharge;
+  document.getElementById('confirm-total').innerText = total;
+};
+
+// 🚀 নতুন: অ্যাড্রেস পরিবর্তন করতে চাইলে
+window.changeAddressFromConfirm = function() {
+  document.getElementById('dlv-order-confirm-modal').classList.remove('active');
+  openAddressModal();
+};
+
+// 🚀 নতুন: অর্ডার কনফার্ম করে পেমেন্ট মডালে যাওয়া
+window.finalizeOrderAndPay = function() {
+  const finalTotal = document.getElementById('confirm-total').innerText.replace('₹', '');
+  
+  // পেমেন্ট মডাল আপডেট
+  document.getElementById('pay-modal-amount').innerText = `₹${parseFloat(finalTotal).toFixed(2)}`;
+  document.getElementById('pay-wallet-bal').innerText = `₹${(globalUserData.walletBalance || 0).toFixed(2)}`;
+  document.getElementById('checkout-summary').innerHTML = `
+    <div style="background:#e8f0fe; padding:10px; border-radius:6px;">
+      <b>📍 ডেলিভারি:</b> ${customerAddresses[customerAddresses.length - 1].text.substring(0, 30)}...<br>
+      <b>⏱️ টাইম:</b> ${document.getElementById('confirm-delivery-time').options[document.getElementById('confirm-delivery-time').selectedIndex].text}
+    </div>
+  `;
+  
+  document.getElementById('dlv-order-confirm-modal').classList.remove('active');
+  document.getElementById('dlv-payment-modal').classList.add('active');
+};
   // ২. পেমেন্ট সিলেক্ট করার পর অর্ডার সেভ করা
   window.finalizeSmartCartOrder = async function(paymentMethod) {
     const btn = document.querySelector(`#dlv-payment-modal .mp-btn-success`);
