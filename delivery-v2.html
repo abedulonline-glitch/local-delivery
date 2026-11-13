@@ -958,17 +958,16 @@
 </div>
 <!-- ==================== MANAGER DASHBOARD END ==================== -->
     
+  
     <!-- ==================== ADMIN DASHBOARD ==================== -->
 <div id="dlv-view-admin" class="mp-hidden">
   <div class="dlv-dashboard-title">👑 অ্যাডমিন কন্ট্রোল প্যানেল</div>
 
-<!-- 🚀 নতুন যোগ করা হলো: ওয়্যারহাউজ প্যানেল বাটন -->
-<div style="margin-bottom: 15px;">
-  <button class="mp-btn mp-btn-primary" style="background: #7b1fa2;" onclick="window.open('warehouse.html', '_blank')">🏢 ওয়্যারহাউজ প্যানেল</button>
-</div>
+  <!-- 🚀 ওয়্যারহাউজ প্যানেল বাটন -->
+  <div style="margin-bottom: 15px;">
+    <button class="mp-btn mp-btn-primary" style="background: #7b1fa2;" onclick="window.open('warehouse.html', '_blank')">🏢 ওয়্যারহাউজ প্যানেল</button>
+  </div>
 
-<!-- রেভিনিউ সামারি -->
-<div class="dlv-wallet-header">
   <!-- রেভিনিউ সামারি -->
   <div class="dlv-wallet-header" style="background: linear-gradient(135deg, #1a73e8, #4285f4);">
     <div>
@@ -985,12 +984,12 @@
       <button class="mp-btn" style="margin: 0; background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px;" onclick="shareInvite('manager')">👨‍💼 ম্যানেজার</button>
       <button class="mp-btn" style="margin: 0; background: #e6f4ea; color: var(--mp-success); font-size: 12px; padding: 8px;" onclick="shareInvite('shopkeeper')">🏪 দোকানদার</button>
       <button class="mp-btn" style="margin: 0; background: #fef7e0; color: var(--mp-warning); font-size: 12px; padding: 8px;" onclick="shareInvite('delivery')">🛵 ডেলিভারি বয়</button>
-      <button class="mp-btn" style="margin: 0; background: #f3e5f5; color: #4a148c; font-size: 12px; padding: 8px; grid-column: 1 / -1;" onclick="shareInvite('wholesaler')">📦 হোলসেলার (পাইকারি)</button>
       <button class="mp-btn" style="margin: 0; background: #f3e8fd; color: #7b1fa2; font-size: 12px; padding: 8px;" onclick="shareInvite('customer')">👤 কাস্টমার</button>
+      <button class="mp-btn" style="margin: 0; background: #f3e5f5; color: #4a148c; font-size: 12px; padding: 8px; grid-column: 1 / -1;" onclick="shareInvite('wholesaler')">📦 হোলসেলার (পাইকারি)</button>
     </div>
   </div>
 
-  <!-- কাউন্টিং স্ট্যাটাস (৪টি কার্ড) -->
+  <!-- কাউন্টিং স্ট্যাটাস -->
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
     <div class="mp-card" style="margin: 0; text-align: center; padding: 15px 10px;">
       <div style="font-size: 24px;">🏪</div><div style="font-size: 12px; font-weight: 600;">দোকানদার</div>
@@ -1010,12 +1009,11 @@
     </div>
   </div>
 
-  <!-- ⚙️ সিস্টেম সেটিংস (রেভিনিউ + ডেলিভারি চার্জ) -->
+  <!-- ⚙️ সিস্টেম সেটিংস -->
   <div class="mp-card" style="border-left: 4px solid #5f6368;">
     <h3>⚙️ সিস্টেম সেটিংস</h3>
     <p style="font-size: 12px; color: #666; margin-bottom: 15px;">এখানে পরিবর্তন করলে পুরো অ্যাপে সাথে সাথে প্রভাব পড়বে।</p>
     
-    <!-- কমিশন ও ফি সেকশন -->
     <h4 style="font-size: 13px; margin-bottom: 10px; color: var(--mp-primary);">💳 চার্জ ও ফি</h4>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
       <div class="dlv-form-group" style="margin-bottom: 0;">
@@ -1042,7 +1040,6 @@
 
     <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
 
-    <!-- ডেলিভারি চার্জ সেকশন -->
     <h4 style="font-size: 13px; margin-bottom: 10px; color: #0f9d58;">🚚 ডেলিভারি চার্জ সেটিংস</h4>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
       <div class="dlv-form-group" style="margin-bottom: 0;">
@@ -1063,11 +1060,10 @@
       </div>
     </div>
 
-    <!-- গ্লোবাল ফ্রি ডেলিভারি টগল -->
     <div style="display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee;">
       <div>
         <div style="font-size: 13px; font-weight: bold; color: var(--mp-danger);">🎉 গ্লোবাল ফ্রি ডেলিভারি</div>
-        <div style="font-size: 11px; color: #666;">এটি অন করলে সবার জন্য ডেলিভারি চার্জ ০ হবে (যেমন: বৃষ্টির দিনে)।</div>
+        <div style="font-size: 11px; color: #666;">এটি অন করলে সবার জন্য ডেলিভারি চার্জ ০ হবে।</div>
       </div>
       <label class="dlv-switch">
         <input type="checkbox" id="sys-global-free-delivery">
@@ -1078,7 +1074,7 @@
     <button class="mp-btn mp-btn-primary" style="margin-top: 5px;" onclick="saveSystemSettings()" id="btn-save-settings">💾 সব সেটিংস সেভ করুন</button>
   </div>
 
-  <!-- লাইভ অর্ডার ফিড (নতুন স্মার্ট সেকশন) -->
+  <!-- লাইভ অর্ডার ফিড -->
   <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
     <h3>📊 সর্বশেষ অর্ডারসমূহ (লাইভ)</h3>
     <div id="admin-live-orders" style="max-height: 200px; overflow-y: auto;">
@@ -1086,114 +1082,99 @@
     </div>
   </div>
 
- 
   <!-- মাস্টার প্রোডাক্ট সেকশন -->
-<div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
-  <h3 style="justify-content: space-between;">
-    🏷️ মাস্টার প্রোডাক্ট
-    <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
-    <button class="mp-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px; background: #7b1fa2; color: white;" onclick="openBulkEditor()">📦 বাল্ক</button>
-  </h3>
-
-        <!-- 🚀 Category Management Section -->
-      <div class="mp-card" style="border-left: 4px solid #0f9d58;">
-        <h3>🗂️ ক্যাটাগরি ম্যানেজমেন্ট</h3>
-        
-        <!-- নতুন ক্যাটাগরি অ্যাড -->
-        <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-          <input type="text" id="new-category-name" class="dlv-input" placeholder="নতুন ক্যাটাগরির নাম" style="flex: 1;">
-          <button class="mp-btn mp-btn-success" style="width: auto; margin: 0; padding: 0 15px;" onclick="addNewCategoryAdmin()">➕ যোগ</button>
-        </div>
-
-        <!-- ক্যাটাগরি লিস্ট -->
-        <div id="admin-category-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
-          <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
-        </div>
-
-        <!-- নতুন ক্যাটাগরি রিকোয়েস্ট -->
-        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
-        <div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
-          <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
-        </div>
+  <div class="mp-card" style="border-left: 4px solid var(--mp-primary);">
+    <h3 style="justify-content: space-between;">
+      🏷️ মাস্টার প্রোডাক্ট
+      <div style="display: flex; gap: 5px;">
+        <button class="mp-btn mp-btn-primary" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMasterProductModal()">+ নতুন</button>
+        <button class="mp-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px; background: #7b1fa2; color: white;" onclick="openBulkEditor()">📦 বাল্ক</button>
       </div>
-  
-  <!-- 🚀 সার্চ বার -->
-  <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
-  
-  <!-- 🚀 স্ক্রলেবল লিস্ট কন্টেইনার (ওয়ার্ডপ্রেস স্টাইল) -->
-  <div id="admin-master-product-list" style="max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 5px;">
-    <div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">লোড হচ্ছে...</div>
-  </div>
-</div>
+    </h3>
 
-<!-- 📢 অ্যাড ম্যানেজমেন্ট সেকশন -->
-<div class="mp-card" style="border-left: 4px solid #f9a825;">
-  <h3>📢 স্মার্ট টার্গেটেড অ্যাড ম্যানেজার</h3>
-  <p style="font-size: 12px; color: #666; margin-bottom: 15px;">নির্দিষ্ট রোল, পিনকোড বা ফোন নম্বর অনুযায়ী কাস্টমাইজড অ্যাড তৈরি করুন।</p>
-  
-  <!-- অ্যাড টাইপ -->
-  <div class="dlv-form-group">
-    <label>অ্যাডের ধরন</label>
-    <select id="admin-ad-type" class="dlv-input" onchange="toggleAdInputType()">
-      <option value="image">🖼️ ইমেজ (সরাসরি আপলোড)</option>
-      <option value="text">📝 টেক্সট মেসেজ (শুধু লেখা)</option>
-      <option value="video">🎥 ভিডিও (YouTube লিংক)</option>
-    </select>
-  </div>
-
-  <!-- ইমেজ আপলোড ও ভিডিও লিংক -->
-  <div id="ad-image-upload-area" style="margin-bottom: 10px;">
-    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-      <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'ad')">📷 ক্যামেরা</button>
-      <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'ad')">🖼️ গ্যালারি</button>
+    <!-- ক্যাটাগরি ম্যানেজমেন্ট -->
+    <div class="mp-card" style="border-left: 4px solid #0f9d58;">
+      <h3>🗂️ ক্যাটাগরি ম্যানেজমেন্ট</h3>
+      <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+        <input type="text" id="new-category-name" class="dlv-input" placeholder="নতুন ক্যাটাগরির নাম" style="flex: 1;">
+        <button class="mp-btn mp-btn-success" style="width: auto; margin: 0; padding: 0 15px;" onclick="addNewCategoryAdmin()">➕ যোগ</button>
+      </div>
+      <div id="admin-category-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
+        <div style="text-align: center; color: #999; font-size: 13px;">লোড হচ্ছে...</div>
+      </div>
+      <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--mp-warning);">🔔 দোকানদারদের রিকোয়েস্ট</h4>
+      <div id="admin-category-requests" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
+        <div style="text-align: center; color: #999; font-size: 13px;">কোনো রিকোয়েস্ট নেই।</div>
+      </div>
     </div>
-    <img id="ad-image-preview" style="width: 100%; height: 100px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
-    <input type="file" id="ad-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'ad')">
-  </div>
-  <div id="ad-video-url-area" class="dlv-form-group mp-hidden" style="margin-bottom: 10px;">
-    <input type="text" id="admin-ad-url" class="dlv-input" placeholder="YouTube ভিডিও লিংক পেস্ট করুন...">
-  </div>
 
-  <!-- 🚀 নতুন: টেক্সট মেসেজ এরিয়া -->
-  <div id="ad-text-area" class="dlv-form-group mp-hidden" style="margin-bottom: 10px;">
-    <input type="text" id="admin-ad-text" class="dlv-input" placeholder="যেমন: আজ ১৫টি ডেলিভারি করলে ₹৫০ বোনাস!">
-  </div>
-
-  <!-- 🚀 নতুন: টার্গেটিং সেকশন -->
-  <div style="background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-    <h4 style="font-size: 12px; margin-bottom: 8px; color: var(--mp-primary);">🎯 অ্যাড টার্গেটিং</h4>
+    <!-- সার্চ বার -->
+    <input type="text" id="admin-master-search" class="dlv-input" placeholder="🔍 প্রোডাক্ট খুঁজুন..." style="margin-bottom: 10px; font-size: 13px; padding: 8px;" oninput="filterAdminMasterProducts(this.value)">
     
-    <div class="dlv-form-group" style="margin-bottom: 8px;">
-      <label style="font-size: 11px;">কাকে দেখানো হবে?</label>
-      <select id="admin-ad-target-role" class="dlv-input" style="padding: 6px;">
-        <option value="all">👥 সবাই (All)</option>
-        <option value="customer">👤 কাস্টমার</option>
-        <option value="delivery">🛵 ডেলিভারি বয়</option>
-        <option value="wholesaler">হোলসেলার (পাইকারি)</option>
-        <option value="shopkeeper">🏪 দোকানদার</option>
+    <!-- প্রোডাক্ট লিস্ট -->
+    <div id="admin-master-product-list" style="max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 5px;">
+      <div style="text-align: center; color: #999; font-size: 13px; padding: 20px;">লোড হচ্ছে...</div>
+    </div>
+  </div>
+
+  <!-- 📢 অ্যাড ম্যানেজমেন্ট সেকশন -->
+  <div class="mp-card" style="border-left: 4px solid #f9a825;">
+    <h3>📢 স্মার্ট টার্গেটেড অ্যাড ম্যানেজার</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 15px;">নির্দিষ্ট রোল, পিনকোড বা ফোন নম্বর অনুযায়ী কাস্টমাইজড অ্যাড তৈরি করুন।</p>
+    
+    <div class="dlv-form-group">
+      <label>অ্যাডের ধরন</label>
+      <select id="admin-ad-type" class="dlv-input" onchange="toggleAdInputType()">
+        <option value="image">🖼️ ইমেজ (সরাসরি আপলোড)</option>
+        <option value="text">📝 টেক্সট মেসেজ (শুধু লেখা)</option>
+        <option value="video">🎥 ভিডিও (YouTube লিংক)</option>
       </select>
     </div>
 
-    <div class="dlv-form-group" style="margin-bottom: 8px;">
-      <label style="font-size: 11px;">পিনকোড (ঐচ্ছিক)</label>
-      <input type="text" id="admin-ad-pincode" class="dlv-input" style="padding: 6px;" placeholder="যেমন: 721139 (ফাঁকা রাখলে সব পিনে যাবে)">
+    <div id="ad-image-upload-area" style="margin-bottom: 10px;">
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <button class="mp-btn" style="background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('camera', 'ad')">📷 ক্যামেরা</button>
+        <button class="mp-btn" style="background: #f0f2f5; color: #333; font-size: 12px; padding: 8px; margin: 0; flex: 1;" onclick="pickImageSource('gallery', 'ad')">🖼️ গ্যালারি</button>
+      </div>
+      <img id="ad-image-preview" style="width: 100%; height: 100px; object-fit: contain; border-radius: 8px; display: none; background: #f8f9fa; border: 1px solid #eee;">
+      <input type="file" id="ad-image-input" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'ad')">
+    </div>
+    <div id="ad-video-url-area" class="dlv-form-group mp-hidden" style="margin-bottom: 10px;">
+      <input type="text" id="admin-ad-url" class="dlv-input" placeholder="YouTube ভিডিও লিংক পেস্ট করুন...">
+    </div>
+    <div id="ad-text-area" class="dlv-form-group mp-hidden" style="margin-bottom: 10px;">
+      <input type="text" id="admin-ad-text" class="dlv-input" placeholder="যেমন: আজ ১৫টি ডেলিভারি করলে ₹৫০ বোনাস!">
     </div>
 
-    <div class="dlv-form-group" style="margin-bottom: 0;">
-      <label style="font-size: 11px;">ফোন নম্বর (ঐচ্ছিক)</label>
-      <input type="tel" id="admin-ad-phone" class="dlv-input" style="padding: 6px;" placeholder="যেমন: 9876543210 (ফাঁকা রাখলে সবার জন্য)">
+    <div style="background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+      <h4 style="font-size: 12px; margin-bottom: 8px; color: var(--mp-primary);">🎯 অ্যাড টার্গেটিং</h4>
+      <div class="dlv-form-group" style="margin-bottom: 8px;">
+        <label style="font-size: 11px;">কাকে দেখানো হবে?</label>
+        <select id="admin-ad-target-role" class="dlv-input" style="padding: 6px;">
+          <option value="all">👥 সবাই (All)</option>
+          <option value="customer">👤 কাস্টমার</option>
+          <option value="delivery">🛵 ডেলিভারি বয়</option>
+          <option value="wholesaler">📦 হোলসেলার</option>
+          <option value="shopkeeper">🏪 দোকানদার</option>
+        </select>
+      </div>
+      <div class="dlv-form-group" style="margin-bottom: 8px;">
+        <label style="font-size: 11px;">পিনকোড (ঐচ্ছিক)</label>
+        <input type="text" id="admin-ad-pincode" class="dlv-input" style="padding: 6px;" placeholder="যেমন: 721139">
+      </div>
+      <div class="dlv-form-group" style="margin-bottom: 0;">
+        <label style="font-size: 11px;">ফোন নম্বর (ঐচ্ছিক)</label>
+        <input type="tel" id="admin-ad-phone" class="dlv-input" style="padding: 6px;" placeholder="যেমন: 9876543210">
+      </div>
     </div>
+
+    <button class="mp-btn mp-btn-primary" style="margin-bottom: 15px; padding: 8px;" onclick="saveAd()">+ স্মার্ট অ্যাড যোগ করুন</button>
+    
+    <h4 style="font-size: 13px; margin-bottom: 8px; border-top: 1px dashed #ccc; padding-top: 10px;">সক্রিয় অ্যাডসমূহ</h4>
+    <div id="admin-ad-list"></div>
   </div>
 
-  <!-- অ্যাড সেভ বাটন -->
-  <button class="mp-btn mp-btn-primary" style="margin-bottom: 15px; padding: 8px;" onclick="saveAd()">+ স্মার্ট অ্যাড যোগ করুন</button>
-  
-  <!-- অ্যাড লিস্ট -->
-  <h4 style="font-size: 13px; margin-bottom: 8px; border-top: 1px dashed #ccc; padding-top: 10px;">সক্রিয় অ্যাডসমূহ</h4>
-  <div id="admin-ad-list"></div>
-</div>
-
-  <!-- প্রিমিয়াম ও ভেরিফাইড ব্যাজ ম্যানেজমেন্ট -->
+  <!-- প্রিমিয়াম ও ভেরিফাইড ব্যাজ -->
   <div class="mp-card" style="border-left: 4px solid #f9a825;">
     <h3>🌟 প্রিমিয়াম ও ভেরিফাইড দোকান</h3>
     <div id="admin-badge-shop-list"></div>
@@ -1215,39 +1196,39 @@
     <div id="admin-pin-user-list"></div>
   </div>
 </div>
+<!-- ==================== ADMIN DASHBOARD END ==================== -->
 
-                  <!-- 🚀 Barcode & Print Section -->
-      <div id="barcode-section-wrapper" class="mp-card mp-hidden" style="border-left: 4px solid #f9a825;">
-        <h3>🏷️ বারকোড প্রিন্ট সেন্টার</h3>
-        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">প্রোডাক্ট সিলেক্ট করে A4 পেজে বারকোড প্রিন্ট করুন।</p>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-          <div class="dlv-form-group">
-            <label>প্রোডাক্ট সিলেক্ট করুন</label>
-            <select id="bc-product-select" class="dlv-input" onchange="updateBarcodePreview()"></select>
-          </div>
-          <div class="dlv-form-group">
-            <label>কতটি বারকোড লাগবে?</label>
-            <input type="number" id="bc-quantity" class="dlv-input" value="20" min="1" max="100">
-          </div>
-        </div>
+<!-- 🚀 Barcode & Print Section (অ্যাডমিন ভিউর বাইরে রাখা হলো) -->
+<div id="barcode-section-wrapper" class="mp-card mp-hidden" style="border-left: 4px solid #f9a825;">
+  <h3>🏷️ বারকোড প্রিন্ট সেন্টার</h3>
+  <p style="font-size: 12px; color: #666; margin-bottom: 10px;">প্রোডাক্ট সিলেক্ট করে A4 পেজে বারকোড প্রিন্ট করুন।</p>
+  
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+    <div class="dlv-form-group">
+      <label>প্রোডাক্ট সিলেক্ট করুন</label>
+      <select id="bc-product-select" class="dlv-input" onchange="updateBarcodePreview()"></select>
+    </div>
+    <div class="dlv-form-group">
+      <label>কতটি বারকোড লাগবে?</label>
+      <input type="number" id="bc-quantity" class="dlv-input" value="20" min="1" max="100">
+    </div>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <button class="mp-btn mp-btn-primary" style="margin: 0; background: #0f9d58;" onclick="generateBarcodesToPrint()">🖨️ বারকোড প্রিন্ট করুন</button>
+  </div>
+</div>
 
-        <div style="display: flex; gap: 10px;">
-          <button class="mp-btn mp-btn-primary" style="margin: 0; background: #0f9d58;" onclick="generateBarcodesToPrint()">🖨️ বারকোড প্রিন্ট করুন</button>
-        </div>
-      </div>
-
-      <!-- 🚀 Print Area (যা প্রিন্ট হবে) -->
-      <div id="barcode-print-area" style="display: none; background: white; padding: 10px; margin-bottom: 14px;">
-        <div style="text-align: center; margin-bottom: 10px; font-size: 12px; color: #666;" class="no-print">
-          💡 প্রিন্ট ডায়ালগে গিয়ে 'Save as PDF' বা প্রিন্টার সিলেক্ট করুন।
-        </div>
-        <div id="barcode-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; border: 1px dashed #ccc; padding: 10px;">
-          <!-- বারকোডগুলো এখানে জেনারেট হবে -->
-        </div>
-      </div>
-
-     <!-- ==================== MODALS ==================== -->
+<!-- 🚀 Print Area -->
+<div id="barcode-print-area" style="display: none; background: white; padding: 10px; margin-bottom: 14px;">
+  <div style="text-align: center; margin-bottom: 10px; font-size: 12px; color: #666;" class="no-print">
+    💡 প্রিন্ট ডায়ালগে গিয়ে 'Save as PDF' বা প্রিন্টার সিলেক্ট করুন।
+  </div>
+  <div id="barcode-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; border: 1px dashed #ccc; padding: 10px;">
+    <!-- বারকোডগুলো এখানে জেনারেট হবে -->
+  </div>
+</div>
+    
+  <!-- ==================== MODALS ==================== -->
 <!-- Recharge Modal -->
 <div id="dlv-recharge-modal" class="dlv-modal-overlay">
   <div class="dlv-modal-content">
