@@ -973,6 +973,7 @@
       <button class="mp-btn" style="margin: 0; background: #e8f0fe; color: var(--mp-primary); font-size: 12px; padding: 8px;" onclick="shareInvite('manager')">👨‍💼 ম্যানেজার</button>
       <button class="mp-btn" style="margin: 0; background: #e6f4ea; color: var(--mp-success); font-size: 12px; padding: 8px;" onclick="shareInvite('shopkeeper')">🏪 দোকানদার</button>
       <button class="mp-btn" style="margin: 0; background: #fef7e0; color: var(--mp-warning); font-size: 12px; padding: 8px;" onclick="shareInvite('delivery')">🛵 ডেলিভারি বয়</button>
+      <button class="mp-btn" style="margin: 0; background: #f3e5f5; color: #4a148c; font-size: 12px; padding: 8px; grid-column: 1 / -1;" onclick="shareInvite('wholesaler')">📦 হোলসেলার (পাইকারি)</button>
       <button class="mp-btn" style="margin: 0; background: #f3e8fd; color: #7b1fa2; font-size: 12px; padding: 8px;" onclick="shareInvite('customer')">👤 কাস্টমার</button>
     </div>
   </div>
@@ -1156,6 +1157,7 @@
         <option value="all">👥 সবাই (All)</option>
         <option value="customer">👤 কাস্টমার</option>
         <option value="delivery">🛵 ডেলিভারি বয়</option>
+        <option value="wholesaler">হোলসেলার (পাইকারি)</option>
         <option value="shopkeeper">🏪 দোকানদার</option>
       </select>
     </div>
@@ -2238,22 +2240,27 @@ await setDoc(doc(db, "users", user.uid), {
 
   // WhatsApp-এ ইনভাইট লিংক শেয়ার করা
   window.shareInvite = function(role) {
-    const baseUrl = window.location.origin + window.location.pathname;
-    // URL-এ ?role=xxx যোগ করা হচ্ছে
-    const inviteLink = `${baseUrl}?role=${role}`; 
-    
-    let msg = "";
-    if (role === 'manager') {
-      msg = `আসসালামু আলাইকুম,\n\nআমাদের হাইপারলোকাল ডেলিভারি সিস্টেমে ম্যানেজার হিসেবে যুক্ত হতে নিচের লিংকে ক্লিক করুন:\n${inviteLink}`;
-    } else if (role === 'shopkeeper') {
-      msg = `আসসালামু আলাইকুম,\n\nআপনার দোকান অনলাইনে নিয়ে আসতে এবং অর্ডার পেতে নিচের লিংকে ক্লিক করে রেজিস্ট্রেশন করুন:\n${inviteLink}`;
-    } else {
-      msg = `আসসালামু আলাইকুম,\n\nডেলিভারি বয় হিসেবে কাজ করতে এবং আয় করতে নিচের লিংকে ক্লিক করুন:\n${inviteLink}`;
-    }
+  const baseUrl = window.location.origin + window.location.pathname;
+  const inviteLink = `${baseUrl}?role=${role}`; 
+  
+  let msg = "";
+  if (role === 'manager') {
+    msg = `আসসালামু আলাইকুম,\n\nআমাদের হাইপারলোকাল ডেলিভারি সিস্টেমে ম্যানেজার হিসেবে যুক্ত হতে নিচের লিংকে ক্লিক করুন:\n${inviteLink}`;
+  } else if (role === 'shopkeeper') {
+    msg = `আসসালামু আলাইকুম,\n\nআপনার দোকান অনলাইনে নিয়ে আসতে এবং অর্ডার পেতে নিচের লিংকে ক্লিক করে রেজিস্ট্রেশন করুন:\n${inviteLink}`;
+  } else if (role === 'wholesaler') {
+    // 🚀 নতুন: হোলসেলার মেসেজ
+    msg = `আসসালামু আলাইকুম,\n\nআপনার পাইকারি ব্যবসাকে আরও বিস্তৃত করতে এবং হাজারো দোকানদারের কাছে মাল বিক্রি করতে আমাদের প্ল্যাটফর্মে যুক্ত হোন:\n${inviteLink}`;
+  } else if (role === 'delivery') {
+    msg = `আসসালামু আলাইকুম,\n\nডেলিভারি বয় হিসেবে কাজ করতে এবং আয় করতে নিচের লিংকে ক্লিক করুন:\n${inviteLink}`;
+  } else {
+    // কাস্টমার
+    msg = `আসসালামু আলাইকুম,\n\nআমাদের অ্যাপে কেনাকাটা করতে নিচের লিংকে ক্লিক করুন:\n${inviteLink}`;
+  }
 
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(whatsappUrl, '_blank');
-  };
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(whatsappUrl, '_blank');
+};
 
   // URL থেকে রোল চেক করা (লিংকে ক্লিক করলে)
   // URL থেকে রোল চেক করা (লিংকে ক্লিক করলে)
