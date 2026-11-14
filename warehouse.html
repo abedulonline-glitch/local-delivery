@@ -86,26 +86,38 @@
     </div>
 
     <!-- ম্যানেজারের জন্য স্টক অ্যাড সেকশন -->
-    <div id="manager-only-section" class="mp-card" style="display: none; border-left: 4px solid #0f9d58;">
-        <h3 style="margin-bottom: 10px;">➕ নতুন স্টক যোগ করুন (শুধু ম্যানেজার)</h3>
-        <div style="display: grid; gap: 10px; grid-template-columns: 1fr 1fr;">
-            <select id="add-warehouse" class="dlv-input">
-                <option value="G-1">গোডাউন G-1</option>
-                <option value="G-2">গোডাউন G-2</option>
-                <option value="G-3">গোডাউন G-3</option>
-            </select>
-            <input type="text" id="add-rack" class="dlv-input" placeholder="র‍্যাক (যেমন: Rack-2)">
-            <input type="text" id="add-distance" class="dlv-input" placeholder="দূরত্ব (যেমন: 12')">
-            <select id="add-side" class="dlv-input">
-                <option value="Front">ফ্রন্ট</option>
-                <option value="Left">বাম</option>
-                <option value="Right">ডান</option>
-            </select>
-            <input type="text" id="add-product-name" class="dlv-input" placeholder="প্রোডাক্টের নাম" style="grid-column: 1/-1;">
-            <input type="number" id="add-quantity" class="dlv-input" placeholder="পরিমাণ (বক্স/পিস)">
+    <!-- ম্যানেজারের জন্য স্টক অ্যাড সেকশন -->
+<div id="manager-only-section" class="mp-card" style="display: none; border-left: 4px solid #0f9d58;">
+    <h3 style="margin-bottom: 10px;">➕ নতুন স্টক যোগ করুন (শুধু ম্যানেজার)</h3>
+    <div style="display: grid; gap: 10px; grid-template-columns: 1fr 1fr;">
+        <select id="add-warehouse" class="dlv-input">
+            <option value="G-1">গোডাউন G-1</option>
+            <option value="G-2">গোডাউন G-2</option>
+            <option value="G-3">গোডাউন G-3</option>
+        </select>
+        <input type="text" id="add-rack" class="dlv-input" placeholder="র‍্যাক (যেমন: Rack-2)">
+        <input type="text" id="add-distance" class="dlv-input" placeholder="দূরত্ব (যেমন: 12')">
+        <select id="add-side" class="dlv-input">
+            <option value="Front">ফ্রন্ট</option>
+            <option value="Left">বাম</option>
+            <option value="Right">ডান</option>
+        </select>
+        <input type="text" id="add-product-name" class="dlv-input" placeholder="প্রোডাক্টের নাম" style="grid-column: 1/-1;">
+        <input type="number" id="add-quantity" class="dlv-input" placeholder="পরিমাণ (বক্স/পিস)">
+
+        <!-- 🚀 পার্টি সিলেক্ট (এখানেই বসানো হলো) -->
+        <div style="grid-column: 1/-1; margin-top: 10px;">
+            <label style="font-size: 12px; font-weight: bold;">🏢 পার্টি/সাপ্লায়ার সিলেক্ট করুন</label>
+            <div style="display: flex; gap: 5px;">
+                <select id="add-party-select" class="dlv-input" style="flex: 1;">
+                    <option value="">-- পার্টি সিলেক্ট করুন --</option>
+                </select>
+                <button class="mp-btn" style="width: auto; margin: 0; padding: 0 15px; background: #7b1fa2; color:white;" onclick="document.getElementById('party-modal').style.display='flex'">+ নতুন</button>
+            </div>
         </div>
-        <button class="mp-btn mp-btn-success" style="margin-top: 10px;" onclick="addNewStock()">💾 স্টক সেভ করুন</button>
     </div>
+    <button class="mp-btn mp-btn-success" style="margin-top: 10px;" onclick="addNewStock()">💾 স্টক সেভ করুন</button>
+</div>
 
 <!-- ==================== BULK PRODUCT ADD (TILES & MARBLE) ==================== -->
 <div id="bulk-product-section" class="mp-card" style="border-left: 4px solid #7b1fa2; display: none;">
@@ -188,22 +200,24 @@
 
     // ১. ইউজার লগইন চেক ও রোল সেট
     auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            currentUser = user;
-            const userSnap = await db.collection("users").doc(user.uid).get();
-            if (userSnap.exists) {
-                userRole = userSnap.data().role;
-                if (userRole === 'manager' || userRole === 'admin') {
-                    document.getElementById('manager-only-section').style.display = 'block';
-                    document.getElementById('dispatch-approval-section').style.display = 'block';
-                    loadDispatchRequests();
-                }
-                loadStockData();
+    if (user) {
+        currentUser = user;
+        const userSnap = await db.collection("users").doc(user.uid).get();
+        if (userSnap.exists) {
+            userRole = userSnap.data().role;
+            if (userRole === 'manager' || userRole === 'admin') {
+                document.getElementById('manager-only-section').style.display = 'block';
+                document.getElementById('dispatch-approval-section').style.display = 'block';
+                document.getElementById('bulk-product-section').style.display = 'block'; // 🚀 বাল্ক সেকশনও দেখানো হলো
+                loadDispatchRequests();
+                loadParties(); // 🚀 এখানে কল করা হলো
             }
-        } else {
-            window.location.href = 'delivery-v2.html';
+            loadStockData();
         }
-    });
+    } else {
+        window.location.href = 'delivery-v2.html';
+    }
+});
 
     // ২. স্টক ডেটা লোড করা
     function loadStockData() {
@@ -289,30 +303,34 @@ function loadParties() {
 
     // ৬. ম্যানেজার নতুন স্টক অ্যাড করা
     async function addNewStock() {
-        const productName = document.getElementById('add-product-name').value.trim();
-        const warehouse = document.getElementById('add-warehouse').value;
-        const rack = document.getElementById('add-rack').value.trim();
-        const distance = document.getElementById('add-distance').value.trim();
-        const side = document.getElementById('add-side').value;
-        const quantity = parseFloat(document.getElementById('add-quantity').value) || 0;
+  const productName = document.getElementById('add-product-name').value.trim();
+  const warehouse = document.getElementById('add-warehouse').value;
+  const rack = document.getElementById('add-rack').value.trim();
+  const distance = document.getElementById('add-distance').value.trim();
+  const side = document.getElementById('add-side').value;
+  const quantity = parseFloat(document.getElementById('add-quantity').value) || 0;
+  const partyId = document.getElementById('add-party-select').value; // 🚀 পার্টি আইডি নেওয়া হলো
 
-        if (!productName || !rack || quantity <= 0) return alert("সব তথ্য সঠিকভাবে দিন!");
+  if (!productName || !rack || quantity <= 0 || !partyId) {
+    return alert("সব তথ্য সঠিকভাবে দিন এবং পার্টি সিলেক্ট করুন!");
+  }
 
-        try {
-            await db.collection("inventory_stock").add({
-                productName, warehouse, rack, distance, side, quantity,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            alert("✅ স্টক সেভ হয়েছে!");
-            document.getElementById('add-product-name').value = '';
-            document.getElementById('add-rack').value = '';
-            document.getElementById('add-distance').value = '';
-            document.getElementById('add-quantity').value = '';
-        } catch(e) {
-            console.error(e);
-            alert("সমস্যা হয়েছে!");
-        }
-    }
+  try {
+    await db.collection("inventory_stock").add({
+      productName, warehouse, rack, distance, side, quantity,
+      partyId: partyId, // 🚀 পার্টি সেভ করা হলো
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    alert("✅ স্টক সেভ হয়েছে!");
+    document.getElementById('add-product-name').value = '';
+    document.getElementById('add-rack').value = '';
+    document.getElementById('add-distance').value = '';
+    document.getElementById('add-quantity').value = '';
+  } catch(e) {
+    console.error(e);
+    alert("সমস্যা হয়েছে!");
+  }
+}
 
     // ৭. ম্যানেজার স্টক ডিলিট করা
     async function deleteStock(stockId) {
@@ -464,6 +482,12 @@ async function saveParty() {
   if (!name || !phone || !address) return alert("নাম, ফোন এবং অ্যাড্রেস অবশ্যই দিতে হবে!");
 
   try {
+    // 🚀 ডুপ্লিকেট ফোন চেক
+    const existingQ = await db.collection("parties").where("phone", "==", phone).get();
+    if (!existingQ.empty) {
+      return alert("⚠️ এই ফোন নম্বরটি দিয়ে আগে থেকেই একটি পার্টি সেভ করা আছে!");
+    }
+
     await db.collection("parties").add({
       name: name, 
       phone: phone, 
@@ -487,6 +511,7 @@ async function saveParty() {
     alert("সেভ করতে সমস্যা হয়েছে!");
   }
 }
+
 
 // ==================== BULK PRODUCT LOGIC ====================
 
