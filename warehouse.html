@@ -107,7 +107,39 @@
         <button class="mp-btn mp-btn-success" style="margin-top: 10px;" onclick="addNewStock()">💾 স্টক সেভ করুন</button>
     </div>
 
-  <!-- 🚀 নতুন: পার্টি/সাপ্লায়ার সিলেক্ট -->
+<!-- ==================== BULK PRODUCT ADD (TILES & MARBLE) ==================== -->
+<div id="bulk-product-section" class="mp-card" style="border-left: 4px solid #7b1fa2; display: none;">
+  <h3 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    📦 বাল্ক প্রোডাক্ট অ্যাড (টাইলস ও মার্বেল)
+    <button class="mp-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px; background: #e8f0fe; color: var(--mp-primary);" onclick="addBulkRow()">+ নতুন রো</button>
+  </h3>
+
+  <div style="overflow-x: auto;">
+    <table id="bulk-product-table" style="width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px;">
+      <thead style="background: #f0f2f5;">
+        <tr>
+          <th style="padding: 8px; text-align: left;">নাম</th>
+          <th style="padding: 8px;">ক্যাটাগরি</th>
+          <th style="padding: 8px;">কোম্পানি (টাইলস)</th>
+          <th style="padding: 8px;">HSN</th>
+          <th style="padding: 8px;">ইউনিট</th>
+          <th style="padding: 8px;">ট্যাক্স (%)</th>
+          <th style="padding: 8px;">রেট (₹)</th>
+          <th style="padding: 8px;">সাইজ (sft/pcs)</th>
+          <th style="padding: 8px;">লট নং</th>
+          <th style="padding: 8px;">অ্যাকশন</th>
+        </tr>
+      </thead>
+      <tbody id="bulk-product-body">
+        <!-- JS দিয়ে রো আসবে -->
+      </tbody>
+    </table>
+  </div>
+  
+  <button class="mp-btn mp-btn-success" style="margin-top: 15px;" onclick="saveBulkProducts()">💾 সব প্রোডাক্ট সেভ করুন</button>
+</div>
+        
+        <!-- 🚀 নতুন: পার্টি/সাপ্লায়ার সিলেক্ট -->
 <div class="dlv-form-group" style="grid-column: 1/-1; margin-top: 10px;">
     <label style="font-size: 12px; font-weight: bold;">🏢 পার্টি/সাপ্লায়ার সিলেক্ট করুন</label>
     <div style="display: flex; gap: 5px;">
@@ -454,6 +486,136 @@ async function saveParty() {
     console.error(e);
     alert("সেভ করতে সমস্যা হয়েছে!");
   }
+}
+
+// ==================== BULK PRODUCT LOGIC ====================
+
+// ১. নতুন রো তৈরি করা
+function addBulkRow() {
+  const tbody = document.getElementById('bulk-product-body');
+  const rowId = 'row-' + Date.now() + Math.floor(Math.random()*100);
+  
+  // ক্যাটাগরি অপশন
+  const catOptions = `
+    <option value="Tiles">টাইলস</option>
+    <option value="Marble">মার্বেল</option>
+    <option value="Granite">গ্রানাইট</option>
+  `;
+
+  // ইউনিট অপশন
+  const unitOptions = `
+    <option value="pcs">পিস</option>
+    <option value="box">বক্স</option>
+    <option value="sft">স্কয়ার ফিট (sft)</option>
+  `;
+
+  const tr = document.createElement('tr');
+  tr.id = rowId;
+  tr.style.borderBottom = '1px solid #eee';
+
+  tr.innerHTML = `
+    <td style="padding: 5px;"><input type="text" class="dlv-input bulk-name" style="padding:4px; font-size:11px;" placeholder="প্রোডাক্টের নাম"></td>
+    <td style="padding: 5px;">
+      <select class="dlv-input bulk-cat" style="padding:4px; font-size:11px;" onchange="toggleBulkFields('${rowId}', this.value)">
+        ${catOptions}
+      </select>
+    </td>
+    <td style="padding: 5px;" class="company-col">
+      <input type="text" class="dlv-input bulk-company" style="padding:4px; font-size:11px;" placeholder="কোম্পানি">
+    </td>
+    <td style="padding: 5px;"><input type="text" class="dlv-input bulk-hsn" style="padding:4px; font-size:11px;" placeholder="HSN"></td>
+    <td style="padding: 5px;">
+      <select class="dlv-input bulk-unit" style="padding:4px; font-size:11px;">
+        ${unitOptions}
+      </select>
+    </td>
+    <td style="padding: 5px;"><input type="number" class="dlv-input bulk-tax" style="padding:4px; font-size:11px;" placeholder="%"></td>
+    <td style="padding: 5px;"><input type="number" class="dlv-input bulk-rate" style="padding:4px; font-size:11px;" placeholder="₹"></td>
+    <td style="padding: 5px;"><input type="number" class="dlv-input bulk-size" style="padding:4px; font-size:11px;" placeholder="sft/pcs"></td>
+    <td style="padding: 5px;"><input type="text" class="dlv-input bulk-lot" style="padding:4px; font-size:11px;" placeholder="Lot No"></td>
+    <td style="padding: 5px; text-align: center;">
+      <button onclick="document.getElementById('${rowId}').remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">&times;</button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+  
+  // ডিফল্টভাবে কোম্পানি ফিল্ড দেখানো
+  toggleBulkFields(rowId, 'Tiles');
+}
+
+// ২. ক্যাটাগরি অনুযায়ী ফিল্ড হাইড/শো করা
+function toggleBulkFields(rowId, category) {
+  const row = document.getElementById(rowId);
+  if(!row) return;
+
+  const companyCol = row.querySelector('.company-col');
+  const unitCol = row.querySelector('.bulk-unit');
+  const sizeCol = row.querySelector('.bulk-size');
+  const lotCol = row.querySelector('.bulk-lot');
+
+  if (category === 'Tiles') {
+    companyCol.style.display = 'table-cell';
+    unitCol.value = 'box';
+    sizeCol.placeholder = 'Size';
+    lotCol.disabled = true;
+    lotCol.style.opacity = '0.5';
+  } else {
+    // Marble বা Granite
+    companyCol.style.display = 'none';
+    unitCol.value = 'sft';
+    sizeCol.placeholder = 'Manual sft';
+    lotCol.disabled = false;
+    lotCol.style.opacity = '1';
+  }
+}
+
+// ৩. সব প্রোডাক্ট সেভ করা
+async function saveBulkProducts() {
+  const tbody = document.getElementById('bulk-product-body');
+  const rows = tbody.querySelectorAll('tr');
+  
+  if (rows.length === 0) return alert("কোনো প্রোডাক্ট নেই!");
+
+  let successCount = 0;
+  const btn = event.target;
+  btn.innerText = "⏳ সেভ হচ্ছে..."; btn.disabled = true;
+
+  for (const row of rows) {
+    const name = row.querySelector('.bulk-name').value.trim();
+    const category = row.querySelector('.bulk-cat').value;
+    const company = row.querySelector('.bulk-company').value.trim();
+    const hsn = row.querySelector('.bulk-hsn').value.trim();
+    const unit = row.querySelector('.bulk-unit').value;
+    const tax = parseFloat(row.querySelector('.bulk-tax').value) || 0;
+    const rate = parseFloat(row.querySelector('.bulk-rate').value) || 0;
+    const size = parseFloat(row.querySelector('.bulk-size').value) || 0;
+    const lot = row.querySelector('.bulk-lot').value.trim();
+
+    if (!name || rate <= 0) continue; // নাম বা রেট না থাকলে স্কিপ
+
+    try {
+      await db.collection("master_products").add({
+        name: name,
+        category: category,
+        company: category === 'Tiles' ? company : null,
+        hsn: hsn,
+        unit: unit,
+        tax: tax,
+        price: rate,
+        size: size,
+        lotNumber: category !== 'Tiles' ? lot : null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      successCount++;
+    } catch(e) { console.error("Save Error:", e); }
+  }
+
+  btn.innerText = "💾 সব প্রোডাক্ট সেভ করুন"; btn.disabled = false;
+  alert(`✅ সফলভাবে ${successCount} টি প্রোডাক্ট সেভ হয়েছে!`);
+  
+  // টেবিল খালি করা
+  tbody.innerHTML = '';
+  addBulkRow(); // একটি নতুন খালি রো
 }
 
 </script>
