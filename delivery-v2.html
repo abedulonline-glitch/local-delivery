@@ -6597,7 +6597,7 @@ window.handleTextSearch = function(query) {
 
 
    // ==================== AI IMAGE SEARCH (CLIP + CROPPER) ====================
-let imageSearchVector = null;
+//let imageSearchVector = null;
 
 window.handleImageSearch = function(event) {
   const file = event.target.files[0];
@@ -8032,159 +8032,181 @@ let actionHtml = `
   tbody.appendChild(tr);
 };
 
-// ==================== AI IMAGE SEARCH (CLIP + CROPPER) ====================
-let imageSearchVector = null;
+// ==================== BULK EDITOR LOGIC (PART 4 - SAVE & AI VECTOR) ====================
 
-window.handleImageSearch = function(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  // ফাইল রিড করে Cropper.js-এ পাঠানো
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const cropModal = document.getElementById('dlv-crop-modal');
-    const cropImage = document.getElementById('crop-image');
-    
-    // ক্রপ মডাল ওপেন করা
-    cropModal.style.display = 'flex';
-    cropImage.src = e.target.result;
-
-    if (cropperInstance) cropperInstance.destroy();
-    setTimeout(() => {
-      cropperInstance = new Cropper(cropImage, { 
-        viewMode: 1, 
-        dragMode: 'move', 
-        autoCropArea: 0.9, 
-        background: false,
-        aspectRatio: NaN // যেকোনো অনুপাত
-      });
-    }, 100);
-  };
-  reader.readAsDataURL(file);
-};
-
-// 🚀 ক্রপ করা ছবি থেকে AI সার্চ চালানো
-window.saveCroppedImageForSearch = async function() {
-  if (!cropperInstance) return;
+window.saveBulkData = async function() {
+  const tbody = document.getElementById('bulk-table-body');
+  const rows = tbody.querySelectorAll('tr');
   
-  const statusEl = document.getElementById('crop-status');
-  statusEl.innerText = "🔍 AI সার্চ হচ্ছে...";
-  statusEl.style.color = "#1a73e8";
+  // যদি টেবিল খালি থাকে বা মেসেজ থাকে তবে কিছু করবে না
+  if (rows.length === 0 || tbody.innerHTML.includes('ছবি সিলেক্ট করুন') || tbody.innerHTML.includes('ডেটা পেস্ট করুন')) {
+    return alert("টেবিলে কোনো ডেটা নেই!");
+  }
 
-  try {
-    // ১. ক্রপ করা ছবি থেকে Canvas তৈরি
-    const canvas = cropperInstance.getCroppedCanvas({ maxWidth: 400, maxHeight: 400 });
-    const base64Image = canvas.toDataURL('image/jpeg', 0.8);
+  // ডেটা ভ্যালিডেশন
+  let dataToSave = [];
+  for (let tr of rows) {
+    const nameInput = tr.querySelector('input[type="text"]');
+    const catSelect = tr.querySelector('.bulk-cat-select');
     
-    // ২. AI মডেল লোড করা
-    if (!window.clipProcessor) {
-      statusEl.innerText = "🧠 AI মডেল লোড হচ্ছে... (একবারই)";
+    if (!nameInput || !catSelect) continue;
+
+    const name = nameInput.value.trim();
+    const category = catSelect.value;
+    
+    // ইমেজ সোর্স বের করা (Base64 বা লিংক)
+    const imgEl = tr.querySelector('img');
+    const imgSrc = imgEl ? imgEl.src : '';
+
+    // অ্যাডমিন হলে শুধু নাম, ক্যাটাগরি, ছবি। দোকানদার হলে দাম, স্টকও লাগবে।
+    let price = 0, stock = 0;
+    if (currentBulkRole === 'shopkeeper') {
+      const priceInput = tr.querySelector('.bulk-price');
+      const stockInput = tr.querySelector('.bulk-stock');
+      price = parseFloat(priceInput ? priceInput.value : 0) || 0;
+      stock = parseFloat(stockInput ? stockInput.value : 0) || 0;
+      
+      if (price <= 0 || stock <= 0) {
+        return alert(`⚠️ "${name || 'নামহীন'}" এর সঠিক দাম এবং স্টক দিন!`);
+      }
+    }
+
+    if (!name || !category) {
+      return alert(`⚠️ "${name || 'নামহীন'}" এর নাম এবং ক্যাটাগরি অবশ্যই দিতে হবে!`);
+    }
+
+    dataToSave.push({
+      name: name,
+      category: category,
+      image: imgSrc,
+      price: price,
+      stock: stock
+    });
+  }
+
+  // লোডিং ওভারলে দেখানো (Progress Bar)
+  const overlay = document.createElement('div');
+  overlay.id = 'bulk-saving-overlay';
+  overlay.style.cssText = "position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:99999; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white;";
+  overlay.innerHTML = `
+    <div class="dlv-spinner" style="margin-bottom:15px; width:50px; height:50px;"></div>
+    <h3 style="margin-bottom:10px; font-size:16px;" id="bulk-progress-title">প্রসেসিং হচ্ছে... (০/${dataToSave.length})</h3>
+    <div style="width:80%; max-width:300px; background:#555; height:10px; border-radius:5px; overflow:hidden;">
+      <div id="bulk-progress-bar" style="height:100%; background:var(--mp-success); width:0%; transition:0.3s;"></div>
+    </div>
+    <p style="font-size:11px; margin-top:15px; color:#ccc;">AI ইমেজ ভেক্টর তৈরি হতে পারে, দয়া করে অপেক্ষা করুন...</p>
+  `;
+  document.body.appendChild(overlay);
+
+  const progressTitle = document.getElementById('bulk-progress-title');
+  const progressBar = document.getElementById('bulk-progress-bar');
+
+  // AI মডেল লোড চেক (যদি আগে থেকে লোড না থাকে)
+  if (!window.clipProcessor && window.AutoProcessor) {
+    progressTitle.innerText = "🧠 AI মডেল লোড হচ্ছে...";
+    try {
       window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
       window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
-    }
-
-    // ৩. সার্চ ভেক্টর তৈরি
-    statusEl.innerText = "🧠 ভেক্টর তৈরি হচ্ছে...";
-    const image = await window.RawImage.fromURL(base64Image);
-    const image_inputs = await window.clipProcessor(image);
-    const { image_embeds } = await window.clipVisionModel(image_inputs);
-    
-    const queryVector = Array.from(image_embeds.data);
-    imageSearchVector = queryVector;
-
-    // ৪. ডেটাবেস থেকে সব প্রোডাক্ট নিয়ে Similarity চেক
-    statusEl.innerText = "🔍 ডেটাবেসে খোঁজা হচ্ছে...";
-    const productsRef = collection(db, "products");
-    const snapshot = await getDocs(productsRef);
-    
-    let scoredProducts = [];
-    let vectorCount = 0;
-
-    snapshot.forEach(docSnap => {
-      const prod = docSnap.data();
-      if (prod.imageVector && prod.imageVector !== "") {
-        try {
-          const prodVector = typeof prod.imageVector === 'string' ? JSON.parse(prod.imageVector) : prod.imageVector;
-          if (Array.isArray(prodVector) && prodVector.length > 0) {
-            vectorCount++;
-            const score = calculateCosineSimilarity(queryVector, prodVector);
-            scoredProducts.push({ product: prod, id: docSnap.id, score: score });
-          }
-        } catch(e) { console.warn("Vector parse error:", prod.name); }
-      }
-    });
-
-    // ৫. স্কোর অনুযায়ী সর্ট (সবচেয়ে কাছাকাছি সবার উপরে)
-    scoredProducts.sort((a, b) => b.score - a.score);
-
-    // ৬. থ্রেশহোল্ড (৫৫% এর বেশি মিললে দেখাবে)
-    const THRESHOLD = 0.55;
-    const matchedProducts = scoredProducts.filter(sp => sp.score >= THRESHOLD);
-
-    // ক্রপ মডাল বন্ধ করা
-    closeCropModal();
-    document.getElementById('search-image-preview').src = base64Image;
-    document.getElementById('search-image-preview-container').style.display = 'block';
-
-    // ৭. রেজাল্ট গ্রিডে দেখানো
-    if (matchedProducts.length === 0) {
-      document.getElementById('cst-product-grid').innerHTML = `
-        <div style="text-align:center; color:#999; padding:20px; grid-column: 1/-1;">
-          এই ছবির সাথে ${THRESHOLD*100}% মিল এমন কোনো প্রোডাক্ট পাওয়া যায়নি।<br>
-          <small>ডাটাবেসে ${vectorCount} টি প্রোডাক্টে AI ভেক্টর আছে।</small>
-        </div>`;
-    } else {
-      renderAISearchResults(matchedProducts);
-    }
-
-  } catch (error) {
-    console.error("AI Search Error:", error);
-    alert("ছবি সার্চে সমস্যা হয়েছে! এরর: " + error.message);
-    statusEl.innerText = "❌ ব্যর্থ!";
-    statusEl.style.color = "red";
+    } catch(err) { console.warn("AI Model Load Failed:", err); }
   }
+
+  let successCount = 0;
+
+  // লুপ চালিয়ে এক এক করে ডেটা সেভ এবং ভেক্টর জেনারেট করা
+  for (let i = 0; i < dataToSave.length; i++) {
+    const item = dataToSave[i];
+    progressTitle.innerText = `প্রসেসিং: ${item.name} (${i+1}/${dataToSave.length})`;
+    progressBar.style.width = `${((i) / dataToSave.length) * 100}%`;
+
+    let finalImageUrl = item.image;
+    let generatedVectorStr = "";
+
+    // ১. ইমেজ আপলোড (যদি Base64 হয়)
+    if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
+      try {
+        const formData = new FormData();
+        formData.append("image", finalImageUrl.split(',')[1]);
+        const imgRes = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
+        const imgData = await imgRes.json();
+        if (imgData.success) {
+          finalImageUrl = imgData.data.url;
+        } else { finalImageUrl = null; }
+      } catch(e) { finalImageUrl = null; }
+    }
+
+    // ২. AI ভেক্টর জেনারেশন
+    if (finalImageUrl && window.CLIPVisionModelWithProjection) {
+      try {
+        if (!window.clipProcessor) {
+          window.clipProcessor = await window.AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch32');
+          window.clipVisionModel = await window.CLIPVisionModelWithProjection.from_pretrained('Xenova/clip-vit-base-patch32');
+        }
+        const image = await window.RawImage.fromURL(finalImageUrl);
+        const image_inputs = await window.clipProcessor(image);
+        const { image_embeds } = await window.clipVisionModel(image_inputs);
+        const vectorArray = Array.from(image_embeds.data).slice(0, 256);
+        generatedVectorStr = JSON.stringify(vectorArray);
+      } catch (err) { console.warn("Vector Generation Failed:", err); }
+    }
+
+    // ৩. ডেটাবেসে সেভ করা
+    try {
+      if (currentBulkRole === 'admin') {
+        // অ্যাডমিন মাস্টার প্রোডাক্ট সেভ
+        await addDoc(collection(db, "master_products"), {
+          name: item.name,
+          category: item.category,
+          image: finalImageUrl || null,
+          imageVector: generatedVectorStr,
+          createdAt: serverTimestamp()
+        });
+      } else {
+        // দোকানদার নিজস্ব প্রোডাক্ট সেভ
+        await addDoc(collection(db, "products"), {
+          shopId: currentUser.uid,
+          shopName: globalUserData.name || 'Unknown',
+          name: item.name,
+          category: item.category,
+          image: finalImageUrl || null,
+          imageVector: generatedVectorStr,
+          price: item.price,
+          stock: item.stock,
+          baseWeight: 1,
+          baseUnit: 'kg',
+          packagingCharge: 0,
+          allowCustomWeight: true,
+          minOrderWeight: 0,
+          maxOrderWeight: 0,
+          minExtraCharge: 0,
+          discountTiers: [],
+          isBulkDiscountActive: false,
+          isStandalone: true,
+          shopLat: globalUserData.lat || null,
+          shopLng: globalUserData.lng || null,
+          isPremium: globalUserData.isPremium || false,
+          isVerified: globalUserData.isVerified || false,
+          createdAt: serverTimestamp()
+        });
+      }
+      successCount++;
+    } catch (err) {
+      console.error("Save Error for " + item.name, err);
+    }
+
+    // UI আপডেট
+    progressBar.style.width = `${((i+1) / dataToSave.length) * 100}%`;
+  }
+
+  // কাজ শেষ হলে
+  setTimeout(() => {
+    document.body.removeChild(overlay);
+    alert(`✅ সফলভাবে ${successCount} টি প্রোডাক্ট সেভ হয়েছে!`);
+    document.getElementById('dlv-bulk-editor-modal').classList.remove('active');
+    clearBulkTable();
+  }, 500);
 };
 
-// 🚀 Cosine Similarity ক্যালকুলেশন
-function calculateCosineSimilarity(vecA, vecB) {
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-  const len = Math.min(vecA.length, vecB.length);
-  for (let i = 0; i < len; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
-  }
-  if (normA === 0 || normB === 0) return 0;
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-}
-
-// 🚀 AI সার্চের রেজাল্ট গ্রিডে দেখানো
-function renderAISearchResults(scoredProducts) {
-  const grid = document.getElementById('cst-product-grid');
-  grid.innerHTML = '';
-  
-  scoredProducts.forEach(sp => {
-    const prod = sp.product;
-    const matchPercent = Math.round(sp.score * 100);
-    grid.innerHTML += `
-      <div class="dlv-product-card">
-        <div class="dlv-product-img-wrap" style="position:relative;">
-          ${prod.image ? `<img src="${prod.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
-          <span class="dlv-badge-stock" style="background:var(--mp-primary);">${matchPercent}% ম্যাচ</span>
-        </div>
-        <div class="dlv-product-name">${prod.name}</div>
-        <div class="dlv-product-meta"><span>⚖️ ${prod.unit || 'pcs'}</span></div>
-        <div class="dlv-product-price">₹${prod.price}</div>
-        <button class="dlv-add-btn" onclick="addToSmartCart('${sp.id}')">🛒 অ্যাড করুন</button>
-      </div>
-    `;
-  });
-}
-  
-   
-    // 🚀 ৫. স্যাম্পল CSV টেমপ্লেট ডাউনলোড লজিক
+// 🚀 ৫. স্যাম্পল CSV টেমপ্লেট ডাউনলোড লজিক
 window.downloadCSVTemplate = function(e) {
   if(e) e.preventDefault();
   
