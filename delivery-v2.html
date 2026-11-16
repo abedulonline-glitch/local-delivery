@@ -555,25 +555,11 @@
     <input type="text" id="cst-search-input" class="dlv-input" placeholder="🔍 প্রোডাক্ট বা ক্যাটাগরি খুঁজুন..." oninput="handleTextSearch(this.value)" style="padding-right: 40px; margin-bottom: 0;">
     
     <!-- 📷 ক্যামেরা আইকন -->
-    <!-- 🚀 ক্যামেরা এবং গ্যালারি বাটন -->
-<div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: flex; gap: 10px; background: white; padding: 4px; border-radius: 8px;">
-    
-    <!-- ক্যামেরা বাটন -->
-    <label style="font-size: 20px; cursor: pointer; color: var(--mp-primary); margin: 0;" title="ক্যামেরা" onclick="triggerCameraSearch()">
+    <label for="camera-upload" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 20px; cursor: pointer; color: var(--mp-primary);">
       📷
     </label>
-
-    <!-- গ্যালারি বাটন -->
-    <label style="font-size: 20px; cursor: pointer; color: #f9a825; margin: 0;" title="গ্যালারি" onclick="triggerGallerySearch()">
-      🖼️
-    </label>
-</div>
-
-<!-- 🚀 হিডেন ইনপুট (ক্যামেরার জন্য) -->
-<input type="file" id="search-camera-input" accept="image/*" capture="environment" style="display: none;" onchange="handleImageSearch(event)">
-
-<!-- 🚀 হিডেন ইনপুট (গ্যালারির জন্য) -->
-<input type="file" id="search-gallery-input" accept="image/*" style="display: none;" onchange="handleImageSearch(event)">
+    <input type="file" id="camera-upload" accept="image/*" style="display: none;" onchange="handleImageSearch(event)">
+  </div>
 
   <!-- ইমেজ প্রিভিউ এরিয়া (সার্চের জন্য) -->
   <div id="search-image-preview-container" style="display: none; text-align: center; margin-bottom: 15px;">
@@ -8563,16 +8549,6 @@ window.addWholesaleToCart = function(prodId) {
   updateSmartCartUI();
   document.getElementById('dlv-b2b-market-modal').classList.remove('active');
   document.getElementById('dlv-smart-cart-modal').classList.add('active');
-};
-
-// 🚀 ক্যামেরা ওপেন করার ফাংশন
-window.triggerCameraSearch = function() {
-  document.getElementById('search-camera-input').click();
-};
-
-// 🚀 গ্যালারি ওপেন করার ফাংশন
-window.triggerGallerySearch = function() {
-  document.getElementById('search-gallery-input').click();
 };
 
 </script>
