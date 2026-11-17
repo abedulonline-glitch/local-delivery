@@ -6783,43 +6783,6 @@ function renderAISearchResults(scoredProducts) {
   });
 }
 
-  // 🚀 Cosine Similarity ক্যালকুলেশন
-function calculateCosineSimilarity(vecA, vecB) {
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-  const len = Math.min(vecA.length, vecB.length);
-  for (let i = 0; i < len; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
-  }
-  if (normA === 0 || normB === 0) return 0;
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-}
-
-// 🚀 AI সার্চের রেজাল্ট গ্রিডে দেখানো
-function renderAISearchResults(scoredProducts) {
-  const grid = document.getElementById('cst-product-grid');
-  grid.innerHTML = '';
-  
-  scoredProducts.forEach(sp => {
-    const prod = sp.product;
-    const matchPercent = Math.round(sp.score * 100);
-    grid.innerHTML += `
-      <div class="dlv-product-card">
-        <div class="dlv-product-img-wrap" style="position:relative;">
-          ${prod.image ? `<img src="${prod.image}">` : '<div style="display:flex; justify-content:center; align-items:center; height:100%; font-size:30px;">📦</div>'}
-          <span class="dlv-badge-stock" style="background:var(--mp-primary);">${matchPercent}% ম্যাচ</span>
-        </div>
-        <div class="dlv-product-name">${prod.name}</div>
-        <div class="dlv-product-meta"><span>⚖️ ${prod.unit || 'pcs'}</span></div>
-        <div class="dlv-product-price">₹${prod.price}</div>
-        <button class="dlv-add-btn" onclick="addToSmartCart('${sp.id}')">🛒 অ্যাড করুন</button>
-      </div>
-    `;
-  });
-} 
     
   // ৪. প্রোডাক্ট গ্রিড রেন্ডার করার হেল্পার ফাংশন
 function renderFilteredProductsToGrid(products) {
