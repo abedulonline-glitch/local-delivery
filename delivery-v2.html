@@ -351,9 +351,8 @@
           </label>
         </div>
         <div style="font-size: 11px; color: #888; margin-bottom: 10px;">প্রোফাইল ছবি (ঐচ্ছিক)</div>
-        
-        <input type="file" id="reg-profile-pic-file" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'reg')">
-      </div>
+       <input type="file" id="reg-profile-pic-file" accept="image/*" style="display: none;" onchange="handleImageSelect(event, 'reg')"> 
+         </div>
 
       <div id="reg-location-section" class="mp-hidden" style="margin-bottom: 15px; border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fafafa;">
         <div class="dlv-form-group" style="margin-bottom: 0;">
@@ -6293,25 +6292,36 @@ window.searchPinUsers = async function() {
 };
   
   
+
   window.handleImageSelect = function(event, context) {
-    const file = event.target.files[0];
-    if (!file) return;
+  const file = event.target.files[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const cropModal = document.getElementById('dlv-crop-modal');
-      const cropImage = document.getElementById('crop-image');
-      cropModal.style.display = 'flex';
-      cropImage.src = e.target.result;
+  // 🚀 কনটেক্সট সেভ করা (যাতে Cropper থেকে সেভ করার সময় সঠিক ফাংশন কল হয়)
+  currentUploadContext = context;
 
-      if (cropperInstance) cropperInstance.destroy();
-      setTimeout(() => {
-        cropperInstance = new Cropper(cropImage, { viewMode: 1, dragMode: 'move', autoCropArea: 0.9, background: false });
-      }, 100);
-    };
-    reader.readAsDataURL(file);
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const cropModal = document.getElementById('dlv-crop-modal');
+    const cropImage = document.getElementById('crop-image');
+    cropModal.style.display = 'flex';
+    cropImage.src = e.target.result;
+
+    if (cropperInstance) cropperInstance.destroy();
+    setTimeout(() => {
+      cropperInstance = new Cropper(cropImage, { viewMode: 1, dragMode: 'move', autoCropArea: 0.9, background: false, aspectRatio: context === 'reg' ? 1 : NaN });
+      
+      // 🚀 Cropper-এর বাটনে ক্লিক করলে সেভ হবে
+      const cropBtn = cropModal.querySelector('.mp-btn-success');
+      if (cropBtn) cropBtn.setAttribute('onclick', 'saveCroppedImage()');
+    }, 100);
   };
+  reader.readAsDataURL(file);
+};
+  
 
+
+  
   window.closeCropModal = function() {
     document.getElementById('dlv-crop-modal').style.display = 'none';
     if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
